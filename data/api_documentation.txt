@@ -1,0 +1,544 @@
+# Python 3
+# This is a description of the Hexagons package.
+# The purpose of this package is to execute instructions given in natural language.
+# The instructions describe drawings on a hexagonal tiled board.
+
+# Constants
+HEIGHT = 10 # number of rows
+WIDTH = 18 # number of columns
+COLORS = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange']
+DIRECTIONS = ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']
+
+# Classes
+Class Tile:
+'''
+A Class to represent a tile on the board
+
+
+Attributes:
+---------------
+column: int
+  The column on which the tile is located. starts at 1 and counted from left to right
+row: int
+  The row on which this tile is located. starts from 1 and counted from top to bottom
+color: str
+  The color of the tile
+'''
+
+
+  def __init__(self, column, row):
+    '''
+    Construct a new tile. The default color is ‘white’.
+
+
+    Parameters:
+    ---------------
+    column: int
+      The column on which the tile is located. Starts at 1 and counted from left to right.
+      A negative value represents counting from right to left. E.g., the first column from the right is -1.
+    row: int
+      The row on which this tile is located. Starts from 1 and counted from top to bottom.
+      A negative value represents counting from bottom to top. E.g., the first row from the bottom is -1.
+    '''
+    pass # implementation goes here
+
+
+  def draw(self, color):
+    '''
+    Draw the tile on the board in the given color
+
+
+    Parameters:
+    ---------------
+    color: str
+      The color
+    '''
+    pass # implementation goes here
+
+
+  def neighbor(self, direction):
+    '''
+    Return the neighbor of the tile in the given direction.
+
+
+    Parameters:
+    ---------------
+    direction: str
+      Must be an item of DIRECTIONS
+
+
+    Returns:
+    ---------------
+    Tile
+      new Tile object
+    '''
+    pass # implementation goes here
+
+
+  def neighbors(self):
+    '''
+    Return a Shape object containing all the neighbors of the tile
+
+
+    Returns:
+    ---------------
+    Shape
+      A shape containing all the neighbors of the tile
+    '''
+    pass # implementation goes here
+
+
+    def on_board(self):
+    '''
+    Return True if the tile is on the board, False otherwise
+
+
+    Returns:
+    ---------------
+    bool
+    '''
+    pass # implementation goes here
+
+
+class Shape():
+'''
+    Construct a new Shape from a list of tiles.
+
+
+    Parameters:
+    ---------------
+    tiles: list[Tile]
+      The tiles that compose the shape
+
+
+  def __init__(self, tiles):
+    '''
+    Parameters:
+    ---------------
+    tiles: list[Tile]
+      A list of Tile objects
+    '''
+    pass # implementation goes here
+
+
+  def is_empty(self):
+    '''
+    Return True if self is empty, False otherwise
+
+
+    Returns:
+    ---------------
+    bool
+    '''
+    pass # implementation goes here
+
+
+  def draw(self, color):
+    '''
+    Draw the shape in the given color
+
+
+    Parameters:
+    ---------------
+    color: str
+      The color
+    '''
+    pass # implementation goes here
+
+
+  def copy_paste(self, shift_direction, spacing, reference_shape = None):
+    '''
+    Draw a copy of the shape in a new location.
+
+
+    Parameters:
+    ---------------
+    shift_direction: str
+      The direction in which to shift the shape
+      Supported values:
+      - any item of DIRECTIONS
+      - 'right'
+      - 'left'
+    spacing: int
+      Number of tiles between the original shape and the new shape
+    reference_shape: Shape
+      The new location is computed with respect to reference_shape.
+      If not specified, location is computed with respect to the original shape.
+
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def grid(self, shift_direction, spacing, num_copies = None):
+    '''
+    Draw copies of the shape along a grid.
+    This is done by repeated calls to 'copy_paste'.
+
+
+    Parameters:
+    ---------------
+    shift_direction: str
+      The direction in which to shift the shape
+    spacing: int
+      Number of tiles between the original shape and the new shape
+    num_copies: int
+      The number of copies.
+      If not specified, copies will be created until there is no more room
+      on the board
+
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object that holds the original shape and all its copies
+    '''
+    pass # implementation goes here
+
+
+  def reflect(self, axis_line=None, column=None, axis_direction=None, tile_on_axis=None):
+    '''
+    Reflect the shape through an axis.  Axis can be specified by one of the following options:
+    - axis_line
+    - column
+    - axis_direction and tile_on_axis: together they define a single line, to reflect the shape through
+
+
+    Parameters:
+    ---------------
+    axis_line: Line
+      Reflect the shape through this line
+    column: int
+      Reflect the shape through this column
+    axis_direction: str
+      Item of DIRECTIONS. The direction of the reflection axis
+    tile_on_axis: Tile
+      A tile on the reflection axis
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def rotate(self, rotation, center_tile):
+    '''
+    Rotate the shape counterclockwise around the center_tile.
+
+
+    Parameters:
+    ---------------
+    center_tile: Tile
+     Rotate the shape around this tile
+    rotation: int
+      How much rotation to apply.
+      0 means no rotation, 1 means 60 degrees rotation, 2 means 120 rotation, etc.
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def recolor(self, color_map):
+    '''
+    Recolor the shape, by mapping the existing colors to other colors.
+
+
+    Parameters:
+    ---------------
+    color_map: dict of str
+          A mapping from colors to colors, e.g. {'red': 'blue', 'green': 'black'}
+    '''
+    pass # implementation goes here
+
+
+  def get_color(color):
+    '''
+    Return all the tiles colored in a given color as a Shape object
+
+    Parameters:
+    ---------------
+    color: str
+      The color
+
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def get(self, criterion):
+    '''
+    Return a new shape according to some geometrical relation with the given shape, described by ‘criterion’
+
+
+    Parameters:
+    ---------------
+    criterion: str
+      The criterion by which to create the new shape. Options:
+      - 'outside' / 'inside': the tiles outside/inside the given shape
+      - 'outer_boundary' / 'inner_boundary': tiles that are part of the given shape, and lie on its outer/inner boundary
+      - 'above' / 'below': tiles that lie above/below the given shape
+      - 'top' / 'bottom': to topmost/bottommost tiles of the given shape
+      - 'corners': the corners of the shape. If the shape is a polygon, these will be the polygon’s vertices
+      - 'end_points': the end points of the shape. If the shape is a line, these will be the ends of the line
+
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def boundary(self, criterion='all'):
+    '''
+    Return the boundary of the shape. These are tiles that are part of the shape and touch tiles that are not part of the shape
+
+    Parameters:
+    ---------------
+    criterion: str
+      Criterion to select parts of the boundary
+      - ‘all’: the entire boundary
+      - 'outer’: tiles that touch tiles that are outside the shape
+      - ‘inner’: tiles that touch tiles that are inside the shape
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def extreme(self, direction):
+    '''
+    Return the extreme tiles in a given direction
+
+
+    Parameters:
+    ---------------
+    direction: str
+      any item of DIRECTIONS
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+   def edge(self, criterion):
+    '''
+    Return the edge of the shape in a given direction
+
+    Parameters:
+    ---------------
+    direction: str
+      options:
+      - ‘top’ / ‘bottom’
+      - ‘left’ / ‘right’
+      - any item of DIRECTIONS
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def neighbors(self, criterion='all'):
+    Return the neighbors of the shape by some criterion
+
+    Parameters:
+    ---------------
+    criterion: str
+      options:
+      - ‘all’: all the neighbors of the shape
+      - ‘right’ / ‘left’: neighbors to the right/left of the shape
+      - ‘above’ / ‘below’: neighbors from above/below the shape
+      - ‘outside’ / ‘inside’: neighbors outside/inside the shape
+      - ‘white’: blank neighbors
+
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+  def polygon(vertices):
+    '''
+    Returns a polygon with the given vertices
+
+    Parameters:
+    ---------------
+    vertices: ls[Tile]
+      A list of Tile objects
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+    pass # implementation goes here
+
+
+class Line(Shape):
+  '''
+  A class to represent a line on the board. This is a Shape object with tiles that are along a line
+
+
+  Attributes:
+  ---------------
+start_tile: Tile
+  First tile of the line
+end_tile: Tile
+  Last tile of the line
+color: str
+  The color of the line
+direction: str
+  The direction of the line.
+'''
+  def __init__(self, start_tile: Tile, end_tile = None, direction = None, length = None, end_tiles = Shape([]), include_start_tile = True, include_end_tile = True):
+    '''
+    Not all parameters can be specified together
+    Options for creating a Line object:
+    - Line(start_tile, end_tile)
+    - Line(start_tile, direction)
+    - Line(start_tile, direction, length)
+    - Line(start_tile, end_tiles)
+    'include_start_tile' and 'include_end_tile' may be specified
+
+
+    Parameters:
+    ---------------
+    start_tile: Tile
+      First tile of the line
+    end_tile: Tile
+      Last tile of the line
+    direction: str
+      Any item of DIRECTIONS. The direction of line
+    length: int
+      The length of the line
+      If direction is specified without length, the line will continue until it reaches the end of the board
+    end_tiles: Shape
+      Continue the line until you reach any tile from this shape
+    include_start_tile: bool
+      If False, do not include the tile 'start_tile'
+    include_end: bool
+      If False, do not include the tile 'end_tile'
+    '''
+    pass # implementation goes here
+
+
+  def draw(self, color):
+    '''
+    Draw the line in the given color
+
+
+    Parameters:
+    ---------------
+    color: str
+      The color
+    '''
+    pass # implementation goes here
+
+class Circle(Shape):
+  '''
+  A class to represent a circle on the board. This is a Shape object with tiles that are along a circle
+
+
+  Attributes:
+  ---------------
+center_tile: Tile
+  The center of the circle
+color: str
+  The color of the circle
+'''
+  def __init__(self, center_tile, radius = 1):
+    '''
+    Parameters:
+    ---------------
+    center_tile: Tile
+      The center of the circle
+    radius: int
+      The radius of the circle
+    '''
+    pass # implementation goes here
+
+
+  def draw(self, color):
+    '''
+    Draw the circle in the given color.
+
+
+    Parameters:
+    ---------------
+    color: str
+      The color
+    '''
+    pass # implementation goes here
+
+
+class Triangle(Shape):
+   '''
+   A class to represent a triangle on the board.
+   This is a Shape object with tiles that are along a triangle.
+   Attributes:
+    ---------------
+  center_tile: Tile
+    The center of the circle
+  color: str
+    The color of the circle
+    '''
+
+  def __init__(self, start_tile, point, start_tile_type, side_length = 2):
+    '''
+    Parameters:
+    ---------------
+    start_tile: Tile
+      Specifies a vertex of the triangle, from which we start generating the triangle
+    point: str
+      'left' / 'right'
+      The direction the triangle is pointing at.
+    start_tile_type: str
+      'side' / 'top' / 'bottom'
+      A triangle has three vertices: side vertex, top vertex, and bottom vertex.
+      'start_tile_type' specifies which vertex of the triangle is described by ‘start_tile’.
+    side_length: int
+      The length of the side of the triangle
+    '''
+    pass # implementation goes here
+
+
+  def draw(self, color):
+    '''
+    Draw the triangle in the given color
+
+
+    Parameters:
+    ---------------
+    color: str
+      The color
+    '''
+    pass # implementation goes here
+
+# This is the end of the documentation for the Hexagons package.
