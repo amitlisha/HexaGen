@@ -1,16 +1,7 @@
-import collections
-from functools import wraps
-import math
-import os.path
-import matplotlib.pyplot as plt
-from numbers import Number
 import numpy as np
-from numpy.random import randint
-from numpy.random import choice
 from scipy.spatial.transform import Rotation
 import sys
 from typing import Callable, Optional, List # Union
-
 sys.path.append('../utils')
 import plot_board as pb
 
@@ -39,8 +30,8 @@ it is used by other classes in operations like shifting tiles and creating polyg
 
 
 class _Vec:
-  DIRECTIONS = {'up': [0, -1, 1], 'down': [0, 1, -1], 'down_right': [1, 0, -1], 'up_left': [-1, 0, 1],
-                'down_left': [-1, 1, 0], 'up_right': [1, -1, 0]}
+  DIRECTIONS = {'up': (0, -1, 1), 'down': (0, 1, -1), 'down_right': (1, 0, -1), 'up_left': (-1, 0, 1),
+                'down_left': (-1, 1, 0), 'up_right': (1, -1, 0)}
   DIRECTIONS_TO_QRS = {'up': 0, 'down': 0, 'down_right': 1, 'up_left': 1, 'down_left': 2, 'up_right': 2}
 
   def __init__(self, *args):
@@ -59,13 +50,19 @@ class _Vec:
       s = -q - r
     if abs(q + r + s) > 0.00001:
       raise Exception(f'cube coordinates {[q, r, s]} don\'t sum up to 0')
-    self._q = q
-    self._r = r
-    self._s = - q - r
+    self._cube = (q, r, -q - r)
 
   @property
-  def _cube(self):
-    return [self._q, self._r, self._s]
+  def _q(self):
+    return self._cube[0]
+
+  @property
+  def _r(self):
+    return self._cube[1]
+
+  @property
+  def _s(self):
+    return self._cube[2]
 
   def cyclic_permutation(ls, k):
     # if k >= 0, element 0 becomes element k
@@ -120,14 +117,11 @@ class _Hexagon:
       if (column is not None) and (row is not None):
         # _Hexagon is given as offset = [column, row]
         # compute cube coordinates. offset [1, 1] is cube [0, 0, 0]
-        column = column % (HexagonsGame._W + 1)
-        row = row % (HexagonsGame._H + 1)
+        # column = column % (HexagonsGame._W + 1)
+        # row = row % (HexagonsGame._H + 1)
         q = column - 1
         r = row - 1 - (q - (q % 2)) // 2
         s = -q - r
-        # q = column
-        # r = row - (q - (q % 2)) // 2
-        # s = -q - r
       elif cube is not None:
         # _Hexagon is given as cube = [q, r, s]
         q, r, s = cube
@@ -135,72 +129,73 @@ class _Hexagon:
           raise Exception(f'cube coordinates {[q, r, s]} don\'t sum up to 0')
         column = q + 1
         row = r + (q - (q % 2)) // 2 + 1
-        # column = q
-        # row = r + (q - (q % 2)) // 2
       if 1 <= column <= HexagonsGame._W and 1 <= row <= HexagonsGame._H:
         lind = int((row - 1) * HexagonsGame._W + (column - 1))
       else:
         # tile is not on board, so it has no linear index
         lind = None
-      return lind, column, row, [q, r, s]
+      return lind, (column, row), (q, r, s)
 
-  def __init__(self, column = None, row = None, cube = None, create_none_tile = False):
-    if create_none_tile:
-      self._lind = None
-    else:
-      lind, column, row, [q, r, s] = _Hexagon.complete_arguments(column, row, cube)
-      self._lind = lind
-      self._column = column
-      self._row = row
-      self._q = q
-      self._r = r
-      self._s = s
+  def __init__(self, column = None, row = None, cube = None):
+    self._lind, self._offset, self._cube = _Hexagon.complete_arguments(column, row, cube)
+    if self._lind is None:
+      self._saved_color_id = 0
+
+  @property
+  def _q(self):
+    return self._cube[0]
+
+  @property
+  def _r(self):
+    return self._cube[1]
+
+  @property
+  def _s(self):
+    return self._cube[2]
 
   @property
   def _color_id(self):
-    if self._lind is not None:
-      return HexagonsGame.board_state[self._lind]
+    if self._lind is None:
+      return self._saved_color_id
     else:
-      return 0
+      return HexagonsGame.board_state[self._lind]
 
   @property
   def _color(self):
       return HexagonsGame._COLORS_LIST[self._color_id]
 
   @property
-  def _offset(self):
-    return [self._column, self._row]
+  def _column(self):
+    return self._offset[0]
 
   @property
-  def _cube(self):
-    return [self._q, self._r, self._s]
+  def _row(self):
+    return self._offset[1]
 
   def _show(self):
     print(f'{self.__class__.__name__} instance: column = {self._column}, row = {self._row}, lind = {self._lind}, color = {self._color_id}')
 
   def _from_lind(lind):
-    if lind is None or lind not in range(HexagonsGame._W * HexagonsGame._H):
-      return _Hexagon(create_none_tile = True)
     if lind in range(HexagonsGame._W * HexagonsGame._H):
       row = lind // (HexagonsGame._W) + 1
       column = lind % HexagonsGame._W + 1
       return _Hexagon(column = column, row = row)
+    print(f'lind {lind} not valid')
 
   def _on_board(self):
     return self._lind is not None
 
-  def handle_none_hexagon(func):
-    @wraps(func)
-    def with_handle(*args, **kwargs):
-      if args[0]._lind is None:
-          return _Hexagon(create_none_tile = True)
-      return func(*args, **kwargs)
-    return with_handle
+  # def handle_none_hexagon(func):
+  #   @wraps(func)
+  #   def with_handle(*args, **kwargs):
+  #     if args[0]._lind is None:
+  #         return _Hexagon(create_none_tile = True)
+  #     return func(*args, **kwargs)
+  #   return with_handle
 
   def __sub__(self, other):
     return _Vec(*[int(_) for _ in [x - y for x, y in zip(self._cube, other._cube)]])
 
-  @handle_none_hexagon
   def _shift(self, *args):
     if isinstance(args[0], _Vec):
       vec = args[0]
@@ -209,13 +204,11 @@ class _Hexagon:
     new_cube = [int(_) for _ in [x + y for x, y in zip(self._cube, vec._cube)]]
     return _Hexagon(cube = new_cube)
 
-  @handle_none_hexagon
   def _copy_paste(self, vec, color = None):
     new_tile = self._shift(vec)
     new_tile._draw(self._color_id if color is None else color)
     return new_tile
 
-  @handle_none_hexagon
   def _reflect(self, axis_line = None, column = None, axis_direction = None, hexagon_on_axis = None):
     if axis_direction == 'horizontal':
       direction_vec = _Vec(2, -1, -1)
@@ -249,7 +242,6 @@ class _Hexagon:
     new_tile._draw(self._color)
     return new_tile
 
-  @handle_none_hexagon
   def _rotate(self, rotation, center):
     v_self = np.array(self._cube)
     v_center = np.array(center._cube)
@@ -261,7 +253,6 @@ class _Hexagon:
     new_tile._draw(self._color)
     return new_tile
 
-  @handle_none_hexagon
   def _draw(self, color):
     '''
     draw a single tile with color 'color'
@@ -270,9 +261,10 @@ class _Hexagon:
     if self._lind is not None:
       HexagonsGame.board_state[self._lind] = color_id
     # commands._update_drawn(self, 'tiles')
+    else:
+      self._saved_color_id = color_id
     return self
 
-  @handle_none_hexagon
   def _neighbor(self, direction):
     '''
     return the neighbor of self in the given direction
@@ -287,9 +279,8 @@ class _Hexagon:
     return all the neighbors of self
     '''
     if self._lind is None:
-      return Shape([])
-    return Shape([self._shift(_Vec(*direction_cube)) for direction_cube in _Vec.DIRECTIONS.values()], from_hexagons = True)
-
+      return []
+    return [self._shift(_Vec(*direction_cube)) for direction_cube in _Vec.DIRECTIONS.values()]
 
 class Shape:
   def __init__(self, tiles, from_linds=False, from_hexagons=False):
@@ -301,7 +292,6 @@ class Shape:
     tiles: list[Tile]
       The tiles that compose the shape
     '''
-
     if from_linds:
       linds = tiles
       hexagons = [_Hexagon._from_lind(lind) for lind in linds]
@@ -312,12 +302,11 @@ class Shape:
         hexagons = tiles._hexagons
       else:
         hexagons = [tile._hexagon for tile in tiles]
-      linds = [hexagon._lind for hexagon in hexagons]
-    unique_linds = []
     unique_hexagons = []
-    for hexagon, lind in zip(hexagons, linds):
-      if lind is not None and lind not in unique_linds:
-        unique_linds.append(lind)
+    unique_cubes = []
+    for hexagon in hexagons:
+      if hexagon._cube not in unique_cubes:
+        unique_cubes.append(hexagon._cube)
         unique_hexagons.append(hexagon)
     self._hexagons = tuple(unique_hexagons)
     if len(unique_hexagons) == 1:
@@ -382,16 +371,19 @@ class Shape:
     return self.tiles[item]
 
   def __add__(self, other):
-    linds = list(set(self._linds) | set(other._linds))
-    return Shape(linds, from_linds=True)
+    cubes = list(set(self._cubes) | set(other._cubes))
+    hexs = [_Hexagon(cube = cube) for cube in cubes]
+    return Shape(hexs, from_hexagons = True)
 
   def __mul__(self, other):
-    linds = list(set(self._linds) & set(other._linds))
-    return Shape(linds, from_linds=True)
+    cubes = list(set(self._cubes) & set(other._cubes))
+    hexs = [_Hexagon(cube = cube) for cube in cubes]
+    return Shape(hexs, from_hexagons = True)
 
   def __sub__(self, other):
-    linds = list(set(self._linds).difference(set(other._linds)))
-    return Shape(linds, from_linds=True)
+    cubes = list(set(self._cubes).difference(set(other._cubes)))
+    hexs = [_Hexagon(cube = cube) for cube in cubes]
+    return Shape(hexs, from_hexagons = True)
 
   def _compute_shift_from_spacing(self, direction, spacing, reference_shape=None):
     if reference_shape is None:
@@ -418,12 +410,12 @@ class Shape:
     total_shift = shift._scale(steps) + initial_shift
     return total_shift
 
-  def _shifted_shape_fits_board(self, shift):
-    return self._size == self._shift(shift)._size
-
   def _center_of_mass(self):
     cubes_arr = np.array([hexagon._cube for hexagon in self._hexagons])
     return _Vec(*np.mean(cubes_arr, axis=0))
+
+  def _entirely_on_board(self):
+    return None not in self._linds
 
   def is_empty(self):
     '''
@@ -488,7 +480,7 @@ class Shape:
     # COMMANDS._update_drawn(new_shape, 'shapes')
     return new_shape
 
-  def grid(self, shift_direction, spacing, num_copies=None):
+  def grid(self, shift_direction, spacing, num_copies = None):
     '''
     Draw copies of the shape along a grid.
     This is done by repeated calls to 'copy_paste'.
@@ -511,16 +503,14 @@ class Shape:
     '''
     shift = self._compute_shift_from_spacing(shift_direction, spacing, None)
 
-    new_shape = self
-    if num_copies is not None:
-      for k in range(1, num_copies + 1):
-        new_shape = new_shape + self.copy_paste(shift=shift._scale(k))
-    else:
-      k = 1
-      while self._shifted_shape_fits_board(shift._scale(k)):
-        new_shape = new_shape + self.copy_paste(shift=shift._scale(k))
-        k += 1
-    return new_shape
+    grid = self
+    k = 0
+    new_shape = self._shift(shift)
+    while (num_copies is None and new_shape._entirely_on_board()) or (num_copies is not None and k < num_copies):
+      grid = grid + new_shape
+      new_shape = new_shape._shift(shift)
+      k += 1
+    return grid
 
   def reflect(self, axis_line=None, column=None, axis_direction=None, tile_on_axis=None):
     new_hexagons = []
@@ -555,14 +545,16 @@ class Shape:
     return Shape([hexagon._shift(V) for hexagon in self._hexagons], from_hexagons=True)
 
   def get_entire_board():
-    return Shape(list(np.arange(HexagonsGame._H * HexagonsGame._W)), from_linds=True)
+    tiles = []
+    for row in range(1, HexagonsGame._H + 1):
+      for column in range(1, HexagonsGame._W + 1):
+        tiles.append(Tile(column, row))
+    return Shape(tiles)
 
   def get_board_perimeter():
     B = Shape.get_entire_board()
-
     def tile_on_perimeter(tile):
       return tile.column in [1, HexagonsGame._W] or tile.row in [1, HexagonsGame._H]
-
     return Shape([tile for tile in B if tile_on_perimeter(tile)])
 
   def get_color(color):
@@ -614,7 +606,7 @@ class Shape:
       ext = self.boundary('outer')
       corners = []
       for hexagon in ext._hexagons:
-        neighbors = (hexagon._neighbors() * ext)._hexagons
+        neighbors = (Shape(hexagon._neighbors(), from_hexagons = True) * ext)._hexagons
         if len(neighbors) == 2:
           v0 = hexagon - neighbors[0]
           v1 = hexagon - neighbors[1]
@@ -626,7 +618,7 @@ class Shape:
       ext = self.boundary('outer')
       ends = []
       for hexagon in ext._hexagons:
-        neighbors = (hexagon._neighbors() * ext)._hexagons
+        neighbors = (Shape(hexagon._neighbors(), from_hexagons = True) * ext)._hexagons
         if len(neighbors) == 1:
           ends.append(hexagon)
       return Shape(ends, from_hexagons=True)
@@ -722,15 +714,10 @@ class Shape:
     if criterion == 'white':
       return Shape([tile for tile in Shape.get_entire_board() if tile.color == 'white']) * self.neighbors()
 
-  def neighbor(self, direction):
-    # solution for something like 'Tile(1,1).neighbor('up').neighbor('up')
-    if self._size == 0:
-      return Shape([])
-
-  def on_board(self):
-    # solution for something like 'Tile(1,1).neighbor('up').on_board()
-    if self._size == 0:
-      return False
+  # def neighbor(self, direction):
+  #   # solution for something like 'Tile(1,1).neighbor('up').neighbor('up')
+  #   if self._size == 0:
+  #     return Shape([])
 
   def polygon(vertices, *args):
     if isinstance(vertices, Shape):
@@ -797,7 +784,6 @@ class Tile(Shape):
       The row on which this tile is located. Starts from 1 and counted from top to bottom.
       A negative value represents counting from bottom to top. E.g., the first row from the bottom is -1.
     '''
-
     column = column % (HexagonsGame._W + 1)
     row = row % (HexagonsGame._H + 1)
     self._hexagons = [_Hexagon(column = column, row = row, cube = None)]
@@ -882,7 +868,7 @@ class Line(Shape):
     count = 0
     hexagons = []
     hexagon = shexagon
-    while count < length and hexagon._on_board() and hexagon._lind not in end_tiles._linds:
+    while count < length and hexagon._on_board() and hexagon._cube not in end_tiles._cubes:
         hexagons.append(hexagon)
         hexagon = hexagon._shift(direction_vec)
         count += 1
@@ -959,11 +945,25 @@ class Triangle(Shape):
 
 if __name__ == '__main__':
   HexagonsGame.start()
-  S = Shape([61, 117, 65, 62, 116, 83, 118, 64, 79, 101, 45, 97], from_linds=True)
+
+  S = Tile(2,3).neighbors()
   S.draw('black')
-  S.edge(criterion='left').draw('red')
-  # self.assertShapeLinds(S.edge(criterion='right'), [65, 83, 101])
-  # self.assertShapeLinds(S.edge(criterion='top'), [61, 62, 45, 64, 65])
-  # S = Circle(center_tile=Tile(10, 5), radius=3).draw('black')
-  # S.extreme('up_right').draw('red')
+  S.get('outside').draw('red')
+
+  # S = Shape([61, 117, 65, 62, 116, 83, 118, 64, 79, 101, 45, 97], from_linds=True)
+  # S.draw('black')
+  # S.neighbors().draw('red')
+  # S.get(criterion='outside').draw('red')
+  # self.assertShapeLinds(S.get(criterion='outside'), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+  #                                                  20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+  #                                                  37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+  #                                                  55, 56, 57, 58, 59, 60, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
+  #                                                  77, 78, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 102, 103,
+  #                                                  104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 119, 120,
+  #                                                  121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134,
+  #                                                  135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148,
+  #                                                  149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162,
+  #                                                  163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176,
+  #                                                  177, 178, 179])
+
   HexagonsGame.plot()

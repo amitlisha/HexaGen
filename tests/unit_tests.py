@@ -1,9 +1,18 @@
+from functools import wraps
 import sys
 import unittest
 sys.path.append('../src')
 from hexagons_classes import HexagonsGame, _Vec, _Hexagon, Tile, Shape, Line, Circle, Triangle
 
 class HexagonsTests(unittest.TestCase):
+
+  def wrap_test(func):
+    @wraps(func)
+    def mod_test(*args, **kwargs):
+      print(f'starting {func.__qualname__}')
+      func(*args, **kwargs)
+      print(f'finishing {func.__qualname__}')
+    return mod_test
 
   def assertShapeLinds(self, S, linds):
     return self.assertEqual(set(S._linds), set(linds))
@@ -13,39 +22,40 @@ class HexagonsTests(unittest.TestCase):
     return self.assertEqual(set(board_nz_indices), set(indices))
 
 class _VecTests(unittest.TestCase):
+  @HexagonsTests.wrap_test
   def test(self):
-    self.assertEqual(_Vec('up')._cube, [0, -1, 1])
-    self.assertEqual(_Vec(1, 1, -2)._cube, [1, 1, -2])
-    self.assertEqual(_Vec(2, 3)._cube, [2, 2, -4])
+    self.assertEqual(_Vec('up')._cube, (0, -1, 1))
+    self.assertEqual(_Vec(1, 1, -2)._cube, (1, 1, -2))
+    self.assertEqual(_Vec(2, 3)._cube, (2, 2, -4))
     self.assertEqual(_Vec.cyclic_permutation([0,1,2,3], 2), [2, 3, 0, 1])
     self.assertEqual(_Vec.cyclic_permutation([0,1,2,3], -1), [1, 2, 3, 0])
-    self.assertEqual(_Vec(.7, .8, -1.5)._round()._cube, [1, 1, -2])
-    self.assertEqual(_Vec(.2, .3, -.5)._round()._cube, [0, 0, 0])
+    self.assertEqual(_Vec(.7, .8, -1.5)._round()._cube, (1, 1, -2))
+    self.assertEqual(_Vec(.2, .3, -.5)._round()._cube, (0, 0, 0))
     self.assertEqual(_Vec(5.3, -2.1, -3.2)._norm(), 5.3)
-    self.assertEqual(_Vec(1,0,-1)._scale(3)._cube, [3, 0, -3])
-    self.assertEqual((_Vec(-3, -4, 7) - _Vec(1, -6, 5))._cube, [-4, 2, 2])
-    self.assertEqual((_Vec(-3, -4, 7) + _Vec(1, -6, 5))._cube, [-2, -10, 12])
+    self.assertEqual(_Vec(1,0,-1)._scale(3)._cube, (3, 0, -3))
+    self.assertEqual((_Vec(-3, -4, 7) - _Vec(1, -6, 5))._cube, (-4, 2, 2))
+    self.assertEqual((_Vec(-3, -4, 7) + _Vec(1, -6, 5))._cube, (-2, -10, 12))
     self.assertEqual(_Vec(-4, 0, 4)._direction_str(), 'up_left')
-    self.assertEqual(_Vec(-4, 0, 4)._normalize()._cube, [-1, 0, 1])
+    self.assertEqual(_Vec(-4, 0, 4)._normalize()._cube, (-1, 0, 1))
     self.assertEqual(_Vec(0, -3, 3)._has_direction(), True)
     self.assertEqual(_Vec(1, -4, 3)._has_direction(), False)
     self.assertEqual(_Vec(0, -3, 3)._has_direction(), True)
-    print('finished _Vec testing')
 
 class _HexagonTests(HexagonsTests):
-
+  @HexagonsTests.wrap_test
   def test(self):
 
     HexagonsGame.start()
-    self.assertEqual(_Hexagon._from_lind(17)._offset, [18, 1])
-    self.assertIs(_Hexagon._from_lind(180)._lind, None)
+    self.assertEqual(_Hexagon._from_lind(17)._offset, (18, 1))
+    self.assertIs(_Hexagon._from_lind(180), None)
 
     HexagonsGame.start()
-    self.assertTrue(_Hexagon(-7, 6)._on_board())
+    self.assertTrue(_Hexagon(7, 6)._on_board())
+    self.assertFalse(_Hexagon(-7, 6)._on_board())
     self.assertFalse(_Hexagon(0, 0, 0)._on_board())
 
     HexagonsGame.start()
-    self.assertEqual((_Hexagon(7, 6) - _Hexagon(8, 5))._cube, [-1, 1, 0])
+    self.assertEqual((_Hexagon(7, 6) - _Hexagon(8, 5))._cube, (-1, 1, 0))
 
     HexagonsGame.start(2, 2)
     _Hexagon(1,2)._draw('black')
@@ -57,22 +67,20 @@ class _HexagonTests(HexagonsTests):
     self.assertEqual(HexagonsGame.board_state, [2, 0, 1, 0])
 
     HexagonsGame.start()
-    self.assertEqual(_Hexagon(1,2)._shift(_Vec(-2, 3))._offset, [-1, 5])
-    self.assertEqual(_Hexagon(1,2)._shift(_Vec(0, -1, 1))._offset, [1, 1])
-    self.assertEqual(_Hexagon(1,2)._shift(0, -1, 1)._offset, [1, 1])
+    self.assertEqual(_Hexagon(1,2)._shift(_Vec(-2, 3))._offset, (-1, 5))
+    self.assertEqual(_Hexagon(1,2)._shift(_Vec(0, -1, 1))._offset, (1, 1))
+    self.assertEqual(_Hexagon(1,2)._shift(0, -1, 1)._offset, (1, 1))
 
     HexagonsGame.start(4, 6)
     # self.assertEqual() Line!
-    self.assertEqual(_Hexagon(1,2)._reflect(axis_direction = 'up_right', hexagon_on_axis = _Hexagon(2, 3))._cube, [2, 3, -5])
-    self.assertEqual(_Hexagon(1,2)._reflect(column = 3)._offset, [5, 2])
-    self.assertEqual(_Hexagon(2,2)._rotate(2, _Hexagon(3,3))._offset, [3, 4])
+    self.assertEqual(_Hexagon(1,2)._reflect(axis_direction = 'up_right', hexagon_on_axis = _Hexagon(2, 3))._cube, (2, 3, -5))
+    self.assertEqual(_Hexagon(1,2)._reflect(column = 3)._offset, (5, 2))
+    self.assertEqual(_Hexagon(2,2)._rotate(2, _Hexagon(3,3))._offset, (3, 4))
     _Hexagon(3,1)._draw('black')
     self.assertEqual(HexagonsGame.board_state, [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    self.assertEqual(_Hexagon(3,1)._neighbor('up')._offset, [3, 0])
-    self.assertEqual(_Hexagon(3,1)._neighbor('down')._offset, [3, 2])
-    self.assertShapeLinds(_Hexagon(3,1)._neighbors(), [6, 3, 1])
-
-    print('finished HexagonsGame testing')
+    self.assertEqual(_Hexagon(3,1)._neighbor('up')._offset, (3, 0))
+    self.assertEqual(_Hexagon(3,1)._neighbor('down')._offset, (3, 2))
+    self.assertShapeLinds(Shape(_Hexagon(3,1)._neighbors(), from_hexagons = True), [None, 6, 3, 1])
 
 class ShapeTests(HexagonsTests):
 #   def _size(self):
@@ -92,7 +100,7 @@ class ShapeTests(HexagonsTests):
 #   def _compute_shift_from_spacing(self, direction, spacing, reference_shape = None):
 #   def _shifted_shape_fits_board(self, shift):
 #   def _center_of_mass(self):
-
+  @HexagonsTests.wrap_test
   def test(self):
 
     HexagonsGame.start()
@@ -192,15 +200,15 @@ class ShapeTests(HexagonsTests):
     self.assertShapeLinds(Shape.polygon(tiles), [43, 59, 60, 62, 63, 76, 82, 83, 94, 101, 102, 112, 113, 117, 118, 132, 133, 134])
 
     HexagonsGame.start()
-    self.assertEqual(Shape([Tile(4, 3), Tile(3, 5), Tile(4, 5), Tile(5, 5), Tile(3, 4), Tile(5, 4)]).center().offset, [4, 4])
-
-    print('finished Shape testing')
+    self.assertEqual(Shape([Tile(4, 3), Tile(3, 5), Tile(4, 5), Tile(5, 5), Tile(3, 4), Tile(5, 4)]).center().offset, (4, 4))
 
 class TileTests(HexagonsTests):
-
+  @HexagonsTests.wrap_test
   def test(self):
 
     HexagonsGame.start()
+    self.assertTrue(Tile(1, 1).on_board())
+    self.assertTrue(Tile(-3, -1).on_board())
     Tile(1, 1).draw('black')
     self.assertBoardNonZeros([0])
 
@@ -209,11 +217,9 @@ class TileTests(HexagonsTests):
     self.assertEqual(Tile(1, 1).neighbor(direction = 'down').on_board(), True)
     self.assertEqual(Tile(1, 1).neighbor(direction = 'up').on_board(), False)
 
-    print('finished Tile testing')
-
 
 class LineTests(HexagonsTests):
-
+  @HexagonsTests.wrap_test
   def test(self):
     HexagonsGame.start()
     self.assertShapeLinds(Line(start_tile=Tile(1, 1), direction='down_right'),
@@ -229,10 +235,8 @@ class LineTests(HexagonsTests):
     Line(start_tile=Tile(1, 1), direction='down_right', length=3).draw('black')
     self.assertBoardNonZeros([0, 1, 20])
 
-    print('finished Line testing')
-
 class CircleTests(HexagonsTests):
-
+  @HexagonsTests.wrap_test
   def test(self):
     HexagonsGame.start()
     self.assertShapeLinds(Circle(center_tile=Tile(7, 6), radius=2),
@@ -242,18 +246,14 @@ class CircleTests(HexagonsTests):
     Circle(center_tile=Tile(7, 6)).draw('black')
     self.assertBoardNonZeros([77, 114, 79, 97, 78, 95])
 
-    print('finished Circle testing')
-
 class TriangleTests(HexagonsTests):
-
+  @HexagonsTests.wrap_test
   def test(self):
     HexagonsGame.start()
     self.assertShapeLinds(Triangle(start_tile=Tile(8, 6), point='left', start_tile_type='bottom', side_length=3),
                           [97, 96, 77, 78, 61, 79])
     Triangle(start_tile=Tile(8, 6), point='left', start_tile_type='bottom', side_length=3).draw('black')
     self.assertBoardNonZeros([97, 96, 77, 78, 61, 79])
-
-    print('finished Triangle testing')
 
 if __name__ == '__main__':
   unittest.main()
