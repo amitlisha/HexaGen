@@ -1,29 +1,22 @@
 # set params
-
 H = 10 # number of lines
 W = 18 # number of rows
 num_colors = 8
 
 import json
-import matplotlib.pyplot as plt
-import os.path
-import numpy as np
 import textwrap
 import sys
-
 import plot_board as pb
 
 sys.path.append('../data')
 data_dir_name = '../data/'
 
 # reading procedures from json files
-
 f_train = '2022_01_19_hexagon_dataset_extended_public_hard1_train.jsonl'
 f_dev = '2022_01_19_hexagon_dataset_extended_public_hard1_dev_abstraction.jsonl'
 f_test = '2022_01_19_hexagon_dataset_extended_public_hard1_test.jsonl'
 
 def get_info(drpr):
-  procedures = []
   with open(data_dir_name + f_train) as jsonl_file:
       train_procedures = [json.loads(command) for command in jsonl_file]
       for procedure in train_procedures:
@@ -73,8 +66,9 @@ def get_procedure_for_codex(drpr, pr = False):
     # s += '# complete code here\n\n'
   if pr:
     print(s)
-  return s
+  gold = get_boards(d)[-1]
+  return s, gold
 
 if __name__ == '__main__':
   drpr = 24
-  get_procedure_for_codex(drpr,True)
+  get_procedure_for_codex(drpr, True)
