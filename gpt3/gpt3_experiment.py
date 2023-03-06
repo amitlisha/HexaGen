@@ -6,18 +6,22 @@ from get_procedure import get_procedure_for_codex
 sys.path.append('../data')
 sys.path.append('../results')
 
+# set parameters for the experiment
+model = 'code-davinci-002' #'text-davinci-003'
+max_tokens = 256
+
 with open('../data/api_documentation_01.txt', 'r') as file:
   api_doc = file.read()
 with open('../data/task_instructions_01.txt', 'r') as file:
   instructions = file.read()
 
 drpr_ind = 24
-procedure, gold = get_procedure_for_codex(drpr_ind)
+procedure, gold = get_procedure_for_codex(drpr_ind, model = model, max_tokens = max_tokens)
 prompt = api_doc + instructions + procedure
 
 valid = []
 success = []
-total = 100
+total = 1
 
 for i in range(total):
   print(f'test number {i}: ', end = '')

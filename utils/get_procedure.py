@@ -72,3 +72,16 @@ def get_procedure_for_codex(drpr, pr = False):
 if __name__ == '__main__':
   drpr = 24
   get_procedure_for_codex(drpr, True)
+
+def get_instructions(drpr):
+  d = get_info(drpr)
+  s = ''
+  for i,txt in enumerate([_[1] for _ in d['drawing_procedure'][1:]]):
+    wrap_txt = '\n'.join(textwrap.wrap(txt, width=80))
+    s += f"'''\n{i + 1}. {wrap_txt}\n'''\n\n"
+    # s += '# complete code here\n\n'
+  return s, get_description(d)
+
+if __name__ == '__main__':
+  drpr = 93
+  get_procedure_for_codex(drpr, True)

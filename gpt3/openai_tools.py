@@ -4,8 +4,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def call_gpt3(prompt, **kwargs):
   response = openai.Completion.create(
-      # model = 'code-davinci-002',
-      model = 'text-davinci-003',
+      model = 'code-davinci-002',
+      # model = 'text-davinci-003',
       prompt = prompt,
       temperature = kwargs['temp'] if 'temp' in kwargs.keys() else 0,
       max_tokens = kwargs['max_tokens'] if 'max_tokens' in kwargs.keys() else 256,

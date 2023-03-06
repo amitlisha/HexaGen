@@ -558,7 +558,12 @@ class Shape:
     return Shape([tile for tile in B if tile_on_perimeter(tile)])
 
   def get_color(color):
+    if color == 'all':
+      return Shape([tile for tile in Shape.get_entire_board().tiles if tile.color != 'white'])
     return Shape([tile for tile in Shape.get_entire_board().tiles if tile.color == color])
+
+  def get_column(column):
+    return Shape([Tile(column, row) for row in range(1, HexagonsGame._H + 1)])
 
   def get(self, criterion):
     '''
@@ -703,9 +708,9 @@ class Shape:
       down = Shape([_.neighbor('down_' + criterion) for _ in edge])
       up = Shape([_.neighbor('up_' + criterion) for _ in edge])
       return down * up
-    if criterion == 'above':
+    if criterion in ['above', 'up']:
       return self.get('above') * self.neighbors()
-    if criterion == 'below':
+    if criterion in ['below', 'down']:
       return self.get('below') * self.neighbors()
     if criterion == 'outside':
       return self.neighbors('all') * self.get('outside')
@@ -714,10 +719,8 @@ class Shape:
     if criterion == 'white':
       return Shape([tile for tile in Shape.get_entire_board() if tile.color == 'white']) * self.neighbors()
 
-  # def neighbor(self, direction):
-  #   # solution for something like 'Tile(1,1).neighbor('up').neighbor('up')
-  #   if self._size == 0:
-  #     return Shape([])
+  def neighbor(self, direction):
+    return Shape([tile.neighbor(direction) for tile in self.tiles])
 
   def polygon(vertices, *args):
     if isinstance(vertices, Shape):
@@ -873,17 +876,71 @@ class Line(Shape):
         hexagon = hexagon._shift(direction_vec)
         count += 1
     super().__init__(hexagons, from_hexagons = True)
-    self.start_tile = Tile._to_tile(hexagons[0])
-    self.end_tile = Tile._to_tile(hexagons[-1])
+    self.length = len(hexagons)
     self.color = None
     self._direction_vec = direction_vec
     self.direction = direction_vec._direction_str()
-    qrs_ind = direction_vec._cube.index(0)
-    self.constant_value = hexagons[0]._cube[qrs_ind]
+    if len(hexagons) > 1:
+      self.start_tile = Tile._to_tile(hexagons[0])
+      self.end_tile = Tile._to_tile(hexagons[-1])
+      qrs_ind = direction_vec._cube.index(0)
+      self.constant_value = hexagons[0]._cube[qrs_ind]
 
   def _show(self):
     print(f'{self.__class__.__name__} instance: linds = {self._linds}, size = {self._size}, direction = {self.direction}, \
     start = {self.tiles[0].offset}, end = {self.tiles[-1].offset}, color = {self.color}')
+
+  def parallel(self, direction, spacing=0):
+    if self.direction in ['up', 'down']:
+      start_column = self.start_tile.column + spacing + 1 if direction == 'right' else \
+        self.start_tile.column - spacing - 1
+      start_row = 1 if self.direction == 'down' else -1
+    else:
+      all_tiles = Shape.get_entire_board().tiles
+      if self.direction in ['up_right', 'down_left']:
+        if direction in ['up', 'left', 'up_left']:
+          new_const_val = self.constant_value + spacing + 1
+        else:
+          new_const_val = self.constant_value - spacing - 1
+        all_tiles = Shape.get_entire_board().tiles
+        new_line_tiles = list(filter(lambda tile: tile._hexagon._s == new_const_val, all_tiles))
+        if self.direction == 'up_right':
+          start_column = min([tile.column for tile in new_line_tiles])
+          start_row = max([tile.row for tile in new_line_tiles])
+        else:
+          start_column = max([tile.column for tile in new_line_tiles])
+          start_row = min([tile.row for tile in new_line_tiles])
+      else:
+        if direction in ['down', 'left', 'down_left']:
+          new_const_val = self.constant_value + spacing + 1
+        else:
+          new_const_val = self.constant_value - spacing - 1
+        new_line_tiles = list(filter(lambda tile: tile._hexagon._r == new_const_val, all_tiles))
+        if self.direction == 'down_right':
+          start_column = min([tile.column for tile in new_line_tiles])
+          start_row = min([tile.row for tile in new_line_tiles])
+        else:
+          start_column = max([tile.column for tile in new_line_tiles])
+          start_row = max([tile.row for tile in new_line_tiles])
+      return Line(start_tile = Tile(start_column, start_row), direction = self.direction)
+
+    if self.direction == 'up_right':
+      column = 1
+      self_row = Line(start_tile = self.start_tile, direction = 'down_left').end_tile.row
+      row = self_row + spacing + 1 if direction in ['up', 'left', 'up_left'] else \
+        self_row - spacing - 1
+    if self.direction == 'down_right':
+      column = 1
+      self_row = Line(start_tile = self.start_tile, direction = 'up_left').end_tile.row
+      row = self_row + spacing + 1 if direction in ['up', 'right', 'up_right'] else \
+        self_row - spacing - 1
+    if self.direction == 'up_left':
+      row = 1
+      self_end = Line(start_tile = self.start_tile, direction = 'down_right').end_tile
+      row = self_row + spacing + 1 if direction in ['up', 'left', 'up_left'] else \
+        self_row - spacing - 1
+
+    return Line(start_tile = Tile(start_column, start_row), direction = self.direction)
 
   def draw(self, color):
     self.color = color
@@ -946,24 +1003,10 @@ class Triangle(Shape):
 if __name__ == '__main__':
   HexagonsGame.start()
 
-  S = Tile(2,3).neighbors()
-  S.draw('black')
-  S.get('outside').draw('red')
-
-  # S = Shape([61, 117, 65, 62, 116, 83, 118, 64, 79, 101, 45, 97], from_linds=True)
-  # S.draw('black')
-  # S.neighbors().draw('red')
-  # S.get(criterion='outside').draw('red')
-  # self.assertShapeLinds(S.get(criterion='outside'), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-  #                                                  20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
-  #                                                  37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-  #                                                  55, 56, 57, 58, 59, 60, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76,
-  #                                                  77, 78, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 102, 103,
-  #                                                  104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 119, 120,
-  #                                                  121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134,
-  #                                                  135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148,
-  #                                                  149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162,
-  #                                                  163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176,
-  #                                                  177, 178, 179])
+  l1 = Line(Tile(10, 5), direction = 'up_left')
+  l1.draw('black')
+  l2 = l1.parallel('down_left', 7)
+  l2.draw('red')
+  l2.start_tile.draw('yellow')
 
   HexagonsGame.plot()
