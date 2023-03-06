@@ -13,6 +13,21 @@ class HexagonsGame:
     HexagonsGame._W = width
     HexagonsGame._H = height
     HexagonsGame.board_state = [0] * width * height
+    HexagonsGame._step = None
+    HexagonsGame._drawn_hexagons = {'all': []}
+
+  def record_step(step):
+    HexagonsGame._drawn_hexagons[step] = []
+    HexagonsGame._step = step
+
+  def get_record(steps):
+    if isinstance(steps, list):
+      drawn_hexagons = []
+      for step in steps:
+        drawn_hexagons += HexagonsGame._drawn_hexagons[step]
+      return Shape(drawn_hexagons, from_hexagons=True)
+    else:
+      return Shape(HexagonsGame._drawn_hexagons[steps], from_hexagons=True)
 
   def plot(gold_board = None):
     if gold_board is not None:
@@ -255,7 +270,7 @@ class _Hexagon:
 
   def _draw(self, color):
     '''
-    draw a single tile with color 'color'
+    draw a single hexagon with color 'color'
     '''
     color_id = HexagonsGame._COLORS_LIST.index(color) if isinstance(color, str) else color
     if self._lind is not None:
@@ -263,6 +278,9 @@ class _Hexagon:
     # commands._update_drawn(self, 'tiles')
     else:
       self._saved_color_id = color_id
+    HexagonsGame._drawn_hexagons['all'].append(self)
+    if HexagonsGame._step is not None:
+      HexagonsGame._drawn_hexagons[HexagonsGame._step].append(self)
     return self
 
   def _neighbor(self, direction):
@@ -1003,10 +1021,15 @@ class Triangle(Shape):
 if __name__ == '__main__':
   HexagonsGame.start()
 
+  HexagonsGame.record_step(1)
   l1 = Line(Tile(10, 5), direction = 'up_left')
   l1.draw('black')
-  l2 = l1.parallel('down_left', 7)
-  l2.draw('red')
-  l2.start_tile.draw('yellow')
+
+  HexagonsGame.record_step(2)
+  l2 = Line(Tile(1, -1), direction = 'up_right')
+  l2.draw('black')
+
+  HexagonsGame.record_step(3)
+  HexagonsGame.get_record([1]).draw('red')
 
   HexagonsGame.plot()
