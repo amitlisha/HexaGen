@@ -2,13 +2,12 @@ import sys
 sys.path.append('../src')
 sys.path.append('../utils')
 
-from get_procedure import get_procedure
+from reading_tasks import read_task
 from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 import plot_board as pb
 
-# drpr = ?
-gold_bs, _ = get_procedure(drpr, plot = False)
-gold_b = gold_bs[-1]
+task_index = ?
+gold_b = read_task(task_index)['gold_boards'][-1]
 
 HexagonsGame.start()
 
@@ -20,4 +19,4 @@ drawn_b = HexagonsGame.board_state
 
 diff = list(map(lambda x, y: 0 if x == y else 1, gold_b, drawn_b))
 
-pb.plot_boards([list(gold_b), drawn_b, diff])
+pb.plot_boards([list(gold_b), drawn_b, diff], titles = ['gold', 'code generated', 'difference'])

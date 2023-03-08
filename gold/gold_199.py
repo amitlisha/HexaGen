@@ -2,13 +2,12 @@ import sys
 sys.path.append('../src')
 sys.path.append('../utils')
 
-from get_procedure import get_procedure
+from reading_tasks import read_task
 from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 import plot_board as pb
 
-drpr = 199
-gold_bs, _ = get_procedure(drpr, plot = False)
-gold_b = gold_bs[-1]
+task_index = 199
+gold_b = read_task(task_index)['gold_boards'][-1]
 
 HexagonsGame.start()
 
@@ -23,8 +22,7 @@ red_tile.draw('red')
 2. Note the three tiles immediately below/to the right of the tile you just filled.
 Leave these unfilled, but color all tiles below/to the right of these RED.
 '''
-white_tiles = Shape([red.tile.neighbor('down'), red.tile.neighbor('down_right')])
-draw
+white_tiles = Shape([red_tile.neighbor('down'), red_tile.neighbor('down_right')])
 '''
 3. Repeat step 2 three more times. You should have five solid red diagonal stripes
 (including the corner tile) in the top left half of the grid.
@@ -44,4 +42,4 @@ drawn_b = HexagonsGame.board_state
 
 diff = list(map(lambda x, y: 0 if x == y else 1, gold_b, drawn_b))
 
-pb.plot_boards([list(gold_b), drawn_b, diff])
+pb.plot_boards([list(gold_b), drawn_b, diff], titles = ['gold', 'code generated', 'difference'])

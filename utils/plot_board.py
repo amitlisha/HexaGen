@@ -1,15 +1,15 @@
-# plotting utilities
+'''
+Plot a hexagon board / boards
+'''
 
-#import torch
-import numbers
-import numpy as np
-
-from typing import List, Union
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
+from matplotlib.cm import get_cmap
 from matplotlib.collections import PatchCollection
 from matplotlib.colors import ListedColormap
-from matplotlib.cm import get_cmap
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numbers
+import numpy as np
+from typing import List, Union
 
 MAX_INPUT_LEN = 512
 MAX_OUTPUT_LEN = 512
@@ -28,38 +28,27 @@ COLORS_LIST = [[t / 255. for t in _] for _ in COLORS[:-1]]
 hexa_cmap = ListedColormap(COLORS_LIST)
 gray_cmap = get_cmap('gray')
 
+def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k', color_map='hexa', titles = None):
+  '''Plot a hexagon board / boards
 
-# def plot_board_from_table(board, W=18, H=10, color_map = 'hexa'):
-#   plot_boards(board[:,-1], W, H, color_map = color_map)
+  'boards' should be any one of:
+  - list of length 180 / list of such lists
+  - np.array with shape [180] / list of such arrays
+  - np.array with shape [W,H] / list of such arrays
 
-def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k', color_map='hexa'):
+  'titles' is optional, should be a list of string, containing a title for each board
   '''
-  called by board_to_img
-  calls create_hex_grid
-  '''
-  # boards should be:
-  # - list of length 180 / list of such lists
-  # - np.array with shape [180] / list of such arrays
-  # - np.array with shape [W,H] / list of such arrays
 
-  # print('start plot_board')
-  # if isinstance(boards, torch.Tensor):
-  #   boards = boards.cpu().numpy()
   if not isinstance(boards, list):
     boards = [boards]
   if isinstance(boards[0], numbers.Number):
     boards = [boards]
   boards = [np.array(_) for _ in boards]
 
-  # if not multiple_boards:
-  #   boards = np.expand_dims(boards, 0)
-
-  # num_boards = boards.shape[0]
   num_boards = len(boards)
   num_rows = int(np.ceil(num_boards / max_in_row))
   num_cols = np.min([num_boards, max_in_row])
   fig = plt.figure(figsize=[fig_size[0] * num_cols, fig_size[1] * num_rows])
-  # fig.tight_layout()
   axes = fig.subplots(num_rows, num_cols)
   if num_rows > 1:
     axes = [_ for ls in axes for _ in ls]
@@ -72,7 +61,10 @@ def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k
   for i in range(num_boards):
     axes[i].set_xticks([])
     axes[i].set_yticks([])
-    axes[i].set_title(str(i + 1))
+    if titles is None:
+      axes[i].set_title(str(i + 1))
+    else:
+      axes[i].set_title(titles[i])
 
   for i in range(num_boards):
 
@@ -97,9 +89,6 @@ def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k
   fig.tight_layout(h_pad=0, w_pad=2)
 
   plt.show()
-  # print('end plot_board')
-  # return hex_centers, data
-
 
 def create_hex_grid(fig_size,
                     color_map='hexa',
@@ -134,19 +123,10 @@ def create_hex_grid(fig_size,
   :param h_ax: Handle to axes. If provided the grid will be added to it, if not a new figure will be opened.
   :return:
   """
-  # print('start create_hex_grid')
   coord_x, coord_y = make_grid(nx, ny, min_diam, n, crop_circ, rotate_deg, align_to_origin)
-  # coords = np.hstack([coord_x, coord_y])
-  # coords = coords[np.lexsort((coords[:,0], coords[:,1]))]
-  # coord_x = coords[:, 0][:, np.newaxis]
-  # coord_y = coords[:, 1][:, np.newaxis][::-1]
   if do_plot:
     plot_single_lattice(fig_size, coord_x, coord_y, face_color, edge_color, min_diam, plotting_gap, rotate_deg,
                         color_map, ax)
-
-  # print('end create_hex_grid')
-  # return np.hstack([coord_x, coord_y]), ax
-
 
 def make_grid(nx, ny, min_diam, n, crop_circ, rotate_deg, align_to_origin) -> (np.ndarray, np.ndarray):
   """
@@ -165,8 +145,6 @@ def make_grid(nx, ny, min_diam, n, crop_circ, rotate_deg, align_to_origin) -> (n
   coord_y = coord_y * ratio
   coord_x = coord_x.astype(float)
   coord_x[1::2, :] += 0.5
-  # coord_y[:, 1::2] -= 0.5
-  # coord_y[:, :] -= 0.5
   coord_x = coord_x.reshape(-1, 1)
   coord_y = coord_y.reshape(-1, 1)
 
@@ -192,14 +170,12 @@ def make_grid(nx, ny, min_diam, n, crop_circ, rotate_deg, align_to_origin) -> (n
     RotMatrix = np.array([[np.cos(np.deg2rad(rotate_deg)), np.sin(np.deg2rad(rotate_deg))],
                           [-np.sin(np.deg2rad(rotate_deg)), np.cos(np.deg2rad(rotate_deg))]])
     rot_locs = np.hstack((coord_x - mid_x, coord_y - mid_y)) @ RotMatrix.T
-    # rot_locs = np.hstack((coord_x - mid_x, coord_y - mid_y))
     coord_x, coord_y = np.hsplit(rot_locs + np.array([mid_x, mid_y]), 2)
 
   if align_to_origin:
     coord_x -= mid_x
     coord_y -= mid_y
 
-  # print('end make_grid')
   return coord_x, coord_y
 
 
@@ -210,7 +186,6 @@ def plot_single_lattice(fig_size, coord_x, coord_y, face_color, edge_color, min_
   Adds a single lattice to the axes canvas. Multiple calls can be made to overlay few lattices.
   :return:
   """
-  # print('start plot_single_lattice')
   if face_color is None:
     face_color = (1, 1, 1, 0)  # Make the face transparent
   if edge_color is None:
