@@ -3,7 +3,15 @@ sys.path.append('../src')
 sys.path.append('../utils')
 
 from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
-import plot_board as pb
+
+HexagonsGame.start()
+
+tile = Tile(5,7)
+tile.draw('blue')
+
+file_name = 'example_boards/' + input('please enter file name\n')
+HexagonsGame.plot(file_name = file_name)
+
 
 # Shape
 # copy_paste

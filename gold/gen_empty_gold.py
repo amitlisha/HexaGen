@@ -34,12 +34,12 @@ def main():
   else:
     print(f'creating file {file_name}')
     with open(file_path, 'w+') as file_id:
-      file_id.write('\n'.join(template[:8]))
+      file_id.write('\n'.join(template[:7]))
       file_id.write(f'\ntask_index = {task_index}\n')
-      file_id.write('\n'.join(template[9:14]))
+      file_id.write('\n'.join(template[8:13]))
       file_id.write(f"\n{task_dict['description']}\n\n")
       file_id.write(task_dict['instructions'])
-      file_id.write('\n'.join(template[17:]))
+      file_id.write('\n'.join(template[16:]))
 
 if __name__ == "__main__":
   main()
