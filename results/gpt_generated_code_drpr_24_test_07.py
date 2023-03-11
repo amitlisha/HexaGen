@@ -1,0 +1,29 @@
+import sys
+sys.path.append('../src')
+from hexagons_classes import HexagonsGame, _Vec, _Hexagon, Tile, Shape, Line, Circle, Triangle
+
+def func(pr = False):
+  HexagonsGame.start()
+  
+  # Solution
+  # 1.
+  start_tile = Tile(2, 2)
+  neighbors = start_tile.neighbors()
+  neighbors.draw('purple')
+  
+  # 2.
+  rings = 4
+  spacing = 1
+  for i in range(rings):
+      shift_direction = 'right'
+      reference_shape = start_tile if i == 0 else neighbors
+      neighbors = neighbors.copy_paste(shift_direction, spacing, reference_shape)
+      neighbors.draw('purple')
+
+  if pr:
+    HexagonsGame.plot()
+
+  return HexagonsGame.board_state
+
+if __name__ == '__main__':
+  func(pr=True)
