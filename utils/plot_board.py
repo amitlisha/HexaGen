@@ -28,7 +28,8 @@ COLORS_LIST = [[t / 255. for t in _] for _ in COLORS[:-1]]
 hexa_cmap = ListedColormap(COLORS_LIST)
 gray_cmap = get_cmap('gray')
 
-def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k', color_map='hexa', titles = None):
+def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k', color_map='hexa', titles = None,
+                file_name = None):
   '''Plot a hexagon board / boards
 
   'boards' should be any one of:
@@ -89,6 +90,9 @@ def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k
   fig.tight_layout(h_pad=0, w_pad=2)
 
   plt.show()
+
+  if file_name is not None:
+    fig.savefig(file_name)
 
 def create_hex_grid(fig_size,
                     color_map='hexa',
