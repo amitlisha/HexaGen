@@ -21,7 +21,8 @@ tile.draw('blue')
 
 HexagonsGame.plot()
 ```
-![example](board_examples/single_blue_hex.png)
+<img src="board_examples/single_blue_hex.png" alt="single blue hexagon" width="30%" height="30%">
+
 From now on we omit the code frame.
 ## Creating Tiles
 ```python
@@ -52,27 +53,27 @@ circle.draw('black')
 circle.get(criterion = 'above').draw('red')
 circle.get(criterion = 'below').draw('green')
 ```
-![example](board_examples/get_above_below)
+![example](board_examples/get_above_below.png)
 ```python
 circle = Circle(center_tile = Tile(9, 5), radius = 3)
 circle.draw('black')
 circle.get(criterion = 'top').draw('red')
 circle.get(criterion = 'bottom').draw('green')
 ```
-![example](board_examples/get_top_bottom)
+![example](board_examples/get_top_bottom.png)
 ```python
 circle = Circle(center_tile = Tile(9, 5), radius = 3)
 circle.draw('black')
 circle.get(criterion = 'corners').draw('red')
 ```
-![example](board_examples/get_corners)
+![example](board_examples/get_corners.png)
 ```python
 circle = Circle(center_tile = Tile(9, 5), radius = 3) + Tile(-6, -4) + Tile(-5, -4) + Tile(-4, -3)
 circle.draw('black')
 circle.get(criterion = 'end_points').draw('red')
 ```
-![example](board_examples/get_end_points)
+<img src="board_examples/get_end_points.png" alt="get end points" width="30%" height="30%">
 
 ```python
 ?```
-![example](board_examples/?)
+![example](board_examples/?.png)
