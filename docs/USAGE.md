@@ -46,3 +46,33 @@ circle.get(criterion = 'outside').draw('red')
 circle.get(criterion = 'inside').draw('green')
 ```
 ![example](board_examples/get_outside_inside.png)
+```python
+circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle.draw('black')
+circle.get(criterion = 'above').draw('red')
+circle.get(criterion = 'below').draw('green')
+```
+![example](board_examples/get_above_below)
+```python
+circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle.draw('black')
+circle.get(criterion = 'top').draw('red')
+circle.get(criterion = 'bottom').draw('green')
+```
+![example](board_examples/get_top_bottom)
+```python
+circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle.draw('black')
+circle.get(criterion = 'corners').draw('red')
+```
+![example](board_examples/get_corners)
+```python
+circle = Circle(center_tile = Tile(9, 5), radius = 3) + Tile(-6, -4) + Tile(-5, -4) + Tile(-4, -3)
+circle.draw('black')
+circle.get(criterion = 'end_points').draw('red')
+```
+![example](board_examples/get_end_points)
+
+```python
+?```
+![example](board_examples/?)
