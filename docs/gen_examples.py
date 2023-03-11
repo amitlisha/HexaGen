@@ -9,7 +9,7 @@ HexagonsGame.start()
 tile = Tile(5,7)
 tile.draw('blue')
 
-file_name = 'example_boards/' + input('please enter file name\n')
+file_name = 'board_examples/' + input('please enter file name\n')
 HexagonsGame.plot(file_name = file_name)
 
 
