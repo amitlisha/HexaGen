@@ -6,10 +6,9 @@ from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 
-circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle = Circle(center_tile = Tile(9, 5), radius = 3) + Tile(-6, -4) + Tile(-5, -4) + Tile(-4, -3)
 circle.draw('black')
-circle.get(criterion = 'outside').draw('red')
-circle.get(criterion = 'inside').draw('green')
+circle.get(criterion = 'end_points').draw('red')
 
 file_name = 'board_examples/' + input('please enter file name\n')
 HexagonsGame.plot(file_name = file_name)

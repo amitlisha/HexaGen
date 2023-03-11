@@ -79,7 +79,7 @@ class HexagonsGame:
     '''Plot the current state of the board'''
 
     if gold_board is None:
-      pb.plot_boards(HexagonsGame.board_state, titles = [''], file_name = file_name)
+      pb.plot_boards(HexagonsGame.board_state, fig_size=[7, 5], titles = [''], file_name = file_name)
     else:
       diff = list(map(lambda x, y: 0 if x == y else 1, gold_board, HexagonsGame.board_state))
       pb.plot_boards([gold_board, HexagonsGame.board_state, diff], titles = ['gold', 'code generated', 'difference'], file_name = file_name)
