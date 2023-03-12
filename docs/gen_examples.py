@@ -6,11 +6,20 @@ from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 
-circle1 = Circle(center_tile = Tile(4, 4), radius = 2)
-ref_shape = Shape([Tile(11, 6), Tile(11, 7), Tile(12, 6)])
-circle1.draw('black')
-ref_shape.draw('purple')
-circle2 = circle1.copy_paste(shift_direction='right', spacing=1, reference_shape=ref_shape)
+circle = Circle(center_tile=Tile(10, 5), radius=3)
+circle.draw('black')
+
+circle.get('below').draw('red')
+# circle.neighbors().draw('green')
+# circle.neighbors(criterion='right').draw('green')
+# circle.neighbors(criterion='left').draw('red')
+# circle.neighbors(criterion='above').draw('green')
+# circle.neighbors(criterion='below').draw('red')
+# circle.neighbors(criterion='outside').draw('green')
+# circle.neighbors(criterion='inside').draw('red')
+# Tile(14, 6).draw('blue')
+# circle.neighbors(criterion='white').draw('green')
+# circle.neighbors(criterion='up_right').draw('green')
 
 file_name = input('please enter file name\n')
 if file_name == '':
@@ -18,16 +27,6 @@ if file_name == '':
 else:
   HexagonsGame.plot(file_name = 'board_examples/' + file_name)
 
-# Shape
-# copy_paste
-# grid
-# reflect
-# rotate
-# recolor
-
-# boundary: outer / inner
-
-# extreme: direction
 
 # edge
 
@@ -42,10 +41,9 @@ neighbors
 
 # polygon
 
-# Line
-
 # parallel
 
-# circle
-
 # triangle
+
+# line attributes
+# circle attributes

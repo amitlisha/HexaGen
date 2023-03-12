@@ -182,7 +182,7 @@ class Shape():
 
     pass # implementation goes here
 
-  def grid(self, shift_direction, spacing, num_copies = None):
+  def grid(self, shift_direction, spacing, length=None):
     '''Draw copies of the shape along a grid.
     This is done by repeated calls to 'copy_paste'.
 
@@ -192,10 +192,10 @@ class Shape():
       The direction in which to shift the shape
     spacing: int
       Number of tiles between the original shape and the new shape
-    num_copies: int
-      The number of copies.
+    length: int
+      The length of the grid.
       If not specified, copies will be created until there is no more room
-      on the board
+      on the board.
 
     Returns:
     ---------------
