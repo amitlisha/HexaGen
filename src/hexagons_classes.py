@@ -105,7 +105,7 @@ class _Vec:
     elif len(args) == 2:
       # _Vec is given as offset [column_diff, row_diff]
       column_diff, row_diff = args
-      assert column_diff % 2 == 0, 'column_diff must be even, otherwise this is ambiguous'
+      # assert column_diff % 2 == 0, 'column_diff must be even, otherwise this is ambiguous'
       q = column_diff
       r = row_diff - (q - (q % 2)) // 2
       s = -q - r
@@ -477,31 +477,27 @@ class Shape:
 
   def _compute_shift_from_spacing(self, direction, spacing, reference_shape=None):
     '''Compute how much to shift a shape, to create a copy with a desired spacing from self
-    for internal use only'''
+    For internal use only'''
 
     if reference_shape is None:
       reference_shape = self
     vec_diff = reference_shape._center_of_mass() - self._center_of_mass()
     initial_shift = vec_diff._round()
-    if direction == 'left':
-      shift = _Vec(-2, 0)
-      spacing -= spacing % 2
-    elif direction == 'right':
-      shift = _Vec(2, 0)
-      spacing -= spacing % 2
-    else:
-      shift = _Vec(direction)
-    step_size = shift._norm()
-    new_shape = self._shift(initial_shift)
-    steps = 0
-    count_space = 0
-    while new_shape.overlaps(reference_shape) or count_space < spacing:
-      if not new_shape.overlaps(reference_shape):
-        count_space += step_size
-      new_shape = new_shape._shift(shift)
-      steps += 1
-    total_shift = shift._scale(steps) + initial_shift
-    return total_shift
+    initial_new_shape = self._shift(initial_shift)
+
+    def scale_shift(direction, k):
+      if direction == 'left':
+        return _Vec(-k, 0)
+      elif direction == 'right':
+        return _Vec(k, 0)
+      else:
+        return _Vec(direction)._scale(k)
+
+    for k in range(max(HexagonsGame._W, HexagonsGame._H), -1, -1):
+      if reference_shape.overlaps(initial_new_shape._shift(scale_shift(direction, k))):
+        break
+
+    return initial_shift + scale_shift(direction, k + 1 + spacing)
 
   def _center_of_mass(self):
     cubes_arr = np.array([hexagon._cube for hexagon in self._hexagons])
@@ -541,7 +537,7 @@ class Shape:
     for hexagon in self._hexagons:
       hexagon._draw(color)
 
-  def copy_paste(self, shift_direction=None, spacing=None, reference_shape=None, shift=None):
+  def copy_paste(self, shift_direction=None, spacing=0, reference_shape=None, shift=None):
     '''
     Draw a copy of self in a new location
 
@@ -558,6 +554,8 @@ class Shape:
     reference_shape: Shape
       The new location is computed with respect to reference_shape.
       If not specified, location is computed with respect to the original shape.
+    shifet: _Vec
+      Specify the shift vector directly. This option is for internal use only.
 
     Returns:
     --------

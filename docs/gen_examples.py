@@ -6,14 +6,17 @@ from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 
-circle = Circle(center_tile=Tile(15, 8), radius=2)
-circle.draw('red')
-line = Line(start_tile=Tile(1, 1), direction='down_right', end_tiles=circle)
-line.draw('blue')
+circle1 = Circle(center_tile = Tile(4, 4), radius = 2)
+ref_shape = Shape([Tile(11, 6), Tile(11, 7), Tile(12, 6)])
+circle1.draw('black')
+ref_shape.draw('purple')
+circle2 = circle1.copy_paste(shift_direction='right', spacing=1, reference_shape=ref_shape)
 
-file_name = 'board_examples/' + input('please enter file name\n')
-HexagonsGame.plot(file_name = file_name)
-# HexagonsGame.plot()
+file_name = input('please enter file name\n')
+if file_name == '':
+  HexagonsGame.plot()
+else:
+  HexagonsGame.plot(file_name = 'board_examples/' + file_name)
 
 # Shape
 # copy_paste
