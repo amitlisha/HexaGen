@@ -6,20 +6,9 @@ from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 
-circle = Circle(center_tile=Tile(10, 5), radius=3)
-circle.draw('black')
-
-circle.get('below').draw('red')
-# circle.neighbors().draw('green')
-# circle.neighbors(criterion='right').draw('green')
-# circle.neighbors(criterion='left').draw('red')
-# circle.neighbors(criterion='above').draw('green')
-# circle.neighbors(criterion='below').draw('red')
-# circle.neighbors(criterion='outside').draw('green')
-# circle.neighbors(criterion='inside').draw('red')
-# Tile(14, 6).draw('blue')
-# circle.neighbors(criterion='white').draw('green')
-# circle.neighbors(criterion='up_right').draw('green')
+vertices = [Tile(5, 5), Tile(8, 3), Tile(5, 7), Tile(8, 8), Tile(13, 6)]
+Shape.polygon(vertices=vertices).draw('green')
+Shape(vertices).draw('black')
 
 file_name = input('please enter file name\n')
 if file_name == '':
@@ -47,3 +36,5 @@ neighbors
 
 # line attributes
 # circle attributes
+
+# tile neighbor
