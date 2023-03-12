@@ -573,7 +573,7 @@ class Shape:
     new_shape = Shape(new_hexagons, from_hexagons=True)
     return new_shape
 
-  def grid(self, shift_direction, spacing, num_copies = None):
+  def grid(self, shift_direction, spacing, length=None):
     '''
     Draw copies of self along a grid.
     This is done by repeated calls to 'copy_paste'.
@@ -584,8 +584,8 @@ class Shape:
       The direction in which to shift the shape
     spacing: int
       Number of tiles between the original shape and the new shape
-    num_copies: int
-      The number of copies.
+    length: int
+      The length of the grid.
       If not specified, copies will be created until there is no more room
       on the board
 
@@ -598,11 +598,11 @@ class Shape:
     shift = self._compute_shift_from_spacing(shift_direction, spacing, None)
 
     grid = self
-    k = 0
-    new_shape = self._shift(shift)
-    while (num_copies is None and new_shape._entirely_on_board()) or (num_copies is not None and k < num_copies):
-      grid = grid + new_shape
-      new_shape = new_shape._shift(shift)
+    k = 1
+    shape = self
+    while (length is None and shape._shift(shift)._entirely_on_board()) or (length is not None and k < length):
+      shape = shape.copy_paste(shift=shift)
+      grid = grid + shape
       k += 1
     return grid
 
@@ -738,16 +738,30 @@ class Shape:
     if criterion == 'inside':
       return (Shape.get_entire_board() - self) - self.get('outside')
 
-    if criterion in ['above', 'below']:
-      S = Shape([])
-      for column in np.unique(self.columns):
-        if criterion == 'above':
-          row = min([tile.row for tile in self if tile.column == column])
-          S += Shape([tile for tile in Shape.get_entire_board() if tile.column == column and tile.row < row])
-        elif criterion == 'below':
-          row = max([tile.row for tile in self if tile.column == column])
-          S += Shape([tile for tile in Shape.get_entire_board() if tile.column == column and tile.row > row])
-      return S
+    if criterion == 'above':
+      criterion = 'up'
+    if criterion == 'below':
+      criterion = 'down'
+    if criterion in _Vec.DIRECTIONS:
+      direction = criterion
+      direction_cube = _Vec.DIRECTIONS[direction]
+      direction_ind = direction_cube.index(0)
+      next_ind = (direction_ind + 1) % 3
+      next_grows = (direction_cube[next_ind] == 1)
+      shape_lines = [cube[direction_ind] for cube in self._cubes]
+      hexagons = []
+      entire_board_hexagons = Shape.get_entire_board()._hexagons
+      for val in np.unique(shape_lines):
+        hexagons_with_val = [hexagon for hexagon in self._hexagons if hexagon._cube[direction_ind] == val]
+        if next_grows:
+          max_val = np.max([_._cube[next_ind] for _ in hexagons_with_val])
+          hexagons += [hex for hex in entire_board_hexagons if hex._cube[direction_ind] == val and hex._cube[next_ind] > max_val]
+        else:
+          min_val = np.min([_._cube[next_ind] for _ in hexagons_with_val])
+          hexagons += [hex for hex in entire_board_hexagons if hex._cube[direction_ind] == val and hex._cube[next_ind] < min_val]
+
+      return Shape(hexagons, from_hexagons=True)
+
 
     if criterion == 'top':
       return self._max('up')
@@ -818,22 +832,22 @@ class Shape:
         vhexagons.append(hexagons[i])
     return Shape(vhexagons, from_hexagons=True)
 
-  def edge(self, criterion):
-    '''Return the edge tiles of self according to some criterion'''
+  def edge(self, direction):
+    '''Return the edge tiles of self according to some direction'''
 
-    if criterion in ['up', 'top']:
+    if direction in ['up', 'top']:
       return self._max('up')
-    if criterion in ['down', 'bottom']:
+    if direction in ['down', 'bottom']:
       return self._max('down')
 
-    if criterion in ['right', 'left']:
+    if direction in ['right', 'left']:
       shape_lines = self._qs
-    elif criterion in ['down_left', 'up_right']:
+    elif direction in ['down_left', 'up_right']:
       shape_lines = self._rs
-    elif criterion in ['up_left', 'down_right']:
+    elif direction in ['up_left', 'down_right']:
       shape_lines = self._ss
 
-    if criterion in ['down_left', 'up_left', 'right']:
+    if direction in ['down_left', 'up_left', 'right']:
       extreme_line = np.amax(shape_lines)
     else:
       extreme_line = np.amin(shape_lines)
@@ -871,7 +885,7 @@ class Shape:
     if criterion == 'white':
       return Shape([tile for tile in Shape.get_entire_board() if tile.color == 'white']) * self.neighbors()
     if criterion in _Vec.DIRECTIONS:
-      return Shape([tile.neighbor(criterion) for tile in self.tiles]) - self
+      return self.get(criterion) * self.neighbors()
 
   def neighbor(self, direction):
     '''Return self's neighbor(s) in a given direction'''

@@ -123,7 +123,7 @@ class ShapeTests(HexagonsTests):
 
     HexagonsGame.start()
     self.assertShapeLinds(Shape([56, 37, 38], from_linds = True).grid(shift_direction = 'right', spacing = 2), [64, 68, 37, 38, 41, 42, 45, 46, 49, 50, 56, 60])
-    self.assertShapeLinds(Shape([56, 37, 38], from_linds = True).grid(shift_direction = 'right', spacing = 2, num_copies = 2), [64, 37, 38, 41, 42, 45, 46, 56, 60])
+    self.assertShapeLinds(Shape([56, 37, 38], from_linds = True).grid(shift_direction = 'right', spacing = 2, length = 3), [64, 37, 38, 41, 42, 45, 46, 56, 60])
 
     HexagonsGame.start()
     self.assertShapeLinds(Shape([60,41,42], from_linds = True).copy_paste(shift_direction = 'right', spacing = 3), [64, 45, 46])
@@ -180,8 +180,8 @@ class ShapeTests(HexagonsTests):
     self.assertShapeLinds(S.extreme(direction = 'up_right'), [65])
 
     S = Shape([61, 117, 65, 62, 116, 83, 118, 64, 79, 101, 45, 97], from_linds = True)
-    self.assertShapeLinds(S.edge(criterion = 'right'), [65, 83, 101])
-    self.assertShapeLinds(S.edge(criterion = 'top'), [61, 62, 45, 64, 65])
+    self.assertShapeLinds(S.edge(direction = 'right'), [65, 83, 101])
+    self.assertShapeLinds(S.edge(direction = 'top'), [61, 62, 45, 64, 65])
 
     S = Shape([61, 117, 65, 62, 116, 83, 118, 64, 79, 101, 45, 97], from_linds = True)
     self.assertShapeLinds(S.neighbors(), [134, 135, 136, 27, 43, 44, 46, 47, 60, 63, 66, 78, 80, 82, 84, 96, 98, 99, 100, 102, 114, 115, 119, 120])
