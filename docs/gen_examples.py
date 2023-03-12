@@ -6,13 +6,14 @@ from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 
-circle = Circle(center_tile = Tile(9, 5), radius = 3) + Tile(-6, -4) + Tile(-5, -4) + Tile(-4, -3)
-circle.draw('black')
-circle.get(criterion = 'end_points').draw('red')
+circle = Circle(center_tile=Tile(15, 8), radius=2)
+circle.draw('red')
+line = Line(start_tile=Tile(1, 1), direction='down_right', end_tiles=circle)
+line.draw('blue')
 
 file_name = 'board_examples/' + input('please enter file name\n')
 HexagonsGame.plot(file_name = file_name)
-
+# HexagonsGame.plot()
 
 # Shape
 # copy_paste
@@ -20,15 +21,6 @@ HexagonsGame.plot(file_name = file_name)
 # reflect
 # rotate
 # recolor
-
-'''
-get
-    - 'outside' / 'inside': the tiles outside/inside the given shape
-    - 'above' / 'below': tiles that lie above/below the given shape
-    - 'top' / 'bottom': to topmost/bottommost tiles of the given shape
-    - 'corners': the corners of the shape. If the shape is a polygon, these will be the polygon’s vertices
-    - 'end_points': the end points of the shape. If the shape is a line, these will be the ends of the line
-'''
 
 # boundary: outer / inner
 
