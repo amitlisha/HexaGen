@@ -458,10 +458,3 @@ Shape(vertices).draw('black')
 <img src="board_examples/shape_polygon.png" alt="shape polygon" width="40%" height="40%">
 
 
-
-##### 
-```python
-?
-```
-<img src="board_examples/?.png" alt="?" width="40%" height="40%">
-
