@@ -314,13 +314,13 @@ class _Hexagon:
     new_tile._draw(self._color)
     return new_tile
 
-  def _rotate(self, rotation, center):
+  def _rotate(self, center, angle):
     '''Rotate self
     Compute the new location and draw there'''
 
     v_self = np.array(self._cube)
     v_center = np.array(center._cube)
-    rotvec = np.ones(3) / np.sqrt(3) * (rotation * np.pi / 3)
+    rotvec = np.ones(3) / np.sqrt(3) * (angle / 60 * np.pi / 3)
     R = Rotation.from_rotvec(rotvec).as_matrix()
     v_new = np.matmul(v_self - v_center, R) + v_center
     new_tile_vec = _Vec(*list(v_new))._round()
@@ -547,13 +547,13 @@ class Shape:
     Parameters:
     -----------
     shift_direction: str
-      The direction in which to shift the shape
+      The direction of the new shape relative to self.
       Supported values:
       - any item of DIRECTIONS
       - 'right'
       - 'left'
     spacing: int
-      Number of tiles between the original shape and the new shape
+      Number of tiles between self and the new shape
     reference_shape: Shape
       The new location is computed with respect to reference_shape.
       If not specified, location is computed with respect to the original shape.
@@ -576,7 +576,7 @@ class Shape:
     new_shape = Shape(new_hexagons, from_hexagons=True)
     return new_shape
 
-  def grid(self, shift_direction, spacing, length=None):
+  def grid(self, shift_direction, spacing, num_copies=None):
     '''
     Draw copies of self along a grid.
     This is done by repeated calls to 'copy_paste'.
@@ -587,10 +587,9 @@ class Shape:
       The direction in which to shift the shape
     spacing: int
       Number of tiles between the original shape and the new shape
-    length: int
-      The length of the grid.
-      If not specified, copies will be created until there is no more room
-      on the board
+    num_copies: int
+      The total number of copies to create.
+      If not specified, the method creates the maximal possible number of complete copies.
 
     Returns:
     --------
@@ -601,9 +600,9 @@ class Shape:
     shift = self._compute_shift_from_spacing(shift_direction, spacing, None)
 
     grid = self
-    k = 1
+    k = 0
     shape = self
-    while (length is None and shape._shift(shift)._entirely_on_board()) or (length is not None and k < length):
+    while (num_copies is None and shape._shift(shift)._entirely_on_board()) or (num_copies is not None and k < num_copies):
       shape = shape.copy_paste(shift=shift)
       grid = grid + shape
       k += 1
@@ -642,19 +641,16 @@ class Shape:
     new_shape = Shape(new_hexagons, from_hexagons=True)
     return new_shape
 
-  def rotate(self, rotation, center_tile):
+  def rotate(self, center_tile, angle):
     '''
     Draw a rotation of self
 
     Parameters:
     -----------
-    rotation: int
-      Sets the angle of rotation
-      1 - rotate 60 degrees counterclockwise
-      2 - rotate 120 degrees counterclockwise
-      etc.
     center_tile: Tile
       The tile around which to rotate
+    angle: int
+      Sets the angle of rotation, counterclockwise. Should be a mutliple of 60.
 
     Returns:
     --------
@@ -664,7 +660,7 @@ class Shape:
 
     new_hexagons = []
     for hexagon in self._hexagons:
-      new_hexagons.append(hexagon._rotate(rotation=rotation, center=center_tile._hexagon))
+      new_hexagons.append(hexagon._rotate(center=center_tile._hexagon, angle=angle))
     new_shape = Shape(new_hexagons, from_hexagons=True)
     return new_shape
 
@@ -726,7 +722,7 @@ class Shape:
     - 'above' / 'below': tiles that lie above/below self
     - 'top' / 'bottom': to topmost/bottommost tiles of self
     - 'corners': the corners of self. If the shape is a polygon, these will be the polygon’s vertices
-    - 'end_points': the end points of self. If the shape is a line, these will be the ends of the line
+    - 'endpoints': the endpoints of self. If the shape is a line, these will be the ends of the line
     '''
 
     if criterion == 'outside':
@@ -787,7 +783,7 @@ class Shape:
             corners.append(hexagon)
       return Shape(corners, from_hexagons=True)
 
-    if criterion == 'end_points':
+    if criterion == 'endpoints':
       ext = self.boundary('outer')
       ends = []
       for hexagon in ext._hexagons:
@@ -797,6 +793,23 @@ class Shape:
       return Shape(ends, from_hexagons=True)
 
   def boundary(self, criterion='all'):
+    '''Return the boundary of the shape. These are tiles that are part of the shape and touch
+    tiles that are not part of the shape.
+
+    Parameters:
+    ---------------
+    criterion: str
+      Criterion to select parts of the boundary
+      - ‘all’: the entire boundary
+      - 'outer’: tiles that touch tiles that are outside the shape
+      - ‘inner’: tiles that touch tiles that are inside the shape
+
+    Returns:
+    ---------------
+    Shape
+      New Shape object
+    '''
+
     if criterion == 'outer':
       return self.get('outside').neighbors('all') * self
 
@@ -1084,7 +1097,7 @@ class Line(Shape):
       count += 1
     super().__init__(hexagons, from_hexagons=True)
     self.length = len(hexagons)
-    self.color = None
+    # self.color = None
     self._direction_vec = direction_vec
     self.direction = direction_vec._direction_str()
     if len(hexagons) > 1:
@@ -1098,7 +1111,7 @@ class Line(Shape):
     start = {self.tiles[0].offset}, end = {self.tiles[-1].offset}, color = {self.color}')
 
   # TODO: write unit_test
-  def parallel(self, shift_direction, spacing=0):
+  def parallel(self, shift_direction, spacing):
     '''Create a new line parallel to self, in the given direction, with the given spacing from self
     This is different from Shape.copy_paste() because it doesn't copy the line, but rather creates a new line,
     which can be of different length from self.
@@ -1108,7 +1121,10 @@ class Line(Shape):
     ---------------
     shift_direction: str
       'right' / 'left' / any item of DIRECTIONS
-      The direction in which you move from self to the new line
+      The direction of the new line relative to self.
+
+    spacing: integer
+      The spacing between self and the new shape.
 
     Returns:
     ---------------
@@ -1168,7 +1184,7 @@ class Line(Shape):
     return Line(start_tile=Tile(start_column, start_row), direction=self.direction)
 
   def draw(self, color):
-    self.color = color
+    # self.color = color
     super().draw(color)
     return self
 
@@ -1206,7 +1222,7 @@ class Circle(Shape):
         hexagons.append(rctile._shift(shift))
     super().__init__(hexagons, from_hexagons=True)
     self.center_tile = center_tile
-    self.color = None
+    # self.color = None
 
   def _show(self):
     print(
@@ -1221,7 +1237,7 @@ class Circle(Shape):
       The color
     '''
 
-    self.color = color
+    # self.color = color
     super().draw(color)
     return self
 
@@ -1266,7 +1282,7 @@ class Triangle(Shape):
     super().__init__(tiles)
     self.point = point
     self.side_length = side_length
-    self.color = None
+    # self.color = None
 
   def _show(self):
     print(
@@ -1281,7 +1297,7 @@ class Triangle(Shape):
       The color
     '''
 
-    self.color = color
+    # self.color = color
     super().draw(color)
     return self
 

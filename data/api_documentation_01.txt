@@ -289,7 +289,6 @@ class Shape():
     criterion: str
       The criterion by which to create the New Shape. Options:
       - 'outside' / 'inside': the tiles outside/inside the given shape
-      - 'outer_boundary' / 'inner_boundary': tiles that are part of the given shape, and lie on its outer/inner boundary
       - 'above' / 'below': tiles that lie above/below the given shape
       - 'top' / 'bottom': to topmost/bottommost tiles of the given shape
       - 'corners': the corners of the shape. If the shape is a polygon, these will be the polygon’s vertices
