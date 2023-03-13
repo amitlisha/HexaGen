@@ -35,6 +35,26 @@ Tile(column=-1, row=-1).draw('orange')
 ```
 <img src="board_examples/corners.png" alt="corners" width="40%" height="40%">
 
+### Attributes
+
+- column: integer that specifies the tile's column
+- row: integer that specifies the tile's row
+- color: string that specifies the tile's color
+
+### Methods
+
+In general, all the methods of the `Shape` class (which we will describe in future sections) are applicable to `Tile` objects.
+Two methods that are especially useful for tile objects are `neighbor` and `neighbors`, so we describe them here.
+
+#### `neighbor` and `neighbors`
+```python
+tile = Tile(9, 5)
+tile.draw('black')
+tile.neighbors().draw('green')
+tile.neighbor(direction='up_right').draw('red')
+```
+<img src="board_examples/?.png" alt="?" width="40%" height="40%">
+
 ## `Shape` Class 
 A shape in Hexagons is any set of tiles on the board, including the empty set and a single tile.
 To create a shape in Hexagons, use the `Shape` class, which requires a single parameter: `tiles`. `tiles` is a list of Tile objects, that specifies the tiles composing the shape.
@@ -45,22 +65,43 @@ shape.draw('purple')
 <img src="board_examples/simple_purple_shape.png" alt="simple purple shape" width="40%" height="40%">
 
 ### Attributes
-...
+
+- tiles: the list of `Tile` object composing the shape
+- columns: the list of columns of the tiles composing the shape
+- rows: the list of rows of the tiles composing the shape
+- colors: the list of colors of the tiles composing the shape
 
 ### Subclasses
 The `Shape` class has three special subclasses that we will now describe: `Circle`, `Line` and `Triangle`.
 
 #### Circle
-To create a circle in Hexagons, use the `Circle` class, which requires two parameters: `center_tile` and `radius`. `center_tile` is a tile object that specifies the center tile of the circle. `radius` is an integer that specifies the radius of the circle.  If you do not specify a `radius` value, it defaults to `1`.
+To create a circle on the board, use the `Circle` class, which requires two parameters: `center_tile` and `radius`. `center_tile` is a tile object that specifies the center tile of the circle. `radius` is an integer that specifies the radius of the circle.  If you do not specify a `radius` value, it defaults to `1`.
 ```python
 circle = Circle(center_tile = Tile(9, 5), radius = 3)
 circle.draw('black')
 ```
 <img src="board_examples/black_circle.png" alt="black circle" width="40%" height="40%">
 
+###### Attributes
+    center_tile: Tile
+      The center of the circle
+    color: str
+      The color of the circle
+      
 #### Line
-To create a line in Hexagons, use the `Line` class.
-There are several to instantiate a new `Line` object:
+To create a straight line on the board, use the `Line` class.
+There are several ways to instantiate a new `Line` object, that we will now describe.
+Note that the `Line` class also has a unique method called `parallel`. This method will be described in later sections together with all other `Shape` methods.
+
+##### Attributes
+    start_tile: Tile
+      First tile of the line
+    end_tile: Tile
+      Last tile of the line
+    color: str
+      The color of the line
+    direction: str
+      The direction of the line.
 
 ##### Using `start_tile` and `end_tile`
 Specify `start_tile` and `end_tile` as `Tile` objects to define the start and end points of the line.
@@ -103,6 +144,32 @@ line = Line(start_tile=Tile(9, 1), end_tile=Tile(9, -1), include_start_tile=Fals
 line.draw('blue')
 ```
 <img src="board_examples/line_dont_include.png" alt="line dont include" width="40%" height="40%">
+
+#### Triangle
+To create a triangle on the board, use the `Triangle` class, which requires four parameters:
+`start_tile` is a tile object that specifies one of the triangle's vertices.
+`point` is a string that specifies whether the triangle is pointing left (corresponding to the value `left`) or right (`right`).
+`start_tile_type` is a string that specifies which one of the three vertices of the triangle does `start_tile` describes: its bottom vertex ('bottom'), its top vertex ('top') or its side vertex (`side`). The side vertex is either the left or the right end point of the triangle.
+`side_length` is an integer that specifies the length of the side of the triangle. If you do not specify a `side_length` value, it defaults to `2`.
+
+```python
+start_tile1 = Tile(6, 5)
+triangle1 = Triangle(start_tile=start_tile1, point='right', start_tile_type='side', side_length=3)
+triangle1.draw('red')
+start_tile1.draw('orange')
+
+start_tile2 = Tile(15, 8)
+triangle2 = Triangle(start_tile=start_tile2, point='left', start_tile_type='bottom', side_length=6)
+triangle2.draw('blue')
+start_tile2.draw('green')
+```
+<img src="board_examples/triangle.png" alt="triangle" width="40%" height="40%">
+
+###### Attributes
+
+- point: string
+- side_length: integer
+- color: string
 
 ### Methods
 
@@ -268,7 +335,7 @@ circle.neighbors(criterion='up_right').draw('green')
 ##### self.draw(color)
 Draw the tiles of self in the given color.
 
-##### copy_paste(self, shift_direction=None, spacing=None, reference_shape=None, shift=None)
+##### self.copy_paste(shift_direction=None, spacing=None, reference_shape=None, shift=None)
 Draw a copy of self in a new location.
 ```python
 circle1 = Circle(center_tile = Tile(4, 4), radius = 2)
@@ -287,7 +354,7 @@ circle2 = circle1.copy_paste(shift_direction='right', spacing=1, reference_shape
 ```
 <img src="board_examples/shape_copy_paste.png" alt="shape copy_paste reference_shape" width="40%" height="40%">
 
-##### self.grid(self, shift_direction, spacing, length=None)
+##### self.grid(shift_direction, spacing, length=None)
 ```python
 shape = Shape([Tile(1, 4), Tile(1, 5), Tile(2, 4)])
 shape.draw('black')
@@ -302,6 +369,15 @@ shape.draw('black')
 shape.grid(shift_direction='right', spacing=2)
 ```
 <img src="board_examples/shape_grid_without_length.png" alt="shape grid length not specified" width="40%" height="40%">
+
+##### self.parallel(shift_direction, spacing=0)
+This is a method of the `Line` subclass. It is similar to the `copy_paste` method, but is specifficaly designed for lines.
+```python
+line = Line(start_tile=Tile(5, 5), direction='up_right', length=5)
+line.draw('black')
+line.parallel(shift_direction='down', spacing=3).draw('red')
+```
+<img src="board_examples/line_parallel.png" alt="line parallel" width="40%" height="40%">
 
 ##### reflect(self, axis_line=None, column=None, axis_direction=None, tile_on_axis=None)
 ```python
@@ -379,7 +455,7 @@ vertices = [Tile(5, 5), Tile(8, 3), Tile(5, 7), Tile(8, 8), Tile(13, 6)]
 Shape.polygon(vertices=vertices).draw('green')
 Shape(vertices).draw('black')
 ```
-<img src="board_examples/shape_vertices.png" alt="shape vertices" width="40%" height="40%">
+<img src="board_examples/shape_polygon.png" alt="shape polygon" width="40%" height="40%">
 
 
 
