@@ -1,6 +1,4 @@
-'''
-Plot a hexagon board / boards
-'''
+# Plot a hexagon board / boards
 
 from matplotlib.cm import get_cmap
 from matplotlib.collections import PatchCollection
@@ -28,7 +26,7 @@ COLORS_LIST = [[t / 255. for t in _] for _ in COLORS[:-1]]
 hexa_cmap = ListedColormap(COLORS_LIST)
 gray_cmap = get_cmap('gray')
 
-def plot_boards(boards, H=10, W=18, fig_size=[5, 5], max_in_row=6, edge_color='k', color_map='hexa', titles = None,
+def plot_boards(boards, H=10, W=18, fig_size=(5, 5), max_in_row=6, edge_color='k', color_map='hexa', titles = None,
                 file_name = None):
   '''Plot a hexagon board / boards
 
