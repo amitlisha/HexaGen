@@ -26,10 +26,12 @@ Before you get started, make sure you have the following requirements installed:
 - SciPy
 
 ## Usage
-See the file [Usage.md](docs/Usage.md) for a complete usage guide.
+See our [usage guide](docs/USAGE.md).
 
 ## License
 TODO
 
 ## Acknowledgments
-TODO
+I would like to express my gratitude to Professor Reut Tsarfaty, head of the ONLP lab, for her valuable guidance and support throughout this project. Her expertise and insights have been invaluable.
+
+I would also like to thank my colleagues from the ONLP lab, Dr. Royi Lachmi and Avshalom Manevich, for their collaboration and teamwork. Working with them has been a great pleasure, and I am grateful for their contributions to this project.
