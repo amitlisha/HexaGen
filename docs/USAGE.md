@@ -1,14 +1,15 @@
 # Usage Guide
-Welcome to the Hexagons usage guide. In this guide, we'll provide you with detailed instructions on how to use the most important features of our Python project, complete with code examples.
+Welcome to the Hexagons usage guide. In this guide we provide detailed instructions on how to use the most important features of our Python project, complete with code examples.
 
 ## Purpose
-The purpose of this project is to allow trnslation of instructions given in natural language into code. The instructions describe drawings on a hexagonal tiled board. For example, given the instruction "draw a red flower with yellow center, centered at the seventh column and fifth row", it can be translated into the following code. This code example uses a `Tile` object that represents a hexagonal tile on the board, the `draw` method that is used to color objects on the board, and the `neighbors` method which returns the six neighboring tiles of the current tile.
+The purpose of this project is to allow translation of instructions given in natural language into code. The instructions describe drawings on a hexagonal tiled board. For example, given the instruction "draw a red flower with yellow center, centered at the seventh column and fifth row", it can be translated into the following code. This code example uses a `Tile` object that represents a hexagonal tile on the board, the `draw` method that is used to color objects on the board, and the `neighbors` method which returns the six neighboring tiles of the current tile.
 ```python
 center = Tile(column=7, row=5)
 center.draw(color='yellow')
 center.neighbors().draw(color='red')
 ```
-This will create the following image:
+This code generates the following image:
+
 <img src="board_examples/red_flower_yellow_center.png" alt="red flower with yellow center" width="40%" height="40%">
 
 ### Constants
@@ -20,7 +21,7 @@ COLORS = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange'
 ```
 
 The project also uses the following list of directions on the board. These directions are dictated by the geometry of the Hexagons board 
-and shouldn't be changes.
+and shouldn't be changed.
 ```python
 DIRECTIONS = {'up': (0, -1, 1), 'down': (0, 1, -1), 'down_right': (1, 0, -1), 
               'up_left': (-1, 0, 1), 'down_left': (-1, 1, 0), 'up_right': (1, -1, 0)}
@@ -46,7 +47,8 @@ tile.draw('blue')
 
 HexagonsGame.plot()
 ```
-The code will generate the following image:
+This code generates the following image:
+
 <img src="board_examples/single_blue_hex.png" alt="single blue hexagon" width="40%" height="40%">
 
 From this point on, we will omit the surrounding code and only present the instructions.
@@ -54,7 +56,7 @@ From this point on, we will omit the surrounding code and only present the instr
 ## `Tile` Class
 To create a tile in Hexagons, use the `Tile` class, that requires two parameters: `column` and `row`. `column` is numbered from 1 (leftmost column) to 18 (rightmost column), while `row` is numbered from 1 (top row) to 10 (bottom row). If you use a negative value for column or row, the counting will start from the rightmost column or bottom row, respectively. 
 
-To paint a tile in a desired color, use the `draw` method, that requires a single parameter, `color`, which is a tring describing any of the available colors in the project.
+To paint a tile in a desired color, use the `draw` method, that requires a single parameter, `color`, which is a string describing any of the available colors in the project.
 
 For example, see the following code and the image it generates:
 ```python
@@ -72,8 +74,6 @@ A `Tile` object has the following read-only attributes:
 - color: a string that specifies the tile's color
 
 ### Methods
-All the methods of the Shape class (which we will describe in future sections) can be applied to Tile objects as well. In particular, two methods that are especially useful for tile objects are neighbor and neighbors, which we describe below.
-
 All the methods of the `Shape` class (which we will describe in future sections) can be applied to `Tile` objects as well.
 In particular, two methods that are especially useful for `Tile` objects are `neighbor` and `neighbors`, which we describe below.
 
@@ -92,7 +92,7 @@ tile.neighbor(direction='up_right').draw('red')
 
 ## `Shape` Class 
 A shape in Hexagons is any set of tiles on the board, including the empty set and a single tile.
-To create a shape in Hexagons, use the `Shape` class, which requires a single parameter: `tiles`. `tiles` is a list of Tile objects, that specifies the tiles composing the shape.
+To create a shape in Hexagons, use the `Shape` class, which requires a single parameter: `tiles`. `tiles` is a list of Tile objects that specifies the tiles composing the shape.
 ```python
 shape = Shape(tiles=[Tile(9, 5), Tile(10, 5), Tile(9, 6)])
 shape.draw('purple')
@@ -107,18 +107,19 @@ A `Shape` object has the following read-only attributes:
 - colors: the list of colors of the tiles composing the shape
 
 ### Subclasses
-The `Shape` class has three special subclasses that we will now describe: `Circle`, `Line` and `Triangle`.
+The `Shape` class has three special subclasses that we now describe: `Circle`, `Line` and `Triangle`.
 
 #### Circle
-To create a circle on the board, use the `Circle` class, which requires two parameters: `center_tile` and `radius`. `center_tile` is a tile object that specifies the center tile of the circle. `radius` is an integer that specifies the radius of the circle.  If you do not specify a `radius` value, it defaults to `1`.
+To create a circle on the board, use the `Circle` class, which requires two parameters: `center_tile` and `radius`. `center_tile` is a tile object that specifies the center tile of the circle. `radius` is an integer that specifies the radius of the circle.  If no value is specified for `radius`, it defaults to `1`.
 ```python
+
 circle = Circle(center_tile = Tile(9, 5), radius = 3)
 circle.draw('black')
 ```
 <img src="board_examples/black_circle.png" alt="black circle" width="40%" height="40%">
 
 ###### Attributes
-A `Circle` object has all the attributes of its super-class `Shape`. In addition, it has the following read-only attributes:
+A `Circle` object has all the attributes of its superclass `Shape`. In addition, it has the following read-only attributes:
 - center_tile: a `Tile` object that specifies the center tile of the circle
 - color: a string that specifies the color of the circle
       
@@ -128,7 +129,7 @@ There are several ways to instantiate a new `Line` object, that we describe belo
 Note that the `Line` class also has a unique method called `parallel`. This method will be described in later sections together with all other `Shape` methods.
 
 ##### Attributes
-A `Line` object has all the attributes of its super-class `Shape`. In addition, it has the following read-only attributes:
+A `Line` object has all the attributes of its superclass `Shape`. In addition, it has the following read-only attributes:
 - start_tile: a `Tile` object that specifies the starting point of the line
 - end_tile: a `Tile` object that specifies the ending point of the line
 - color: a string that specifies the color of the line
@@ -182,8 +183,8 @@ line.draw('blue')
 To create a triangle on the board, use the `Triangle` class, which requires four parameters:
 - `start_tile` is a tile object that specifies one of the triangle's vertices.
 - `point` is a string that specifies whether the triangle is pointing left (corresponding to the value `left`) or right (`right`).
-- `start_tile_type` is a string that specifies which one of the three vertices of the triangle does `start_tile` describes: its bottom vertex ('bottom'), its top vertex ('top') or its side vertex (`side`). The side vertex is either the left or the right end point of the triangle.
-- `side_length` is an integer that specifies the length of the side of the triangle. If you do not specify a `side_length` value, it defaults to `2`.
+- `start_tile_type` is a string that specifies which one of the three vertices of the triangle does `start_tile` describes: its bottom vertex ('bottom'), its top vertex ('top') or its side vertex (`side`). The side vertex is either the left or the right endpoint of the triangle.
+- `side_length` is an integer that specifies the length of the side of the triangle. If no value is specified for `side_length`, it defaults to `2`.
 
 ```python
 start_tile1 = Tile(6, 5)
@@ -199,7 +200,7 @@ start_tile2.draw('green')
 <img src="board_examples/triangle.png" alt="triangle" width="40%" height="40%">
 
 ###### Attributes
-A `Triangle` object has all the attributes of its super-class `Shape`. In addition, it has the following read-only attributes:
+A `Triangle` object has all the attributes of its superclass `Shape`. In addition, it has the following read-only attributes:
 - point: a string that specifies whether the triangle is pointing right or left
 - side_length: an integer that specifies the length of the side of the triangle
 - color: a string that specifies the color of the triangle
@@ -211,12 +212,12 @@ In the following sections we will describe these methods in detail.
 #### General Purpose Methods
 
 ##### Iteration
-The Shape class implements the iterator protocol, which means that you can iterate over the tiles in a shape using a for loop or a list comprehension. For example, the code for tile in shape: will iterate over all the tiles in the Shape object shape, and you can perform operations on each tile inside the loop body.
+The Shape class implements the iterator protocol, which means that you can iterate over the tiles in a shape using a for loop or a list comprehension. For example, the code `for tile in shape:` will iterate over all the tiles in the `Shape` object shape, and you can perform operations on each tile inside the loop body.
 
 ##### `add`, `subtract` and `multiply`
 It is possible to use the plus, minus, and asterisk signs to compute the union, difference, and intersection of shapes respectively.
 For example, to compute the union of two Shape objects `shape1` and `shape2` use: `shape3 = shape1 + shape2`.
-The resulting shape3 object will be a new `Shape` object.
+The resulting shape object is a new `Shape` object.
 
 ##### `self.is_empty()`
 The `is_empty` method returns `True` if `self` is empty.
@@ -224,10 +225,10 @@ The `is_empty` method returns `True` if `self` is empty.
 ##### `self.overlaps(other)`
 The `overlaps` method returns `True` if `self` and `other` overlap.
 
-#### 'Get' Methods
-The following methods all have in common that they return a `Shape` object, and they don't draw anything on the board.
+#### "Get" Methods
+The following methods all have in common that they return a new `Shape` object, and they don't draw anything on the board.
 
-##### Shape.get_entire_board() and Shape.get_board_perimeter()
+##### `Shape.get_entire_board()` and `Shape.get_board_perimeter()`
 These two methods return the entire board and the perimeter of the board, respectively.
 ```python
 Shape.get_entire_board().draw('green')
@@ -235,13 +236,13 @@ Shape.get_board_perimeter().draw('blue')
 ```
 <img src="board_examples/get_board.png" alt="get entire board and get board perimeter" width="40%" height="40%">
 
-##### Shape.get_color(color) and Shape.get_column(column)
+##### `Shape.get_color(color)` and `Shape.get_column(column)`
 These methods return all the tiles with a specific color, and all the tiles in a specific column, respectively.
 
-##### self.get(criterion)
-The `get` methodreturns a new `Shape` object that has some geometric relation to the original shape.
+##### `self.get(criterion)`
+The `get` method returns a new `Shape` object that has some geometric relation to the original shape.
 The method requires a single parameter `criterion`, which is a string specifying the criterion used to create the new shape. 
-There are various options for the criterion parameter, which we'll describe below. 
+There are several options for the criterion parameter, which we will describe below. 
 
 ###### "outside" and "inside"
 If criterion is set to "outside", the `get` method returns a new shape consisting of all tiles that lie outside of the given shape. 
@@ -287,18 +288,21 @@ circle.get(criterion='corners').draw('red')
 ```
 <img src="board_examples/get_corners.png" alt="get corners" width="40%" height="40%">
 
-###### "end_points"
-If `criterion` is set to "end_points", the `get` method returns a shape consisting of the corners of the end points of the given shape,
+###### "endpoints"
+If `criterion` is set to "endpoints", the `get` method returns a shape consisting of the endpoints of the given shape,
 as described in the following example.
 ```python
 circle = Circle(center_tile = Tile(9, 5), radius = 3) + Tile(-6, -4) + Tile(-5, -4) + Tile(-4, -3)
 circle.draw('black')
-circle.get(criterion = 'end_points').draw('red')
+circle.get(criterion = 'endpoints').draw('red')
 ```
-<img src="board_examples/get_end_points.png" alt="get end points" width="40%" height="40%">
+<img src="board_examples/get_endpoints.png" alt="get endpoints" width="40%" height="40%">
 
-##### self.boundary(self, criterion='all')
-We start with the following shape:
+##### `self.boundary(criterion='all')`
+We define the **boundary** of a shape to be the part of the shape that touches tiles that are not part of the shape.
+The `boundary` method returns the boundary of the given shape.
+
+To illustrate with an example, let's start with the following shape:
 <!--
 ```python
 shape = Circle(center_tile = Tile(10, 5), radius = 2) + Circle(center_tile = Tile(10, 5), radius = 3) + Circle(center_tile = Tile(10, 5), radius = 4)
@@ -307,18 +311,23 @@ shape.draw('black')
 -->
 <img src="board_examples/shape_boundary_0.png" alt="shape" width="40%" height="40%">
 
+Its boundary is shown in purple:
 ```python
 shape.boundary().draw('purple')
 ```
 <img src="board_examples/shape_boundary_all.png" alt="shape boundary all" width="40%" height="40%">
 
+If we want to get only the outer or inner part of the boundary, we can set the `criterion` parameter to "outer" or "inner" respectively:
 ```python
 shape.boundary(criterion='outer').draw('red')
 shape.boundary(criterion='inner').draw('green')
 ```
 <img src="board_examples/shape_boundary_inner_outer.png" alt="shape boundary inner and outer" width="40%" height="40%">
 
-##### self.extreme(direction)
+##### `self.extreme(direction)`
+Returns a `Shape` object consisting of the most extreme tiles of the given shape in the given direction,
+as demonstrated in the following example.
+
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -327,7 +336,10 @@ circle.extreme(direction='down_right').draw('red')
 ```
 <img src="board_examples/shape_extreme.png" alt="shape extreme" width="40%" height="40%">
 
-##### self.edge(criterion)
+##### `self.edge(direction)`
+Returns a `Shape` object consisting of the edge tiles of the given shape in the given direction,
+as demonstrated in the following example.
+
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -336,8 +348,15 @@ circle.edge(criterion='right').draw('red')
 ```
 <img src="board_examples/shape_edge.png" alt="shape edge" width="40%" height="40%">
 
-##### self.neighbors(criterion)
+##### `self.neighbors(criterion='all')`
+We define the **neighbors** of a shape to be the set of tiles that are adjacent to the shape but are not part of it.
+The `neighbors` method returns a new `Shape` object consisting of the neighbors of the given shape, 
+or some subset of them based on the value of the `criterion` parameter.
+There are several options for the `criterion` parameter, which we will describe below. 
+If no value is specified for `criterion`, it defaults to "all".
 
+###### "all" (value)
+If criterion is not specified or it is set to "all", the `neighbors` method returns a new shape consisting of all the neighbors of the given shape.
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -345,6 +364,9 @@ circle.neighbors().draw('green')
 ```
 <img src="board_examples/shape_neighbors_all.png" alt="shape neighbors" width="40%" height="40%">
 
+###### "right" and "left"
+If `criterion` is set to "right", the `neighbors` method returns a new shape consisting of the neighbors of the given shape that lie to the right of the given shape. 
+Conversely, if `criterion` is set to "right", the returned shape will consist of the neighbors that lie to the left of the given shape. 
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -353,6 +375,9 @@ circle.neighbors(criterion='left').draw('red')
 ```
 <img src="board_examples/shape_neighbors_right_left.png" alt="shape neighbors right and left" width="40%" height="40%">
 
+###### "above" and "below"
+If `criterion` is set to "above", the `neighbors` method returns a new shape consisting of the neighbors of the given shape that lie above the given shape. 
+Conversely, if `criterion` is set to "below", the returned shape will consist of the neighbors that lie below the given shape. 
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -361,6 +386,9 @@ circle.neighbors(criterion='below').draw('red')
 ```
 <img src="board_examples/shape_neighbors_above_below.png" alt="shape neighbors above and below" width="40%" height="40%">
 
+###### "outside" and "inside"
+If `criterion` is set to "outside", the `neighbors` method returns a new shape consisting of the neighbors of the given shape that lie outside the given shape. 
+Conversely, if `criterion` is set to "inside", the returned shape will consist of the neighbors that lie inside the given shape. 
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -369,6 +397,8 @@ circle.neighbors(criterion='inside').draw('red')
 ```
 <img src="board_examples/shape_neighbors_outside_inside.png" alt="shape neighbors outside and inside" width="40%" height="40%">
 
+###### "white"
+If criterion is set to "white", the `neighbors` method returns a new shape consisting of all the neighbors of the given shape that are not colored.
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -377,6 +407,8 @@ circle.neighbors(criterion='white').draw('green')
 ```
 <img src="board_examples/shape_neighbors_white.png" alt="shape neighbors white" width="40%" height="40%">
 
+###### Any direction
+If criterion is set to a direction, the `neighbors` method returns a new shape consisting of all the neighbors of the given shape that lie in that direction from the given shape.
 ```python
 circle = Circle(center_tile=Tile(10, 5), radius=3)
 circle.draw('black')
@@ -384,13 +416,39 @@ circle.neighbors(criterion='up_right').draw('green')
 ```
 <img src="board_examples/shape_neighbors_up_right.png" alt="shape neighbors up_right" width="40%" height="40%">
 
-#### Draw something methods
+##### self.parallel(shift_direction, spacing)
+The `parallel` method is a member of the `Line` subclass.
+It creates a new line of the same direction but potentially different length as the given line. 
+This method does not copy the original line. Instead, it creates a new line that extends as far as possible in both directions.
+
+In the example below, a black line is drawn on the board with a length of 5 tiles and an "up_right" direction. 
+Then, a new line is created parallel to the original line, shifted downwards by 3 tiles and drawn in red.
+```python
+line = Line(start_tile=Tile(5, 5), direction='up_right', length=5)
+line.draw('black')
+line.parallel(shift_direction='down', spacing=3).draw('red')
+```
+<img src="board_examples/line_parallel.png" alt="line parallel" width="40%" height="40%">
+
+#### "Draw" Methods
+The following methods all have in common that they draw something new on the board. 
+Some of them also return a new `Shape` object, while others return nothing.
 
 ##### self.draw(color)
-Draw the tiles of self in the given color.
+Draw the tiles of the given shape in the given color.
 
-##### self.copy_paste(shift_direction=None, spacing=None, reference_shape=None, shift=None)
-Draw a copy of self in a new location.
+##### self.copy_paste(shift_direction=None, spacing=None, reference_shape=None)
+The `copy_paste` method draws a copy of the given shape in a new location on the board. 
+The new location is specified by the following parameters:
+- `shift_direction`: a string that specifies the direction of the new shape relative to the given shape.
+- `spacing`: an integer that specifies the desired spacing between the given shape and the new shape.
+- `reference_shape`: a `Shape` object. If specified, the new location will be computed relative to
+the location of `reference_shape` rather than the given shape.
+The new shape is also returned by the method, so we can use it for further manipulations.
+
+The following example demonstrates the usage of the `copy_paste` method:
+It first draws a black circle on the board and then creates a copy of it 
+located down and to the right of the original circle, with a spacing of two tiles.
 ```python
 circle1 = Circle(center_tile = Tile(4, 4), radius = 2)
 circle1.draw('black')
@@ -398,7 +456,9 @@ circle2 = circle1.copy_paste(shift_direction='down_right', spacing=2)
 ```
 <img src="board_examples/shape_copy_paste.png" alt="shape copy_paste" width="40%" height="40%">
 
-With reference shape:
+The following example demonstrates the usage of the `reference_shape` parameter:
+First, a black circle and a purple shape are drawn on the board.
+Then, a copy of the black circle is created, located to the right of the purple shape specified as the reference, with a spacing of one tile.
 ```python
 circle1 = Circle(center_tile = Tile(4, 4), radius = 2)
 ref_shape = Shape([Tile(11, 6), Tile(11, 7), Tile(12, 6)])
@@ -408,15 +468,20 @@ circle2 = circle1.copy_paste(shift_direction='right', spacing=1, reference_shape
 ```
 <img src="board_examples/shape_copy_paste.png" alt="shape copy_paste reference_shape" width="40%" height="40%">
 
-##### self.grid(shift_direction, spacing, length=None)
+##### self.grid(shift_direction, spacing, num_copies=None)
+The `grid` method draws multiple copies of the given shape on the board in even spacings, based on the `shift_direction` and `spacing` parameters, with a total number of copies specified by the `num_copies` parameter.
+If the `num_copies` parameter is not specified, the method creates the maximal possible number of complete copies.
+
+The following code creates a black shape on the board and draws two additional copies to the right of the original shape, 
+with a spacing of two tiles between each copy.
 ```python
 shape = Shape([Tile(1, 4), Tile(1, 5), Tile(2, 4)])
 shape.draw('black')
-shape.grid(shift_direction='right', spacing=2, length=3)
+shape.grid(shift_direction='right', spacing=2, num_copies=2)
 ```
 <img src="board_examples/shape_grid.png" alt="shape grid" width="40%" height="40%">
 
-If `length` is not specified, the maximal possible number of complete copies will be created.
+The following code creates a black shape on the board and draws the maximal possible number of complete copies to the right of the original shape, with a spacing of two tiles between each copy.
 ```python
 shape = Shape([Tile(1, 4), Tile(1, 5), Tile(2, 4)])
 shape.draw('black')
@@ -424,16 +489,12 @@ shape.grid(shift_direction='right', spacing=2)
 ```
 <img src="board_examples/shape_grid_without_length.png" alt="shape grid length not specified" width="40%" height="40%">
 
-##### self.parallel(shift_direction, spacing=0)
-This is a method of the `Line` subclass. It is similar to the `copy_paste` method, but is specifficaly designed for lines.
-```python
-line = Line(start_tile=Tile(5, 5), direction='up_right', length=5)
-line.draw('black')
-line.parallel(shift_direction='down', spacing=3).draw('red')
-```
-<img src="board_examples/line_parallel.png" alt="line parallel" width="40%" height="40%">
+##### reflect(axis_line=None, column=None, axis_direction=None, tile_on_axis=None)
+The `reflect` method draws a reflection of the given shape across a given axis line.
+The axis line can be specified in several ways. We describe each of them with an example.
 
-##### reflect(self, axis_line=None, column=None, axis_direction=None, tile_on_axis=None)
+###### Using `axis_line`
+The axis line is specified directly by a `Line` object, as demonstrated in the following example:
 ```python
 blue = Tile(3, 3)
 blue.draw('blue')
@@ -448,6 +509,8 @@ shape.reflect(axis_line=line)
 ```
 <img src="board_examples/shape_reflect_line.png" alt="shape reflect through axis_line" width="40%" height="40%">
 
+###### Using `column`
+The axis line is provided by an integer that specifies a column number, as demonstrated in the following example:
 ```python
 blue = Tile(3, 3)
 blue.draw('blue')
@@ -460,6 +523,8 @@ shape.reflect(column=8)
 ```
 <img src="board_examples/shape_reflect_column.png" alt="shape reflect through column" width="40%" height="40%">
 
+###### Using `axis_direction` and `tile_on_axis`
+The axis line is provided by a direction and a `Tile` object, which together specify a line, as demonstrated in the following example:
 ```python
 blue = Tile(3, 3)
 blue.draw('blue')
@@ -474,8 +539,13 @@ shape.reflect(axis_direction='up_left', tile_on_axis=tile)
 ```
 <img src="board_examples/shape_reflect_direction_and_tile.png" alt="shape reflect through direction and tile" width="40%" height="40%">
 
+##### self.rotate(center_tile, rotation)
+The `rotate` method is used to create a rotated copy of the given shape. The method takes two parameters:
+- `center_tile`: a Tile object that specifies the center of rotation
+- `rotation`: an integer that specifies the counterclockwise rotation angle, in degrees. This parameter should always be a multiple of 60.
+The method rotates the given shape around the center_tile by the rotation angle.
 
-##### self.rotate(rotation, center_tile)
+Here's an example that demonstrates the usage of the rotate method. In this example, we have three tiles of different colors, and we want to rotate them counterclockwise by 60 degrees around the black tile at the center of the board.
 ```python
 blue = Tile(10, 2)
 blue.draw('blue')
@@ -485,11 +555,17 @@ purple = Tile(10, 4)
 purple.draw('purple')
 center_tile = Tile(10, 6)
 center_tile.draw('black')
-(blue + green + purple).rotate(1, center_tile)
+(blue + green + purple).rotate(center_tile, 60)
 ```
 <img src="board_examples/shape_rotate.png" alt="shape rotate" width="40%" height="40%">
 
 ##### self.recolor(color_map)
+The `recolor` method changes the color of the tiles in a shape according to a specified mapping.
+The `color_map` parameter is a dictionary that maps old colors to new colors.
+Each key-value pair in the dictionary specifies a mapping between a color that may appear in the original shape and the corresponding color that it should be changed to.
+For example, if we want to change blue to red, we would include the key-value pair 'blue':'red' in the dictionary.
+After calling `recolor`, the shape's tiles will have the colors specified in the color map. Any colors that are not included in the map will be unchanged.
+
 In the example, we create the left shape with blue, green and purple tiles. Then we copy it and recolor, using the mapping: blue -> red, green -> orange, purple -> green, red -> black.
 ```python
 blue = Tile(6, 2)
@@ -504,6 +580,9 @@ shape.recolor({'blue':'red', 'green':'orange', 'purple':'green', 'red':'black'})
 <img src="board_examples/shape_recolor.png" alt="shape recolor" width="40%" height="40%">
 
 ##### Shape.polygon(vertices)
+The `polygon` method creates a new shape object that is a polygon with the given vertices. 
+The `vertices` parameter is a list of `Tile` objects that specify the corners of the polygon.
+The order of the vertices in the list does not matter, as the method automatically orders them.
 ```python
 vertices = [Tile(5, 5), Tile(8, 3), Tile(5, 7), Tile(8, 8), Tile(13, 6)]
 Shape.polygon(vertices=vertices).draw('green')
