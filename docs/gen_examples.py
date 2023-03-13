@@ -5,15 +5,11 @@ from src.hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triang
 
 HexagonsGame.start()
 
-blue = Tile(10, 2)
-blue.draw('blue')
-green = Tile(10, 3)
-green.draw('green')
-purple = Tile(10, 4)
-purple.draw('purple')
-center_tile = Tile(10, 6)
-center_tile.draw('black')
-(blue + green + purple).rotate(center_tile, 60)
+circle1 = Circle(center_tile=Tile(7, 5), radius=4)
+circle1.draw('green')
+circle2 = Circle(center_tile=Tile(-7, 5), radius=4)
+circle2.draw('blue')
+(circle1 * circle2).draw('red')
 
 file_name = input('please enter file name\n')
 if file_name == '':
