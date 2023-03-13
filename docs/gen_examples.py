@@ -1,15 +1,13 @@
-import sys
-sys.path.append('../src')
-sys.path.append('../utils')
+# import sys
+# sys.path.append('../src')
 
-from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from src.hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 
-tile = Tile(9, 5)
-tile.draw('black')
-tile.neighbors().draw('green')
-tile.neighbor(direction='up_right').draw('red')
+center = Tile(column=7, row=5)
+center.draw(color='yellow')
+center.neighbors().draw(color='red')
 
 file_name = input('please enter file name\n')
 if file_name == '':

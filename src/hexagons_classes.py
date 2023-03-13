@@ -18,11 +18,10 @@ Contains 7 classes:
 
 import numpy as np
 from scipy.spatial.transform import Rotation
-import sys
 from typing import Callable, Optional, List  # Union
 
-sys.path.append('../utils')
-import plot_board as pb
+from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
+import src.plot_board as pb
 
 
 class HexagonsGame:
@@ -30,12 +29,10 @@ class HexagonsGame:
   hold the board state, keep track of drawing steps
   '''
 
-  _COLORS_LIST = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange']
+  # _COLORS_LIST = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange']
 
-  def start(width=18, height=10):
-    HexagonsGame._W = width
-    HexagonsGame._H = height
-    HexagonsGame.board_state = [0] * width * height
+  def start():
+    HexagonsGame.board_state = [0] * WIDTH * HEIGHT
     HexagonsGame._step = None
     HexagonsGame._drawn_hexagons = {'all': []}
 
@@ -95,14 +92,12 @@ class _Vec:
   It is for internal use only.
   '''
 
-  DIRECTIONS = {'up': (0, -1, 1), 'down': (0, 1, -1), 'down_right': (1, 0, -1), 'up_left': (-1, 0, 1),
-                'down_left': (-1, 1, 0), 'up_right': (1, -1, 0)}
-  DIRECTIONS_TO_QRS = {'up': 0, 'down': 0, 'down_right': 1, 'up_left': 1, 'down_left': 2, 'up_right': 2}
+  # directions_to_qrs = {key: DIRECTIONS[key].index(0) for key in DIRECTIONS}
 
   def __init__(self, *args):
     if isinstance(args[0], str):
       # _Vec is given as a direction name, e.g. 'up_right'
-      q, r, s = _Vec.DIRECTIONS[args[0]]
+      q, r, s = DIRECTIONS[args[0]]
     elif len(args) == 3:
       # _Vec is given as cube [q, r, s]
       q, r, s = args
@@ -151,7 +146,7 @@ class _Vec:
   def _direction_str(self):
     # returns a string describing the direction of the vector
     if self._has_direction():
-      return list(_Vec.DIRECTIONS.keys())[list(_Vec.DIRECTIONS.values()).index(self._normalize()._cube)]
+      return list(DIRECTIONS.keys())[list(DIRECTIONS.values()).index(self._normalize()._cube)]
     print(f'vec {self._cube} is not a direction vector')
 
   def __add__(self, other):
@@ -199,8 +194,8 @@ class _Hexagon:
         raise Exception(f'cube coordinates {[q, r, s]} don\'t sum up to 0')
       column = q + 1
       row = r + (q - (q % 2)) // 2 + 1
-    if 1 <= column <= HexagonsGame._W and 1 <= row <= HexagonsGame._H:
-      lind = int((row - 1) * HexagonsGame._W + (column - 1))
+    if 1 <= column <= WIDTH and 1 <= row <= HEIGHT:
+      lind = int((row - 1) * WIDTH + (column - 1))
     else:
       # tile is not on board, so it has no linear index
       lind = None
@@ -232,7 +227,7 @@ class _Hexagon:
 
   @property
   def _color(self):
-    return HexagonsGame._COLORS_LIST[self._color_id]
+    return COLORS[self._color_id]
 
   @property
   def _column(self):
@@ -249,9 +244,9 @@ class _Hexagon:
   def _from_lind(lind):
     '''Returns a hexagon by its linear index on the board'''
 
-    if lind in range(HexagonsGame._W * HexagonsGame._H):
-      row = lind // (HexagonsGame._W) + 1
-      column = lind % HexagonsGame._W + 1
+    if lind in range(WIDTH * HEIGHT):
+      row = lind // (WIDTH) + 1
+      column = lind % WIDTH + 1
       return _Hexagon(column=column, row=row)
     print(f'lind {lind} not valid')
 
@@ -304,7 +299,7 @@ class _Hexagon:
     v_direction_reciprocal = v_direction_reciprocal / np.linalg.norm(v_direction_reciprocal)
     if column is not None:
       # we assume if axis_value is given it represents a column number
-      column = column % (HexagonsGame._W + 1)
+      column = column % (WIDTH + 1)
       axis_value = column - 1
       ind = direction_vec._cube.index(0)
       cube = _Vec.cyclic_permutation([axis_value, -axis_value, 0], ind)
@@ -336,7 +331,7 @@ class _Hexagon:
   def _draw(self, color):
     '''Paint self with the given color'''
 
-    color_id = HexagonsGame._COLORS_LIST.index(color) if isinstance(color, str) else color
+    color_id = COLORS.index(color) if isinstance(color, str) else color
     if self._lind is not None:
       HexagonsGame.board_state[self._lind] = color_id
     else:
@@ -358,7 +353,7 @@ class _Hexagon:
 
     if self._lind is None:
       return []
-    return [self._shift(_Vec(*direction_cube)) for direction_cube in _Vec.DIRECTIONS.values()]
+    return [self._shift(_Vec(*direction_cube)) for direction_cube in DIRECTIONS.values()]
 
 
 class Shape:
@@ -501,7 +496,7 @@ class Shape:
       else:
         return _Vec(direction)._scale(k)
 
-    for k in range(max(HexagonsGame._W, HexagonsGame._H), -1, -1):
+    for k in range(max(WIDTH, HEIGHT), -1, -1):
       if reference_shape.overlaps(initial_new_shape._shift(scale_shift(direction, k))):
         break
 
@@ -693,8 +688,8 @@ class Shape:
     '''Return a Shape object containing all the tiles on the board'''
 
     tiles = []
-    for row in range(1, HexagonsGame._H + 1):
-      for column in range(1, HexagonsGame._W + 1):
+    for row in range(1, HEIGHT + 1):
+      for column in range(1, WIDTH + 1):
         tiles.append(Tile(column, row))
     return Shape(tiles)
 
@@ -704,7 +699,7 @@ class Shape:
     B = Shape.get_entire_board()
 
     def tile_on_perimeter(tile):
-      return tile.column in [1, HexagonsGame._W] or tile.row in [1, HexagonsGame._H]
+      return tile.column in [1, WIDTH] or tile.row in [1, HEIGHT]
 
     return Shape([tile for tile in B if tile_on_perimeter(tile)])
 
@@ -721,7 +716,7 @@ class Shape:
   def get_column(column):
     '''Return a Shape object containing all the tiles in the given column'''
 
-    return Shape([Tile(column, row) for row in range(1, HexagonsGame._H + 1)])
+    return Shape([Tile(column, row) for row in range(1, HEIGHT + 1)])
 
   def get(self, criterion):
     '''
@@ -752,9 +747,9 @@ class Shape:
       criterion = 'up'
     if criterion == 'below':
       criterion = 'down'
-    if criterion in _Vec.DIRECTIONS:
+    if criterion in DIRECTIONS:
       direction = criterion
-      direction_cube = _Vec.DIRECTIONS[direction]
+      direction_cube = DIRECTIONS[direction]
       direction_ind = direction_cube.index(0)
       next_ind = (direction_ind + 1) % 3
       next_grows = (direction_cube[next_ind] == 1)
@@ -814,7 +809,7 @@ class Shape:
     '''Returns a Shape object containing the tiles of the shape which are maximal in the given direction
     For internal use only'''
 
-    direction_cube = _Vec.DIRECTIONS[direction]
+    direction_cube = DIRECTIONS[direction]
     direction_ind = direction_cube.index(0)
     next_ind = (direction_ind + 1) % 3
     next_grows = (direction_cube[next_ind] == 1)
@@ -834,7 +829,7 @@ class Shape:
     def height(cube, dcube):
       return cube[0] * dcube[0] + cube[1] * dcube[1] + cube[2] * dcube[2]
 
-    direction_cube = _Vec.DIRECTIONS[direction]
+    direction_cube = DIRECTIONS[direction]
     hexagons = self._max(direction)._hexagons
     heights = [height(hexagon._cube, direction_cube) for hexagon in hexagons]
     vhexagons = []
@@ -895,7 +890,7 @@ class Shape:
       return self.neighbors('all') * self.get('inside')
     if criterion == 'white':
       return Shape([tile for tile in Shape.get_entire_board() if tile.color == 'white']) * self.neighbors()
-    if criterion in _Vec.DIRECTIONS:
+    if criterion in DIRECTIONS:
       return self.get(criterion) * self.neighbors()
 
   def neighbor(self, direction):
@@ -974,8 +969,8 @@ class Tile(Shape):
       The row on which this tile is located. Starts from 1 and counted from top to bottom.
       A negative value represents counting from bottom to top. E.g., the first row from the bottom is -1.
     '''
-    column = column % (HexagonsGame._W + 1)
-    row = row % (HexagonsGame._H + 1)
+    column = column % (WIDTH + 1)
+    row = row % (HEIGHT + 1)
     self._hexagons = [_Hexagon(column=column, row=row, cube=None)]
 
   @property
@@ -1069,7 +1064,7 @@ class Line(Shape):
 
     shexagon = start_tile._hexagon
     if length is None:
-      length = max(HexagonsGame._H, HexagonsGame._W)
+      length = max(HEIGHT, WIDTH)
     if end_tile is not None:
       ehexagon = end_tile._hexagon
       v = ehexagon - shexagon
