@@ -303,7 +303,7 @@ There are several options for the `criterion` parameter, which we will describe 
 If criterion is set to "outside", the `get` method returns a new shape consisting of all tiles that lie outside of the given shape. 
 Conversely, if criterion is set to "inside", the returned shape will consist of all tiles that lie inside the given shape.
 ```python
-circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle = Circle(center_tile=Tile(9, 5), radius=3)
 circle.draw('black')
 circle.get(criterion='outside').draw('red')
 circle.get(criterion='inside').draw('green')
@@ -314,7 +314,7 @@ circle.get(criterion='inside').draw('green')
 If `criterion` is set to "above", the `get` method returns a new shape consisting of all tiles that lie above the given shape. 
 Conversely, if `criterion` is set to "below", the returned shape will consist of all tiles that lie below the given shape.
 ```python
-circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle = Circle(center_tile=Tile(9, 5), radius=3)
 circle.draw('black')
 circle.get(criterion='above').draw('red')
 circle.get(criterion='below').draw('green')
@@ -326,7 +326,7 @@ If `criterion` is set to "top", the `get` method returns a new shape that consis
 Conversely, if `criterion` is set to "bottom", the returned shape will comprise the bottom portion of the original shape.
 
 ```python
-circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle = Circle(center_tile=Tile(9, 5), radius=3)
 circle.draw('black')
 circle.get(criterion='top').draw('red')
 circle.get(criterion='bottom').draw('green')
@@ -337,7 +337,7 @@ circle.get(criterion='bottom').draw('green')
 If `criterion` is set to "corners", the `get` method returns a shape consisting of the corner tiles of the given shape,
 as demonstrated in the following example:
 ```python
-circle = Circle(center_tile = Tile(9, 5), radius = 3)
+circle = Circle(center_tile=Tile(9, 5), radius=3)
 circle.draw('black')
 circle.get(criterion='corners').draw('red')
 ```
@@ -347,9 +347,9 @@ circle.get(criterion='corners').draw('red')
 If `criterion` is set to "endpoints", the `get` method returns a shape consisting of the endpoints of the given shape,
 as demonstrated in the following example:
 ```python
-circle = Circle(center_tile = Tile(9, 5), radius = 3) + Tile(-6, -4) + Tile(-5, -4) + Tile(-4, -3)
+circle = Circle(center_tile=Tile(9, 5), radius=3) + Tile(-6, -4) + Tile(-5, -4) + Tile(-4, -3)
 circle.draw('black')
-circle.get(criterion = 'endpoints').draw('red')
+circle.get(criterion='endpoints').draw('red')
 ```
 <img src="board_examples/get_end_points.png" alt="get endpoints" width="40%" height="40%">
 
@@ -360,7 +360,7 @@ The `boundary` method returns the boundary of the given shape.
 To illustrate with an example, let's start with the following shape:
 <!--
 ```python
-shape = Circle(center_tile = Tile(10, 5), radius = 2) + Circle(center_tile = Tile(10, 5), radius = 3) + Circle(center_tile = Tile(10, 5), radius = 4)
+shape = Circle(center_tile=Tile(10, 5), radius=2) + Circle(center_tile=Tile(10, 5), radius=3) + Circle(center_tile=Tile(10, 5), radius=4)
 shape.draw('black')
 ```
 -->
@@ -492,7 +492,7 @@ The following example demonstrates the usage of the `copy_paste` method:
 It first draws a black circle on the board and then creates a copy of it 
 located down and to the right of the original circle, with a spacing of two tiles.
 ```python
-circle1 = Circle(center_tile = Tile(4, 4), radius = 2)
+circle1 = Circle(center_tile=Tile(4, 4), radius=2)
 circle1.draw('black')
 circle2 = circle1.copy_paste(shift_direction='down_right', spacing=2)
 ```
@@ -502,8 +502,8 @@ The following example demonstrates the usage of the `reference_shape` parameter:
 First, a black circle and a purple shape are drawn on the board.
 Then, a copy of the black circle is created, located to the right of the purple shape specified as the reference, with a spacing of one tile.
 ```python
-circle1 = Circle(center_tile = Tile(4, 4), radius = 2)
-ref_shape = Shape([Tile(11, 6), Tile(11, 7), Tile(12, 6)])
+circle1 = Circle(center_tile=Tile(4, 4), radius=2)
+ref_shape = Shape(tiles=[Tile(11, 6), Tile(11, 7), Tile(12, 6)])
 circle1.draw('black')
 ref_shape.draw('purple')
 circle2 = circle1.copy_paste(shift_direction='right', spacing=1, reference_shape=ref_shape)
@@ -584,7 +584,7 @@ shape.reflect(axis_direction='up_left', tile_on_axis=tile)
 ##### self.rotate(center_tile, rotation)
 The `rotate` method is used to create a rotated copy of the given shape. The method takes two parameters:
 - `center_tile`: a Tile object that specifies the center of rotation
-- `rotation`: an integer that specifies the counterclockwise rotation angle, in degrees. This parameter should always be a multiple of 60.
+- `angle`: an integer that specifies the counterclockwise rotation angle, in degrees. This parameter should always be a multiple of 60.
 The method rotates the given shape around the center_tile by the rotation angle.
 
 Here's an example that demonstrates the usage of the `rotate` method. In this example, we have three tiles of different colors, and we want to rotate them counterclockwise by 60 degrees around the black tile at the center of the board.
@@ -597,7 +597,7 @@ purple = Tile(10, 4)
 purple.draw('purple')
 center_tile = Tile(10, 6)
 center_tile.draw('black')
-(blue + green + purple).rotate(center_tile, 60)
+(blue + green + purple).rotate(center_tile=center_tile, angle=60)
 ```
 <img src="board_examples/shape_rotate.png" alt="shape rotate" width="40%" height="40%">
 
