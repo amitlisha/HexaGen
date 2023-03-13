@@ -1,22 +1,7 @@
 # Usage Guide
 Welcome to the Hexagons usage guide. In this guide we provide detailed instructions on how to use the most important features of our Python project, complete with code examples.
 
-## Purpose
-The purpose of this project is to allow translation of instructions given in natural language into code. The instructions describe drawings on a hexagonal tiled board. For example, the instruction:
-
->draw a red flower with a yellow center, centered at the seventh column and fifth row
-
-can be translated into the following code: 
-```python
-center = Tile(column=7, row=5)
-center.draw(color='yellow')
-center.neighbors().draw(color='red')
-```
-This code uses a `Tile` object that represents a hexagonal tile on the board, the `draw` method that is used to color objects on the board, and the `neighbors` method which returns the six neighboring tiles of the current tile.
-
-The code generates the following image:
-
-<img src="board_examples/red_flower_yellow_center.png" alt="red flower with yellow center" width="40%" height="40%">
+The purpose of this project is to allow translation of instructions given in natural language into code. 
 
 ### Constants
 The `constants.py` file contains the following constants that are used throughout the project:
