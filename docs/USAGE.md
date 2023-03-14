@@ -21,6 +21,12 @@ The `HexagonsGame` class is responsible for managing the game board.
 It provides methods for starting a new game and displaying the board on the screen. 
 Additionally, it allows users to divide the game into steps.
 
+### Attributes
+The `HexagonsGame` class has the following read-only static attributes:
+- `width`: an integer specifying the width of the board
+- `height`: and integer specifying the height of the board
+- `board_state`: a list of integers specifying the current board state
+
 ### Methods
 
 #### `HexagonsGame.start(width=WIDTH, height=HEIGHT)`
@@ -38,7 +44,7 @@ This will create a new game board with a width of 5 and a height of 8, and creat
 #### `HexagonsGame.plot(gold_board=None, file_name=None)`
 The `plot` method generate a plot of the current board state. 
 It takes two optional parameters:
-- `gold_board`: a list of integers of length matching the number of tiles on the board (usually 180), with values corresponding to the number of available colors (usually ranging from 0 to 7). If provided, the plot will show the gold board, the current board state, and the difference between the two. 
+- `gold_board`: a list of integers specifying some board state. If provided, the plot will show the gold board, the current board state, and the difference between the two. 
 - `file_name`: if provided, the plot will be saved under this name.
 
 The following example illustrates the use of the `gold_board` parameter. 
