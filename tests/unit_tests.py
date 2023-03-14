@@ -126,7 +126,7 @@ class ShapeTests(HexagonsTests):
     self.assertShapeLinds(Shape([56, 37, 38], from_linds=True).grid(shift_direction='right', spacing=2, num_copies=2), [64, 37, 38, 41, 42, 45, 46, 56, 60])
 
     HexagonsGame.start()
-    self.assertShapeLinds(Shape([60,41,42], from_linds=True).copy_paste(shift_direction='right', spacing=3), [64, 45, 46])
+    self.assertShapeLinds(Shape([60,41,42], from_linds=True).copy_paste(shift_direction='right', spacing=3), [65, 64, 47])
     self.assertShapeLinds(Shape([60,41,42], from_linds=True).copy_paste(shift_direction='down_right', spacing=2), [81, 82, 100])
     self.assertShapeLinds(Shape([60,41,42], from_linds=True).copy_paste(shift_direction='right', spacing=2, reference_shape=Tile(10, 5)), [85, 84, 67])
 
@@ -149,6 +149,18 @@ class ShapeTests(HexagonsTests):
     HexagonsGame.start()
     self.assertShapeLinds(Shape([38, 39, 58, 59, 78], from_linds=True)._shift(_Vec(6, -2, -4)), [102, 82, 83, 62, 63])
 
+    HexagonsGame.start()
+    S1=Shape([61, 117, 65], from_linds=True)
+    S2=Shape([2, 17], from_linds=True)
+    S1.draw('red')
+    S2.draw('yellow')
+    self.assertShapeLinds(Shape.get_color(color='red'), [61, 117, 65])
+    self.assertShapeLinds(Shape.get_color(color='all'), [61, 117, 65, 2, 17])
+
+    HexagonsGame.start()
+    self.assertShapeLinds(Shape.get_column(column=1), [0, 18, 36, 54, 72, 90, 108, 126, 144, 162])
+
+    HexagonsGame.start()
     S=Shape([61, 117, 65, 62, 116, 83, 118, 64, 79, 101, 45, 97], from_linds=True)
     self.assertShapeLinds(S.get(criterion='outside'), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
                                                              20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
@@ -169,7 +181,7 @@ class ShapeTests(HexagonsTests):
     S=Shape([64, 65, 66, 134, 135, 136, 78, 79, 80, 82, 83, 84, 27, 96, 97, 98, 99, 100, 101, 102, 43, 44, 45, 46, 47, 114, 115, 116, 117, 118, 119, 120, 60, 61, 62, 63], from_linds=True)
     self.assertShapeLinds(S.get(criterion='corners'), [66, 135, 114, 120, 27, 60])
     S=Shape([38, 39, 58, 59, 78], from_linds=True)
-    self.assertShapeLinds(S.get(criterion='end_points'), [78, 38])
+    self.assertShapeLinds(S.get(criterion='endpoints'), [78, 38])
 
     S=Shape([64, 65, 66, 134, 135, 136, 78, 79, 80, 82, 83, 84, 27, 96, 97, 98, 99, 100, 101, 102, 43, 44, 45, 46, 47, 114, 115, 116, 117, 118, 119, 120, 60, 61, 62, 63], from_linds=True)
     self.assertShapeLinds(S.boundary(), [96, 66, 134, 102, 135, 136, 43, 44, 46, 47, 78, 114, 115, 84, 119, 120, 27, 60, 98, 99, 100, 80, 82, 63])
@@ -234,6 +246,10 @@ class LineTests(HexagonsTests):
     HexagonsGame.start()
     Line(start_tile=Tile(1, 1), direction='down_right', length=3).draw('black')
     self.assertBoardNonZeros([0, 1, 20])
+
+    HexagonsGame.start()
+    line = Line(start_tile=Tile(5, 5), direction='up_right', length=5)
+    self.assertShapeLinds(line.parallel(shift_direction='down', spacing=3), [163, 164, 147, 148, 131, 132, 115, 116, 99, 100, 83, 84, 67, 68, 51, 52, 35])
 
 class CircleTests(HexagonsTests):
   @HexagonsTests.wrap_test

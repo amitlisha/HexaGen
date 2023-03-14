@@ -31,11 +31,14 @@ class HexagonsGame:
 
   # _COLORS_LIST = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange']
 
-  def start():
-    HexagonsGame.board_state = [0] * WIDTH * HEIGHT
+  def start(width = WIDTH, height = HEIGHT):
+    HexagonsGame._width = width
+    HexagonsGame._height = height
+    HexagonsGame.board_state = [0] * width * height
     HexagonsGame._step = None
     HexagonsGame._drawn_hexagons = {'all': []}
 
+  # TODO: add to USAGE.md
   # TODO: write unit_test
   def record_step(step):
     '''After calling this method with some name for the step, all the tiles that are drawn
@@ -194,8 +197,8 @@ class _Hexagon:
         raise Exception(f'cube coordinates {[q, r, s]} don\'t sum up to 0')
       column = q + 1
       row = r + (q - (q % 2)) // 2 + 1
-    if 1 <= column <= WIDTH and 1 <= row <= HEIGHT:
-      lind = int((row - 1) * WIDTH + (column - 1))
+    if 1 <= column <= HexagonsGame._width and 1 <= row <= HexagonsGame._height:
+      lind = int((row - 1) * HexagonsGame._width + (column - 1))
     else:
       # tile is not on board, so it has no linear index
       lind = None
@@ -244,9 +247,9 @@ class _Hexagon:
   def _from_lind(lind):
     '''Returns a hexagon by its linear index on the board'''
 
-    if lind in range(WIDTH * HEIGHT):
-      row = lind // (WIDTH) + 1
-      column = lind % WIDTH + 1
+    if lind in range(HexagonsGame._width * HexagonsGame._height):
+      row = lind // (HexagonsGame._width) + 1
+      column = lind % HexagonsGame._width + 1
       return _Hexagon(column=column, row=row)
     print(f'lind {lind} not valid')
 
@@ -299,7 +302,7 @@ class _Hexagon:
     v_direction_reciprocal = v_direction_reciprocal / np.linalg.norm(v_direction_reciprocal)
     if column is not None:
       # we assume if axis_value is given it represents a column number
-      column = column % (WIDTH + 1)
+      column = column % (HexagonsGame._width + 1)
       axis_value = column - 1
       ind = direction_vec._cube.index(0)
       cube = _Vec.cyclic_permutation([axis_value, -axis_value, 0], ind)
@@ -496,7 +499,7 @@ class Shape:
       else:
         return _Vec(direction)._scale(k)
 
-    for k in range(max(WIDTH, HEIGHT), -1, -1):
+    for k in range(max(HexagonsGame._width, HexagonsGame._height), -1, -1):
       if reference_shape.overlaps(initial_new_shape._shift(scale_shift(direction, k))):
         break
 
@@ -684,8 +687,8 @@ class Shape:
     '''Return a Shape object containing all the tiles on the board'''
 
     tiles = []
-    for row in range(1, HEIGHT + 1):
-      for column in range(1, WIDTH + 1):
+    for row in range(1, HexagonsGame._height + 1):
+      for column in range(1, HexagonsGame._width + 1):
         tiles.append(Tile(column, row))
     return Shape(tiles)
 
@@ -695,24 +698,22 @@ class Shape:
     B = Shape.get_entire_board()
 
     def tile_on_perimeter(tile):
-      return tile.column in [1, WIDTH] or tile.row in [1, HEIGHT]
+      return tile.column in [1, HexagonsGame._width] or tile.row in [1, HexagonsGame._height]
 
     return Shape([tile for tile in B if tile_on_perimeter(tile)])
 
   def get_color(color):
-    # TODO: write unit_test
     '''Return a Shape object containing all the tiles painted in the given color
     If color is 'any' is will return all the tiles that are not white'''
 
-    if color == 'all':
+    if color in ['all', 'any']:
       return Shape([tile for tile in Shape.get_entire_board().tiles if tile.color != 'white'])
     return Shape([tile for tile in Shape.get_entire_board().tiles if tile.color == color])
 
-  # TODO: write unit_test
   def get_column(column):
     '''Return a Shape object containing all the tiles in the given column'''
 
-    return Shape([Tile(column, row) for row in range(1, HEIGHT + 1)])
+    return Shape([Tile(column, row) for row in range(1, HexagonsGame._height + 1)])
 
   def get(self, criterion):
     '''
@@ -982,8 +983,8 @@ class Tile(Shape):
       The row on which this tile is located. Starts from 1 and counted from top to bottom.
       A negative value represents counting from bottom to top. E.g., the first row from the bottom is -1.
     '''
-    column = column % (WIDTH + 1)
-    row = row % (HEIGHT + 1)
+    column = column % (HexagonsGame._width + 1)
+    row = row % (HexagonsGame._height + 1)
     self._hexagons = [_Hexagon(column=column, row=row, cube=None)]
 
   @property
@@ -1077,7 +1078,7 @@ class Line(Shape):
 
     shexagon = start_tile._hexagon
     if length is None:
-      length = max(HEIGHT, WIDTH)
+      length = max(HexagonsGame._height, HexagonsGame._width)
     if end_tile is not None:
       ehexagon = end_tile._hexagon
       v = ehexagon - shexagon
@@ -1110,7 +1111,6 @@ class Line(Shape):
     print(f'{self.__class__.__name__} instance: linds = {self._linds}, size = {self._size}, direction = {self.direction}, \
     start = {self.tiles[0].offset}, end = {self.tiles[-1].offset}, color = {self.color}')
 
-  # TODO: write unit_test
   def parallel(self, shift_direction, spacing):
     '''Create a new line parallel to self, in the given direction, with the given spacing from self
     This is different from Shape.copy_paste() because it doesn't copy the line, but rather creates a new line,
