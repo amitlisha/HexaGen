@@ -16,8 +16,9 @@ The project also uses the following list of directions on the boardwhich are dic
 DIRECTIONS = {'up': (0, -1, 1), 'down': (0, 1, -1), 'down_right': (1, 0, -1), 
               'up_left': (-1, 0, 1), 'down_left': (-1, 1, 0), 'up_right': (1, -1, 0)}
 ```
+## `HexagonsGame` Class
 
-## Code Structure
+### Code Structure
 To plot an image using the Hexagons project, a script should follow the following structure:
 ```python
 from src.hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
@@ -42,6 +43,10 @@ The code generates the following image:
 <img src="board_examples/single_blue_hex.png" alt="single blue hexagon" width="40%" height="40%">
 
 From this point on, we will omit the surrounding code and only present the instructions.
+
+### Methods
+
+#### `record_step` and `get_record`
 
 ## `Tile` Class
 To create a tile in Hexagons, use the `Tile` class, that requires two parameters: `column` and `row`. `column` is numbered from 1 (leftmost column) to 18 (rightmost column), while `row` is numbered from 1 (top row) to 10 (bottom row). 
