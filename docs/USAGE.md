@@ -1,5 +1,5 @@
 # Usage Guide
-Welcome to the Hexagons usage guide. This guide provides detailed instructions on how to use the `HexaGen.py` module, complete with code examples
+Welcome to the Hexagons usage guide. This guide provides detailed instructions on how to use the `hexagen.py` module, complete with code examples
 and visuals to help you get started.
 
 ### Constants
