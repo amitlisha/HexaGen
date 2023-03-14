@@ -48,6 +48,21 @@ From this point on, we will omit the surrounding code and only present the instr
 
 #### `record_step` and `get_record`
 
+>draw a red flower with a yellow center, centered at the seventh column and fifth row
+
+can be translated into the following code: 
+```python
+center = Tile(column=7, row=5)
+center.draw(color='yellow')
+center.neighbors().draw(color='red')
+```
+This code uses a `Tile` object that represents a hexagonal tile on the board, the `draw` method that is used to color objects on the board, and the `neighbors` method which returns the six neighboring tiles of the current tile.
+
+The code generates the following image:
+
+<img src="docs/board_examples/red_flower_yellow_center.png" alt="red flower with yellow center" width="40%" height="40%">
+
+
 ## `Tile` Class
 To create a tile in Hexagons, use the `Tile` class, that requires two parameters: `column` and `row`. `column` is numbered from 1 (leftmost column) to 18 (rightmost column), while `row` is numbered from 1 (top row) to 10 (bottom row). 
 You can also use negative values for column or row to count from the rightmost column or bottom row, respectively.
