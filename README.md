@@ -11,10 +11,9 @@ The instructions are written in natural language and describe drawings on a hexa
 The purpose of the HexaGen project is to provide a formalism that enables the expression of natural language instructions in executable Python code while maintaining the computational ideas present in the NL utterances. The formalism allows for accurate expression of these ideas using Python code, ensuring that the computational structure of the original NL instructions is preserved.
 
 For instance, the instruction:
-
 >"Draw a red flower with a yellow center, centered at the seventh column and fifth row"
 
-can be expressed by the following code: 
+Can be expressed by the following code: 
 ```python
 center = Tile(column=7, row=5)
 center.draw(color='yellow')
