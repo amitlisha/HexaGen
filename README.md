@@ -1,7 +1,11 @@
 # Hexagons
 
-## Purpose
-The purpose of this project is to allow translation of instructions given in natural language into code. The instructions describe drawings on a hexagonal tiled board. For example, the instruction:
+This project is part of the larger Hexagons project developed at the [ONLP lab](https://nlp.biu.ac.il/~rtsarfaty/onlp).
+You can read more about the project [here](https://onlplab.github.io/Hexagons/).
+
+The purpose of this project is to allow translation of instructions given in natural language into code. The instructions describe drawings on a hexagonal tiled board. 
+
+For example, the instruction:
 
 >draw a red flower with a yellow center, centered at the seventh column and fifth row
 
