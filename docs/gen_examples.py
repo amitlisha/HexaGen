@@ -1,7 +1,7 @@
 # import sys
 # sys.path.append('../src')
 
-from src.hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 

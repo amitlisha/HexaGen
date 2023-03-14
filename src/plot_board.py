@@ -1,4 +1,6 @@
-# Plot a hexagon board / boards
+'''plot_board
+Plot a hexagon board / boards
+'''
 
 from matplotlib.cm import get_cmap
 from matplotlib.collections import PatchCollection
