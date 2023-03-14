@@ -1,6 +1,6 @@
-# Hexagons
+# Hexagen
 
-This project is part of the larger Hexagons project developed at the [ONLP lab](https://nlp.biu.ac.il/~rtsarfaty/onlp).
+This project is part of the larger `Hexagons` project developed at the [ONLP lab](https://nlp.biu.ac.il/~rtsarfaty/onlp).
 You can read more about the project [here](https://onlplab.github.io/Hexagons/).
 
 The purpose of this project is to allow translation of instructions given in natural language into code. The instructions describe drawings on a hexagonal tiled board. 
