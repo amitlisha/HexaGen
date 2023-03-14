@@ -9,7 +9,7 @@ import numbers
 import numpy as np
 from typing import List, Union
 
-from constants.constants import COLORS, WIDTH, HEIGHT, COLORS_RGB_INT
+from constants.constants import COLORS, COLORS_RGB_INT
 
 MAX_INPUT_LEN = 512
 MAX_OUTPUT_LEN = 512
@@ -17,8 +17,8 @@ MAX_OUTPUT_LEN = 512
 hexa_cmap = ListedColormap([[val / 255. for val in COLORS_RGB_INT[color]] for color in COLORS])
 gray_cmap = get_cmap('gray')
 
-def plot_boards(boards, fig_size=(5, 5), max_in_row=6, edge_color='k', color_map='hexa', titles = None,
-                file_name = None):
+def plot_boards(boards, fig_size=(5, 5), width=18, height=10, max_in_row=6, edge_color='k', color_map='hexa', titles = None,
+                show=True):
   '''Plot a hexagon board / boards
 
   'boards' should be any one of:
@@ -66,22 +66,22 @@ def plot_boards(boards, fig_size=(5, 5), max_in_row=6, edge_color='k', color_map
       board = board.reshape(-1)
       print('reshaped board from 2 dim to 1 dim')
     else:
-      board = board.reshape(HEIGHT, WIDTH)
+      board = board.reshape(height, width)
       board = board.transpose()
       board = board.reshape(-1)
 
     create_hex_grid(fig_size,
-                    nx=HEIGHT,
-                    ny=WIDTH,
+                    nx=height,
+                    ny=width,
                     rotate_deg=90, edge_color=edge_color,
                     do_plot=True, face_color=board, align_to_origin=False,
                     ax=axes[i], color_map=color_map)
   fig.tight_layout(h_pad=0, w_pad=2)
 
-  plt.show()
+  if show:
+    plt.show()
 
-  if file_name is not None:
-    fig.savefig(file_name)
+  return fig
 
 def create_hex_grid(fig_size,
                     color_map='hexa',

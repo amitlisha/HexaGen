@@ -5,12 +5,17 @@ from src.hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triang
 
 HexagonsGame.start()
 
-# 1. Draw a purple circle centered at the tile on
-triangle = Triangle(start_tile=Tile(3, 5), point='left', start_tile_type='side', side_length=5)
-triangle.draw('purple')
+HexagonsGame.start(width=8, height=4)
+tile = Tile(4, 2)
+tile.draw('orange')
+tile.neighbors().draw('purple')
+gold_board = HexagonsGame.board_state
 
-record_step(step):
-get_record(steps)
+HexagonsGame.start(width=8, height=4)
+tile = Tile(5, 2)
+tile.draw('orange')
+tile.neighbors().draw('purple')
+HexagonsGame.plot(gold_board=gold_board, file_name='hexagonsgame_plot_gold')
 
 file_name = input('please enter file name\n')
 if file_name == '':
