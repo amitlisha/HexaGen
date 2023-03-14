@@ -1,22 +1,7 @@
 # Usage Guide
 Welcome to the Hexagons usage guide. In this guide we provide detailed instructions on how to use the most important features of our Python project, complete with code examples.
 
-## Purpose
-The purpose of this project is to allow translation of instructions given in natural language into code. The instructions describe drawings on a hexagonal tiled board. For example, the instruction:
-
->draw a red flower with a yellow center, centered at the seventh column and fifth row
-
-can be translated into the following code: 
-```python
-center = Tile(column=7, row=5)
-center.draw(color='yellow')
-center.neighbors().draw(color='red')
-```
-This code uses a `Tile` object that represents a hexagonal tile on the board, the `draw` method that is used to color objects on the board, and the `neighbors` method which returns the six neighboring tiles of the current tile.
-
-The code generates the following image:
-
-<img src="board_examples/red_flower_yellow_center.png" alt="red flower with yellow center" width="40%" height="40%">
+The purpose of this project is to allow translation of instructions given in natural language into code. 
 
 ### Constants
 The `constants.py` file contains the following constants that are used throughout the project:
@@ -31,7 +16,6 @@ The project also uses the following list of directions on the boardwhich are dic
 DIRECTIONS = {'up': (0, -1, 1), 'down': (0, 1, -1), 'down_right': (1, 0, -1), 
               'up_left': (-1, 0, 1), 'down_left': (-1, 1, 0), 'up_right': (1, -1, 0)}
 ```
-
 ## Code Structure
 To plot an image using the Hexagons project, a script should follow the following structure:
 ```python
@@ -57,6 +41,74 @@ The code generates the following image:
 <img src="board_examples/single_blue_hex.png" alt="single blue hexagon" width="40%" height="40%">
 
 From this point on, we will omit the surrounding code and only present the instructions.
+
+## `HexagonsGame` Class
+The `HexagonsGame` class handles the board.
+It is used to start a new game, and to print the board.
+It can also be used to follow steps in the game.
+
+### Methods
+
+#### `HexagonsGame.start()`
+The `HexagonsGame` method is used to start a new game. Calling it will create a new blank board.
+The width and height are set by default to the values 18 and 10, respectively, that appear as constants in the projects.
+It is however possible to set them to different values when starting a new game, for example:
+```python
+HexagonsGame.start(width=5, height=8)
+HexagonsGame.plot()
+```
+<img src="docs/board_examples/hexagonsgame_start.png" alt="HexagonsGame start" width="40%" height="40%">
+
+#### `HexagonsGame.plot(gold_board=None, file_name=None)`
+The `plot` method will create a plot of the current board state. 
+It has two optional parameters:
+- `gold_board`: a list of integers, of length matching the number of tiles on the board (usually 180), and values corresponding to the number of available colors (usually in the range from 0 to 7). If provided, the plot will show the gold board, the current board state, and the difference between them. 
+- `file_name`: if provided, the plot will be saved under this name.
+
+The following example demonstrated the use of `gold_board`:
+```python
+HexagonsGame.start(width=8, height=4)
+tile = Tile(4, 2)
+tile.draw('orange')
+tile.neighbors().draw('purple')
+gold_board = HexagonsGame.board_state
+
+HexagonsGame.start(width=8, height=4)
+tile = Tile(5, 2)
+tile.draw('orange')
+tile.neighbors().draw('purple')
+HexagonsGame.plot(gold_board=gold_board)
+```
+<img src="docs/board_examples/hexagonsgame_plot_gold.png" alt="HexagonsGame plot gold board" width="40%" height="40%">
+
+#### `HexagonsGame.record_step()` and `HexagonsGame.get_record()`
+
+Instructions:
+>1. draw a red flower with a yellow center, centered at the seventh column and fifth row
+>2. make a copy the flower from step 1 to the right, creating a space of 3 between the flower
+
+Code:
+```python
+# 1. draw a red flower with a yellow center, centered at the seventh column and fifth row
+HexagonsGame.record_step(step_name='1')
+center = Tile(column=7, row=5)
+center.draw(color='yellow')
+center.neighbors().draw(color='red')
+
+# 2. make a copy the flower from step 1 to the right, creating a space of 3 between the flower
+HexagonsGame.record_step(step_name='2')
+flower = HexagonsGame.get_record(step_names=['1'])
+flower.copy_paste(shift_direction='right', spacing=3)
+```
+
+The first part of this code uses a `Tile` object that represents a hexagonal tile on the board, 
+the `draw` method that is used to color objects on the board, 
+and the `neighbors` method which returns the six neighboring tiles of the current tile.
+
+The code generates the following image:
+
+<img src="docs/board_examples/hexagonsgame_record.png" alt="HexagonsGame record methods" width="40%" height="40%">
+
 
 ## `Tile` Class
 To create a tile in Hexagons, use the `Tile` class, that requires two parameters: `column` and `row`. `column` is numbered from 1 (leftmost column) to 18 (rightmost column), while `row` is numbered from 1 (top row) to 10 (bottom row). 
