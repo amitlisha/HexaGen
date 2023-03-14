@@ -28,6 +28,15 @@ Before you get started, make sure you have the following requirements installed:
 ## Usage
 See our [usage guide](docs/USAGE.md).
 
+## Reading Tasks
+TODO
+
+## Examples
+TODO
+
+## GPT
+TODO
+
 ## License
 TODO
 
