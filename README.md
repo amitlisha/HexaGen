@@ -1,4 +1,6 @@
-# Hexagen
+# HexaGen
+
+# test
 
 This project is part of the larger `Hexagons` project developed at the [ONLP lab](https://nlp.biu.ac.il/~rtsarfaty/onlp).
 You can read more about the project [here](https://onlplab.github.io/Hexagons/).
