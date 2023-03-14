@@ -30,8 +30,8 @@ class HexagonsGame:
   # _COLORS_LIST = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange']
 
   def start(width = WIDTH, height = HEIGHT):
-    HexagonsGame._width = width
-    HexagonsGame._height = height
+    HexagonsGame.width = width
+    HexagonsGame.height = height
     HexagonsGame.board_state = [0] * width * height
     HexagonsGame._step = None
     HexagonsGame._drawn_hexagons = {'all': []}
@@ -93,14 +93,14 @@ class HexagonsGame:
 
     if gold_board is None:
       fig = pb.plot_boards(HexagonsGame.board_state, fig_size=[7, 5],
-                     height=HexagonsGame._height,
-                     width=HexagonsGame._width,
+                     height=HexagonsGame.height,
+                     width=HexagonsGame.width,
                      titles=[''])
     else:
       diff = list(map(lambda x, y: 0 if x == y else 1, gold_board, HexagonsGame.board_state))
       fig = pb.plot_boards([gold_board, HexagonsGame.board_state, diff],
-                     height=HexagonsGame._height,
-                     width=HexagonsGame._width,
+                     height=HexagonsGame.height,
+                     width=HexagonsGame.width,
                      titles=['gold', 'code generated', 'difference'])
 
     if file_name is not None:
@@ -218,8 +218,8 @@ class _Hexagon:
         raise Exception(f'cube coordinates {[q, r, s]} don\'t sum up to 0')
       column = q + 1
       row = r + (q - (q % 2)) // 2 + 1
-    if 1 <= column <= HexagonsGame._width and 1 <= row <= HexagonsGame._height:
-      lind = int((row - 1) * HexagonsGame._width + (column - 1))
+    if 1 <= column <= HexagonsGame.width and 1 <= row <= HexagonsGame.height:
+      lind = int((row - 1) * HexagonsGame.width + (column - 1))
     else:
       # tile is not on board, so it has no linear index
       lind = None
@@ -268,9 +268,9 @@ class _Hexagon:
   def _from_lind(lind):
     '''Returns a hexagon by its linear index on the board'''
 
-    if lind in range(HexagonsGame._width * HexagonsGame._height):
-      row = lind // (HexagonsGame._width) + 1
-      column = lind % HexagonsGame._width + 1
+    if lind in range(HexagonsGame.width * HexagonsGame.height):
+      row = lind // (HexagonsGame.width) + 1
+      column = lind % HexagonsGame.width + 1
       return _Hexagon(column=column, row=row)
     print(f'lind {lind} not valid')
 
@@ -323,7 +323,7 @@ class _Hexagon:
     v_direction_reciprocal = v_direction_reciprocal / np.linalg.norm(v_direction_reciprocal)
     if column is not None:
       # we assume if axis_value is given it represents a column number
-      column = column % (HexagonsGame._width + 1)
+      column = column % (HexagonsGame.width + 1)
       axis_value = column - 1
       ind = direction_vec._cube.index(0)
       cube = _Vec.cyclic_permutation([axis_value, -axis_value, 0], ind)
@@ -520,7 +520,7 @@ class Shape:
       else:
         return _Vec(direction)._scale(k)
 
-    for k in range(max(HexagonsGame._width, HexagonsGame._height), -1, -1):
+    for k in range(max(HexagonsGame.width, HexagonsGame.height), -1, -1):
       if reference_shape.overlaps(initial_new_shape._shift(scale_shift(direction, k))):
         break
 
@@ -708,8 +708,8 @@ class Shape:
     '''Return a Shape object containing all the tiles on the board'''
 
     tiles = []
-    for row in range(1, HexagonsGame._height + 1):
-      for column in range(1, HexagonsGame._width + 1):
+    for row in range(1, HexagonsGame.height + 1):
+      for column in range(1, HexagonsGame.width + 1):
         tiles.append(Tile(column, row))
     return Shape(tiles)
 
@@ -719,7 +719,7 @@ class Shape:
     B = Shape.get_entire_board()
 
     def tile_on_perimeter(tile):
-      return tile.column in [1, HexagonsGame._width] or tile.row in [1, HexagonsGame._height]
+      return tile.column in [1, HexagonsGame.width] or tile.row in [1, HexagonsGame.height]
 
     return Shape([tile for tile in B if tile_on_perimeter(tile)])
 
@@ -734,7 +734,7 @@ class Shape:
   def get_column(column):
     '''Return a Shape object containing all the tiles in the given column'''
 
-    return Shape([Tile(column, row) for row in range(1, HexagonsGame._height + 1)])
+    return Shape([Tile(column, row) for row in range(1, HexagonsGame.height + 1)])
 
   def get(self, criterion):
     '''
@@ -1004,8 +1004,8 @@ class Tile(Shape):
       The row on which this tile is located. Starts from 1 and counted from top to bottom.
       A negative value represents counting from bottom to top. E.g., the first row from the bottom is -1.
     '''
-    column = column % (HexagonsGame._width + 1)
-    row = row % (HexagonsGame._height + 1)
+    column = column % (HexagonsGame.width + 1)
+    row = row % (HexagonsGame.height + 1)
     self._hexagons = [_Hexagon(column=column, row=row, cube=None)]
 
   @property
@@ -1099,7 +1099,7 @@ class Line(Shape):
 
     shexagon = start_tile._hexagon
     if length is None:
-      length = max(HexagonsGame._height, HexagonsGame._width)
+      length = max(HexagonsGame.height, HexagonsGame.width)
     if end_tile is not None:
       ehexagon = end_tile._hexagon
       v = ehexagon - shexagon

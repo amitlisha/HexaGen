@@ -109,9 +109,11 @@ def search_tasks_by_keyword(reg_exp, at_least=1, avoid_reg_exp=None, which_tasks
   return tasks_inds_that_contain_keyword
 
 if __name__ == '__main__':
-  tasks_containing_repeat = search_tasks_by_keyword('[Ss]tep')
-  ind = 0
-  while input("press enter to show the next task, press 's' and then enter to stop") == '':
-    task_dict = read_task(tasks_containing_repeat[ind], True)
-    print(task_dict['instructions'])
-    ind += 1
+  # tasks_containing_repeat = search_tasks_by_keyword('[Ss]tep')
+  # ind = 0
+  # while input("press enter to show the next task, press 's' and then enter to stop") == '':
+  #   task_dict = read_task(tasks_containing_repeat[ind], True)
+  #   print(task_dict['instructions'])
+  #   ind += 1
+
+  print(read_task(1, True)['instructions'])
