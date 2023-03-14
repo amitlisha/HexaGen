@@ -1,13 +1,8 @@
-import sys
-sys.path.append('../src')
-sys.path.append('../utils')
-
-from reading_tasks import read_task
-from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
-import plot_board as pb
+from utils.reading_tasks import read_task
+from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 task_index = 276
-gold_b = read_task(task_index)['gold_boards'][-1]
+gold_board = list(read_task(task_index)['gold_boards'][-1])
 
 HexagonsGame.start()
 
@@ -85,8 +80,4 @@ below the center black tile.
 figure = v_shape + yellow_tiles + orange_tiles + red_tiles
 figure.reflect(axis_direction = 'horizontal', tile_on_axis = black_tile)
 
-drawn_b = HexagonsGame.board_state
-
-diff = list(map(lambda x, y: 0 if x == y else 1, gold_b, drawn_b))
-
-pb.plot_boards([list(gold_b), drawn_b, diff], titles = ['gold', 'code generated', 'difference'])
+HexagonsGame.plot(gold_board=gold_board)

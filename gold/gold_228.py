@@ -1,13 +1,8 @@
-import sys
-sys.path.append('../src')
-sys.path.append('../utils')
-
-from reading_tasks import read_task
-from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
-import plot_board as pb
+from utils.reading_tasks import read_task
+from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 task_index = 228
-gold_b = read_task(task_index)['gold_boards'][-1]
+gold_board = list(read_task(task_index)['gold_boards'][-1])
 
 HexagonsGame.start()
 
@@ -37,28 +32,34 @@ or the colored tiles, place a green tile directly below each green tile and a
 blue tile directly below each blue tile, as far as the grid will allow.
 '''
 colored_tiles = Shape.get_color('all')
-for column in range(4, HexagonsGame._W):
+column = 4
+while column <= HexagonsGame.width:
   column_tiles = Shape.get_column(column)
   colored_column_tiles = colored_tiles * column_tiles
   lowest_tile = colored_column_tiles.extreme(direction = 'down')
   lowest_tile.neighbor('down').draw(lowest_tile.color)
+  column += 1
 '''
 4. Repeat the action of step 3 two more times, starting with the sixth and eighth
 columns from the left.
 '''
 colored_tiles = Shape.get_color('all')
-for column in range(6, HexagonsGame._W):
+column = 6
+while column <= HexagonsGame.width:
   column_tiles = Shape.get_column(column)
   colored_column_tiles = colored_tiles * column_tiles
   lowest_tile = colored_column_tiles.extreme(direction = 'down')
   lowest_tile.neighbor('down').draw(lowest_tile.color)
+  column += 1
 
 colored_tiles = Shape.get_color('all')
-for column in range(8, HexagonsGame._W):
+column = 8
+while column <= HexagonsGame.width:
   column_tiles = Shape.get_column(column)
   colored_column_tiles = colored_tiles * column_tiles
   lowest_tile = colored_column_tiles.extreme(direction = 'down')
   lowest_tile.neighbor('down').draw(lowest_tile.color)
+  column += 1
 '''
 5. Duplicate this color pattern symmetrically along the upper edge of the original
 green line.
@@ -66,8 +67,4 @@ green line.
 colored_tiles = Shape.get_color('all')
 colored_tiles.reflect(axis_line = green_line)
 
-drawn_b = HexagonsGame.board_state
-
-diff = list(map(lambda x, y: 0 if x == y else 1, gold_b, drawn_b))
-
-pb.plot_boards([list(gold_b), drawn_b, diff], titles = ['gold', 'code generated', 'difference'])
+HexagonsGame.plot(gold_board=gold_board)
