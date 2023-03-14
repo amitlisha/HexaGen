@@ -40,27 +40,27 @@ class HexagonsGame:
 
   # TODO: add to USAGE.md
   # TODO: write unit_test
-  def record_step(step):
+  def record_step(step_name):
     '''After calling this method with some name for the step, all the tiles that are drawn
     will be saved in a list under the step's name. The list can later be retrieved using
     the method 'get_record'
 
     Parameters:
     ---------------
-    step:
+    step_name:
       The name of the step, should be a string or an integer
     '''
 
-    HexagonsGame._drawn_hexagons[step] = []
-    HexagonsGame._step = step
+    HexagonsGame._drawn_hexagons[step_name] = []
+    HexagonsGame._step = step_name
 
   # TODO: write unit_test
-  def get_record(steps):
+  def get_record(step_names):
     '''Retrieving a shape consisting of the tiles drawn in previous step/steps
 
     Parameters:
     ---------------
-    direction: str or List[str]
+    step_names: str or List[str]
       The step(s) to retrieve
 
     Returns:
@@ -69,23 +69,46 @@ class HexagonsGame:
       New Shape object
     '''
 
-    if isinstance(steps, list):
-      drawn_hexagons = []
-      for step in steps:
-        drawn_hexagons += HexagonsGame._drawn_hexagons[step]
-      return Shape(drawn_hexagons, from_hexagons=True)
-    else:
-      return Shape(HexagonsGame._drawn_hexagons[steps], from_hexagons=True)
+    if not isinstance(step_names, list):
+      step_names = [step_names]
+    drawn_hexagons = []
+    for step_name in step_names:
+      drawn_hexagons += HexagonsGame._drawn_hexagons[step_name]
+    return Shape(drawn_hexagons, from_hexagons=True)
 
   def plot(gold_board=None, file_name=None):
-    '''Plot the current state of the board'''
+    '''Plot the current state of the board
+
+    Parameters:
+    -----------
+    gold_board: List[int]
+      if provided, the two boards will be plotted side by side,
+      together with the difference between them.
+
+    file_name: string
+      if provided, the plot will be saved under this file name.
+
+    Returns:
+    ---------
+    A marplotlib figure.
+    '''
 
     if gold_board is None:
-      pb.plot_boards(HexagonsGame.board_state, fig_size=[7, 5], titles=[''], file_name=file_name)
+      fig = pb.plot_boards(HexagonsGame.board_state, fig_size=[7, 5],
+                     height=HexagonsGame._height,
+                     width=HexagonsGame._width,
+                     titles=[''])
     else:
       diff = list(map(lambda x, y: 0 if x == y else 1, gold_board, HexagonsGame.board_state))
-      pb.plot_boards([gold_board, HexagonsGame.board_state, diff], titles=['gold', 'code generated', 'difference'],
-                     file_name=file_name)
+      fig = pb.plot_boards([gold_board, HexagonsGame.board_state, diff],
+                     height=HexagonsGame._height,
+                     width=HexagonsGame._width,
+                     titles=['gold', 'code generated', 'difference'])
+
+    if file_name is not None:
+      fig.savefig(file_name)
+
+    return fig
 
 
 class _Vec:
