@@ -2,7 +2,7 @@ from functools import wraps
 import sys
 import unittest
 sys.path.append('../src')
-from hexagons_classes import HexagonsGame, _Vec, _Hexagon, Tile, Shape, Line, Circle, Triangle
+from hexagen import HexagonsGame, _Vec, _Hexagon, Tile, Shape, Line, Circle, Triangle
 
 class HexagonsTests(unittest.TestCase):
 

@@ -1,17 +1,13 @@
-import sys
-sys.path.append('../src')
-sys.path.append('../utils')
-
-from reading_tasks import read_task
-from hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from utils.reading_tasks import read_task
+from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 task_index = ?
 gold_board = list(read_task(task_index)['gold_boards'][-1])
 
 HexagonsGame.start()
 
-# desc
+# description:
 
-# instructions
+# instructions:
 
-HexagonsGame.plot(gold_board = gold_board)
+HexagonsGame.plot(gold_board=gold_board)

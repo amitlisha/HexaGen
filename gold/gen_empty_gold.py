@@ -10,11 +10,8 @@ It will also plot the difference between the two images.
 '''
 
 import os.path
-import sys
-sys.path.append('../src')
-sys.path.append('../utils')
 
-from reading_tasks import read_task
+from utils.reading_tasks import read_task
 
 def main():
 
@@ -34,12 +31,12 @@ def main():
   else:
     print(f'creating file {file_name}')
     with open(file_path, 'w+') as file_id:
-      file_id.write('\n'.join(template[:7]))
+      file_id.write('\n'.join(template[:3]))
       file_id.write(f'\ntask_index = {task_index}\n')
-      file_id.write('\n'.join(template[8:13]))
+      file_id.write('\n'.join(template[4:9]))
       file_id.write(f"\n{task_dict['description']}\n\n")
       file_id.write(task_dict['instructions'])
-      file_id.write('\n'.join(template[16:]))
+      file_id.write('\n'.join(template[12:]))
 
 if __name__ == "__main__":
   main()
