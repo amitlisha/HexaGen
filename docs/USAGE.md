@@ -1,7 +1,6 @@
 # Usage Guide
-Welcome to the Hexagons usage guide. In this guide we provide detailed instructions on how to use the most important features of our Python project, complete with code examples.
-
-The purpose of this project is to allow translation of instructions given in natural language into code. 
+Welcome to the Hexagons usage guide. This guide provides detailed instructions on how to use the `HexaGen.py` module, complete with code examples
+and visuals to help you get started.
 
 ### Constants
 The `constants.py` file contains the following constants that are used throughout the project:
