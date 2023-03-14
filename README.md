@@ -40,8 +40,8 @@ Before you get started, make sure you have the following requirements installed:
 - NumPy
 - SciPy
 
-## Usage of the `HexaGen` module
-Please refer to our [usage guide](docs/USAGE.md) for detailed instructions on how to use the HexaGen.py module. The guide includes code examples that will help you get started with using the module.
+## Usage of the `hexagen` module
+Please refer to our [usage guide](docs/USAGE.md) for detailed instructions on how to use the `hexagen.py` module. The guide includes code examples that will help you get started with using the module.
 
 ## Reading from the dataset
 TODO
