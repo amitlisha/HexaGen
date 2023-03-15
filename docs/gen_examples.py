@@ -5,25 +5,14 @@ from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 
-HexagonsGame.start(width=8, height=4)
-tile = Tile(4, 2)
-tile.draw('orange')
-tile.neighbors().draw('purple')
-gold_board = HexagonsGame.board_state
+HexagonsGame.record_step(step_name='1')
+Tile(column=7, row=5).neighbors().draw(color='yellow')
 
-HexagonsGame.start(width=8, height=4)
-tile = Tile(5, 2)
-tile.draw('orange')
-tile.neighbors().draw('purple')
-HexagonsGame.plot(gold_board=gold_board, file_name='hexagonsgame_plot_gold')
+print(HexagonsGame.get_record(step_names=['1'])._linds)
 
 file_name = input('please enter file name\n')
 if file_name == '':
   HexagonsGame.plot()
 else:
   HexagonsGame.plot(file_name = 'board_examples/' + file_name)
-
-
-# line attributes
-# circle attributes
 
