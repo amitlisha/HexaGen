@@ -41,13 +41,19 @@ Before you get started, make sure you have the following requirements installed:
 - SciPy
 
 ## Usage of the `hexagen` module
-Please refer to our [usage guide](docs/USAGE.md) for detailed instructions on how to use the `hexagen.py` module. The guide includes code examples that will help you get started with using the module.
+Please refer to our [usage guide](docs/USAGE.md) for detailed instructions on how to use the [docs.hexagen](docs.hexagen.py) module. The guide includes code examples that will help you get started with using the module.
 
 ## Reading from the dataset
-TODO
+The [data](data/) folder contains jsonl files that contain the hexagons dataset.
+You can read drawing procedures from them.
+The module [utils.reading_tasks](utils/reading_tasks.py) contains useful methods for reading from the jsonl files.
 
 ## Gold
-TODO
+The [gold](gold/) folder contains gold files for a few reading tasks.
+The script [utils.gen_empty_gold](utils/gen_empty_gold.py) automatically creates files for parsing instructions. 
+When you run it, it will ask you for a task index, and then create a file containing the instructions in the task, 
+together with the necessary imports and other commands.
+All you need to do is fill in the code (using the [docs.hexagen](docs.hexagen.py) module).
 
 ## Examples
 TODO
