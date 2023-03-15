@@ -26,11 +26,10 @@ The code generates the following image:
 <img src="docs/board_examples/red_flower_yellow_center.png" alt="red flower with yellow center" width="40%" height="40%">
 
 ## Philosophy
-- drawing ideas from the dataset of natural language instructions
-- thinking of how to formalize the common computational ideas axpressed by the users in the instructions
-- allowing expression of most of the natural language instructions, while keeping the formalism compact and concise
-- writing a code that is straightforward to use
-- writing methods 
+Our approach in developing the formalism was rooted in the analysis of the natural language instructions in the dataset. 
+We focused on identifying the computational concepts expressed by users in these instructions and then formalizing them in a way that would allow for their expression in a concise and compact manner. 
+We aimed to create a user-friendly formalism by prioritizing code that is easy to use.
+In addition, we made an effort to ensure that the code was robust enough to handle potential errors related to data type mismatches between function parameters and their respective arguments.
 
 ## Requirements
 
@@ -41,19 +40,29 @@ Before you get started, make sure you have the following requirements installed:
 - SciPy
 
 ## Usage of the `hexagen` module
-Please refer to our [usage guide](docs/USAGE.md) for detailed instructions on how to use the [docs.hexagen](docs.hexagen.py) module. The guide includes code examples that will help you get started with using the module.
+The [docs.hexagen](docs.hexagen.py) module is at the core of our formalism. 
+It offers essential classes, such as `Tile` and `Shape`, along with a broad range of methods that enable drawing on the hexagonal board. 
+To learn how to utilize this module, please consult our [usage guide](docs/USAGE.md), which provides comprehensive instructions. 
+The guide also offers numerous code examples that will assist you in getting started with using the module.
 
-## Reading from the dataset
-The [data](data/) folder contains jsonl files that contain the hexagons dataset.
-You can read drawing procedures from them.
-The module [utils.reading_tasks](utils/reading_tasks.py) contains useful methods for reading from the jsonl files.
+## The Hexagons dataset
+The dataset for Hexagons is stored in the [data](data/) folder as jsonl files. 
+You can read the drawing procedures from these files using the methods provided in the [utils.reading_tasks](utils/reading_tasks.py) module.
 
-## Gold
-The [gold](gold/) folder contains gold files for a few reading tasks.
-The script [utils.gen_empty_gold](utils/gen_empty_gold.py) automatically creates files for parsing instructions. 
-When you run it, it will ask you for a task index, and then create a file containing the instructions in the task, 
-together with the necessary imports and other commands.
-All you need to do is fill in the code (using the [docs.hexagen](docs.hexagen.py) module).
+## Gold files and parsing
+The [gold](gold/) folder contains the so called gold files, which provide hand-crafted parsing of drawing procedures from the Hexagons dataset. 
+Such a file includes the NL instructions, and a hand-crafted expression of these instructions in Python code, utilizing our formalism.
+
+The tasks for the gold files are all taken from the 'train' group.
+We randomly selected a single image from each category to create a set of tasks we call 'batch 3'.
+We then parsed some of the drawing procedures in 'batch 3'.
+To get more information about the images and drawing procedures in 'batch 3', 
+and to see the parsing status of each drawing procedure, you can refer to 
+ [gold parsing batch 3](https://docs.google.com/spreadsheets/d/1l89uCMCstFsVayHpcf_xUxGgsJrxM_TwE9AsUOrGgaw/edit?usp=sharing).
+
+To facilitate parsing new instructions, the script [utils.gen_empty_gold](utils/gen_empty_gold.py) can be used to automatically generate starter files. 
+When executed, it prompts the user to enter a task index and then creates a new file containing the instructions for that task (taken fram the Hexagons dataset), 
+as well as any necessary imports and other commands. After the file is generated, the only remaining step is to fill in the parsing code.
 
 ## Examples
 TODO
