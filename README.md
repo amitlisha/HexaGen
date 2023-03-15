@@ -64,9 +64,6 @@ To facilitate parsing new instructions, the script [utils.gen_empty_gold](utils/
 When executed, it prompts the user to enter a task index and then creates a new file containing the instructions for that task (taken fram the Hexagons dataset), 
 as well as any necessary imports and other commands. After the file is generated, the only remaining step is to fill in the parsing code.
 
-## Examples
-TODO
-
 ## GPT
 TODO
 
