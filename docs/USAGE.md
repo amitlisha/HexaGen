@@ -2,7 +2,18 @@
 Welcome to the Hexagons usage guide. This guide provides detailed instructions on how to use the `hexagen.py` module, complete with code examples
 and visuals to help you get started.
 
-### Constants
+## Overview
+Our formalism is comprised of several classes that work together to enable drawing on the hexagonal board. These classes are:
+
+- `HexagonsGame`: responsible for managing the board
+- `Tile`: represents a single tile on the board
+- `Shape`: represents any set of tiles on the board, and has three useful subclasses: `Circle`, `Line`, and `Triangle`
+
+The `Shape` class is the heart of the formalism and contains a wide range of methods that allow for drawing shapes, manipulating shapes, and applying various geometrical concepts. 
+
+It is important to note that we will not cover implementation details, nor will we discuss classes and methods that are intended for internal use only.
+
+## Constants
 The `constants.py` file contains the following constants that are used throughout the project:
 ```python
 WIDTH = 18 # the board's width
