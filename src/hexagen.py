@@ -36,8 +36,6 @@ class HexagonsGame:
     HexagonsGame._step = None
     HexagonsGame._drawn_hexagons = {'all': []}
 
-  # TODO: add to USAGE.md
-  # TODO: write unit_test
   def record_step(step_name):
     '''After calling this method with some name for the step, all the tiles that are drawn
     will be saved in a list under the step's name. The list can later be retrieved using
@@ -52,7 +50,6 @@ class HexagonsGame:
     HexagonsGame._drawn_hexagons[step_name] = []
     HexagonsGame._step = step_name
 
-  # TODO: write unit_test
   def get_record(step_names):
     '''Retrieving a shape consisting of the tiles drawn in previous step/steps
 
@@ -1059,6 +1056,12 @@ class Tile(Shape):
 
     return Tile._to_tile(self._hexagon._neighbor(direction))
 
+  # TODO: unit_test
+  # TODO: USAGE.md
+  # TODO: documentation
+  # TODO: copy_paste upadates
+  def shift(self, other):
+    return other._hexagon - self._hexagon
 
 class Line(Shape):
   '''A class to represent a straight line on the board.

@@ -21,7 +21,15 @@ class HexagonsTests(unittest.TestCase):
     board_nz_indices=[i for i in range(len(HexagonsGame.board_state)) if HexagonsGame.board_state[i] != 0]
     return self.assertEqual(set(board_nz_indices), set(indices))
 
-class _VecTests(unittest.TestCase):
+class HexagonsGameTests(HexagonsTests):
+  @HexagonsTests.wrap_test
+  def test(self):
+    HexagonsGame.start()
+    HexagonsGame.record_step(step_name='1')
+    Tile(column=7, row=5).neighbors().draw(color='yellow')
+    self.assertShapeLinds(HexagonsGame.get_record(step_names=['1']), [77, 79, 96, 61, 59, 60])
+
+class _VecTests(HexagonsTests):
   @HexagonsTests.wrap_test
   def test(self):
     self.assertEqual(_Vec('up')._cube, (0, -1, 1))
