@@ -559,13 +559,16 @@ Some of them also return a new `Shape` object, while others return nothing.
 ##### self.draw(color)
 Draw the tiles of the given shape in the given color.
 
-##### self.copy_paste(shift_direction, spacing, reference_shape=None)
+##### self.copy_paste(shift_direction=None, spacing=0, reference_shape=None, source=None, destination=None)
 The `copy_paste` method draws a copy of the given shape in a new location on the board. 
 The new location is specified by the following parameters:
 - `shift_direction`: a string that specifies the direction of the new shape relative to the given shape.
 - `spacing`: an integer that specifies the desired spacing between the given shape and the new shape.
 - `reference_shape`: a `Shape` object. If specified, the new location will be computed relative to
 the location of `reference_shape` rather than the given shape.
+- `source` and `destination`: Tile objects. Provide and alternative way to specify the location of the new shape. 
+The location is computed such that the source tile is copied to the destination tile. 
+If `shift_direction` is not provided, the `source` and `destination` parameters will be used to compute the new location.
 
 The new shape is also returned by the method, so we can use it for further manipulations.
 
@@ -590,6 +593,21 @@ ref_shape.draw('purple')
 circle2 = circle1.copy_paste(shift_direction='right', spacing=1, reference_shape=ref_shape)
 ```
 <img src="board_examples/shape_copy_paste_ref_shape.png" alt="shape copy_paste reference_shape" width="40%" height="40%">
+
+The final example demonstrates the usage of the `copy_paste` method with the `source` and `destination` parameters.
+The source tile is painted in yellow, while the destination tile is plotted in red.
+```python
+center_tile1 = Tile(4, 4)
+circle1 = Circle(center_tile=center_tile1, radius=2)
+circle1.draw('black')
+center_tile2=Tile(14, 6)
+circle2 = circle1.copy_paste(source=center_tile1, destination=center_tile2)
+center_tile1.draw('yellow')
+center_tile2.draw('red')
+```
+
+<img src="board_examples/shape_copy_paste_source_destination.png" alt="shape copy_paste source destination" width="40%" height="40%">
+
 
 ##### self.grid(shift_direction, spacing, num_copies=None)
 The `grid` method draws multiple copies of the given shape on the board in even spacings, based on the `shift_direction` and `spacing` parameters, with a total number of copies specified by the `num_copies` parameter.
