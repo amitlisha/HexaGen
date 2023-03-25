@@ -595,7 +595,7 @@ circle2 = circle1.copy_paste(shift_direction='right', spacing=1, reference_shape
 <img src="board_examples/shape_copy_paste_ref_shape.png" alt="shape copy_paste reference_shape" width="40%" height="40%">
 
 The final example demonstrates the usage of the `copy_paste` method with the `source` and `destination` parameters.
-The source tile is painted in yellow, while the destination tile is plotted in red.
+The source tile is drawn in yellow, while the destination tile is drawn in red.
 ```python
 center_tile1 = Tile(4, 4)
 circle1 = Circle(center_tile=center_tile1, radius=2)
