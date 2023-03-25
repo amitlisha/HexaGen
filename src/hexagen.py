@@ -561,7 +561,8 @@ class Shape:
     for hexagon in self._hexagons:
       hexagon._draw(color)
 
-  def copy_paste(self, shift_direction=None, spacing=0, reference_shape=None, shift=None):
+  def copy_paste(self, shift_direction=None, spacing=0, reference_shape=None,
+                 source=None, destination=None, shift=None):
     '''
     Draw a copy of self in a new location
 
@@ -578,7 +579,11 @@ class Shape:
     reference_shape: Shape
       The new location is computed with respect to reference_shape.
       If not specified, location is computed with respect to the original shape.
-    shifet: _Vec
+    source: Tile
+    destination: Tile
+      Compute the shift such that tile 'source' will be copied to tile 'destination'
+      This option is activated if 'shift_direction' is not provided
+    shift: _Vec
       Specify the shift vector directly. This option is for internal use only.
 
     Returns:
@@ -588,7 +593,10 @@ class Shape:
     '''
 
     if shift is None:
-      shift = self._compute_shift_from_spacing(shift_direction, spacing, reference_shape)
+      if shift_direction is None:
+        shift = Tile._compute_shift_from_tiles(source, destination)
+      else:
+        shift = self._compute_shift_from_spacing(shift_direction, spacing, reference_shape)
 
     new_hexagons = []
     for hexagon in self._hexagons:
@@ -1057,11 +1065,13 @@ class Tile(Shape):
     return Tile._to_tile(self._hexagon._neighbor(direction))
 
   # TODO: unit_test
-  # TODO: USAGE.md
-  # TODO: documentation
   # TODO: copy_paste upadates
-  def shift(self, other):
-    return other._hexagon - self._hexagon
+  def _compute_shift_from_tiles(source, destination):
+    ''' Computes the shift from tile 'source' to tile 'destination'
+    Returns a _Vec object
+    Used in Shape.copy_paste()
+    '''
+    return destination._hexagon - source._hexagon
 
 class Line(Shape):
   '''A class to represent a straight line on the board.
