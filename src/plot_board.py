@@ -19,7 +19,7 @@ MAX_OUTPUT_LEN = 512
 hexa_cmap = ListedColormap([[val / 255. for val in COLORS_RGB_INT[color]] for color in COLORS])
 gray_cmap = get_cmap('gray')
 
-def plot_boards(boards, fig_size=(5, 5), width=18, height=10, max_in_row=6, edge_color='k', color_map='hexa', titles = None,
+def plot_boards(boards, fig_size=(5, 5), width=18, height=10, max_in_row=6, h_pad=0, edge_color='k', color_map='hexa', titles = None,
                 show=True):
   '''Plot a hexagon board / boards
 
@@ -78,7 +78,7 @@ def plot_boards(boards, fig_size=(5, 5), width=18, height=10, max_in_row=6, edge
                     rotate_deg=90, edge_color=edge_color,
                     do_plot=True, face_color=board, align_to_origin=False,
                     ax=axes[i], color_map=color_map)
-  fig.tight_layout(h_pad=0, w_pad=2)
+  fig.tight_layout(h_pad=h_pad, w_pad=2)
 
   if show:
     plt.show()

@@ -15,12 +15,14 @@ Contains 7 classes:
 - Triangle(Shape) - a triangle on the board
 '''
 
+from copy import copy
 import numpy as np
 from scipy.spatial.transform import Rotation
 from typing import Callable, Optional, List  # Union
 
 from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 import src.plot_board as pb
+from utils.reading_tasks import read_task
 
 class HexagonsGame:
   '''Class HexagonsGame manages the board: reset the board, hold the board parameters and constants,
@@ -33,8 +35,9 @@ class HexagonsGame:
     HexagonsGame.width = width
     HexagonsGame.height = height
     HexagonsGame.board_state = [0] * width * height
-    HexagonsGame._step = None
-    HexagonsGame._drawn_hexagons = {'all': []}
+    HexagonsGame.board_states = {}
+    HexagonsGame._step = 'primary'
+    HexagonsGame._drawn_hexagons = {'all': [], 'primary': []}
 
   def record_step(step_name):
     '''After calling this method with some name for the step, all the tiles that are drawn
@@ -46,9 +49,10 @@ class HexagonsGame:
     step_name:
       The name of the step, should be a string or an integer
     '''
-
-    HexagonsGame._drawn_hexagons[step_name] = []
+    if HexagonsGame._step != 'primary' or HexagonsGame.board_state != [0] * HexagonsGame.width * HexagonsGame.height:
+      HexagonsGame.board_states[HexagonsGame._step] = copy(HexagonsGame.board_state)
     HexagonsGame._step = step_name
+    HexagonsGame._drawn_hexagons[step_name] = []
 
   def get_record(step_names):
     '''Retrieving a shape consisting of the tiles drawn in previous step/steps
@@ -71,12 +75,12 @@ class HexagonsGame:
       drawn_hexagons += HexagonsGame._drawn_hexagons[step_name]
     return Shape(drawn_hexagons, from_hexagons=True)
 
-  def plot(gold_board=None, file_name=None):
+  def plot(gold_boards=None, multiple=False, file_name=None):
     '''Plot the current state of the board
 
     Parameters:
     -----------
-    gold_board: List[int]
+    gold_boards: List[int] or List[List[int]]
       if provided, the two boards will be plotted side by side,
       together with the difference between them.
 
@@ -88,20 +92,45 @@ class HexagonsGame:
     A marplotlib figure.
     '''
 
-    if gold_board is None:
-      fig = pb.plot_boards(HexagonsGame.board_state, fig_size=[7, 5],
-                     height=HexagonsGame.height,
-                     width=HexagonsGame.width,
-                     titles=[''])
-    else:
-      diff = list(map(lambda x, y: 0 if x == y else 1, gold_board, HexagonsGame.board_state))
-      fig = pb.plot_boards([gold_board, HexagonsGame.board_state, diff],
-                     height=HexagonsGame.height,
-                     width=HexagonsGame.width,
-                     titles=['gold', 'code generated', 'difference'])
+    def diff(board1, board2):
+      return list(map(lambda x, y: 0 if x == y else 1, board1, board2))
+
+    HexagonsGame.board_states[HexagonsGame._step] = copy(HexagonsGame.board_state)
+    boards = list(HexagonsGame.board_states.values())
+    titles = list(HexagonsGame.board_states.keys())
+    if not multiple:
+      boards = [boards[-1]]
+      titles = ['']
+    if gold_boards is not None:
+      if not multiple:
+        gold_board = gold_boards if not isinstance(gold_boards[0], list) else gold_boards[-1]
+        boards = [boards[-1], gold_board, diff(boards[-1], gold_board)]
+        titles = ['code generated', 'gold', 'difference']
+      else:
+        drawn_boards = boards
+        drawn_titles = titles
+        gold_boards = gold_boards if isinstance(gold_boards[0], list) else [gold_boards]
+        if len(drawn_boards) != len(gold_boards):
+          print(f"number of recorded steps ({len(drawn_boards)}) "
+                f"doesn't match number of gold steps ({len(gold_boards)})")
+          return
+        boards = []
+        titles = []
+        for i in range(len(drawn_boards)):
+          boards += [drawn_boards[i], gold_boards[i], diff(drawn_boards[i], gold_boards[i])]
+          titles += [f'code generated ({drawn_titles[i]})',f'gold ({i+1})','difference']
+
+    fig = pb.plot_boards(boards=boards,
+                         fig_size=[7, 5],
+                         height=HexagonsGame.height,
+                         width=HexagonsGame.width,
+                         max_in_row=3,
+                         h_pad=2,
+                         titles=titles)
 
     if file_name is not None:
       fig.savefig(file_name)
+
 
     return fig
 
@@ -358,8 +387,7 @@ class _Hexagon:
     else:
       self._saved_color_id = color_id
     HexagonsGame._drawn_hexagons['all'].append(self)
-    if HexagonsGame._step is not None:
-      HexagonsGame._drawn_hexagons[HexagonsGame._step].append(self)
+    HexagonsGame._drawn_hexagons[HexagonsGame._step].append(self)
     return self
 
   def _neighbor(self, direction):
@@ -679,7 +707,7 @@ class Shape:
     center_tile: Tile
       The tile around which to rotate
     angle: int
-      Sets the angle of rotation, counterclockwise. Should be a mutliple of 60.
+      Sets the angle of rotation, counterclockwise. Should be a multiple of 60.
 
     Returns:
     --------
@@ -1337,17 +1365,20 @@ class Triangle(Shape):
 
 
 if __name__ == '__main__':
+
+  gold_boards = list(read_task(24)['gold_boards'])
+
   HexagonsGame.start()
 
-  HexagonsGame.record_step(1)
-  l1 = Line(Tile(10, 5), direction='up_left')
-  l1.draw('black')
+  HexagonsGame.record_step('aaa')
+  ring = Tile(2, 2).neighbors()
+  ring.draw('purple')
 
-  HexagonsGame.record_step(2)
-  l2 = Line(Tile(1, -1), direction='up_right')
-  l2.draw('black')
-
-  HexagonsGame.record_step(3)
-  HexagonsGame.get_record([1]).draw('red')
+  HexagonsGame.record_step('bbb')
+  four_rings = ring.grid('right', 1, num_copies = 3)
+  four_rings.draw('purple')
 
   HexagonsGame.plot()
+  HexagonsGame.plot(multiple=True)
+  HexagonsGame.plot(gold_boards=gold_boards)
+  HexagonsGame.plot(multiple=True, gold_boards=gold_boards)

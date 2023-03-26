@@ -1,31 +1,42 @@
 '''Get Task
 Methods that read drawing tasks info from the 'jsonl' files,
 and return them in useful formats.
+
+read_task
+search_tasks_by_keyword
 '''
 
+from constants.constants import ROOT_DIR
 import json
+from os.path import join
 import re
 import textwrap
 
 # jsonl files that contain all the tasks
-f_train = '../data/2022_01_19_hexagon_dataset_extended_public_hard1_train.jsonl'
-f_dev = '../data/2022_01_19_hexagon_dataset_extended_public_hard1_dev_abstraction.jsonl'
-f_test = '../data/2022_01_19_hexagon_dataset_extended_public_hard1_test.jsonl'
+data_dir = ROOT_DIR / 'data'
+f_train = '2022_01_19_hexagon_dataset_extended_public_hard1_train.jsonl'
+f_dev = '2022_01_19_hexagon_dataset_extended_public_hard1_dev_abstraction.jsonl'
+f_test = '2022_01_19_hexagon_dataset_extended_public_hard1_test.jsonl'
 
 def read_tasks(which_tasks=['train','dev','test']):
+  ''' Read the entire dataset of tasks
+  The dataset is divided into train, dev and test.
+  By default all tasks will be read,
+  but you can specify which of the three parts to read
+  '''
   train_tasks, dev_tasks, test_tasks = [], [], []
   if 'train' in which_tasks:
-    with open(f_train) as jsonl_file:
+    with open(join(data_dir, f_train)) as jsonl_file:
         train_tasks = [json.loads(command) for command in jsonl_file]
         for task in train_tasks:
           task['group'] = 'train'
   if 'dev' in which_tasks:
-    with open(f_dev) as jsonl_file:
+    with open(join(data_dir, f_dev)) as jsonl_file:
         dev_tasks = [json.loads(command) for command in jsonl_file]
         for task in dev_tasks:
           task['group'] = 'dev'
   if 'test' in which_tasks:
-    with open(f_test) as jsonl_file:
+    with open(join(data_dir, f_test)) as jsonl_file:
         test_tasks = [json.loads(command) for command in jsonl_file]
         for task in test_tasks:
           task['group'] = 'test'
