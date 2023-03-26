@@ -26,6 +26,10 @@ def main():
   user_name = input("Please enter a username: ")
   task_index = int(input("Please provide the task index: "))
   task_dict = read_task(task_index)
+  if task_dict['group'] != 'train':
+    print(f"\nWarning! Task {task_index} is in {task_dict['group']} set")
+    if input('Would you like continue? enter y/n ') == 'n':
+      return
 
   # use template to create file
   with open('../gold/template.txt', 'r') as file:
@@ -35,7 +39,7 @@ def main():
   file_name = f'{user_name}_gold_{task_index:0>3}'
   file_path = '../gold/' + file_name + '.py'
   if os.path.exists(file_path):
-    print(f'file {file_name} already exists')
+    print(f'\nfile {file_name} already exists! not creating a new file\n')
   else:
     print(f'creating file {file_name}')
     with open(file_path, 'w+') as file_id:
