@@ -40,7 +40,7 @@ Before you get started, make sure you have the following requirements installed:
 - SciPy
 
 ## Usage of the `hexagen` module
-The [docs.hexagen](docs.hexagen.py) module is at the core of our formalism. 
+The [src.hexagen](src.hexagen.py) module is at the core of our formalism. 
 It offers essential classes, such as `Tile` and `Shape`, along with a broad range of methods that enable drawing on the hexagonal board. 
 To learn how to utilize this module, please consult our [usage guide](docs/USAGE.md), which provides comprehensive instructions. 
 The guide also offers numerous code examples that will assist you in getting started with using the module.
