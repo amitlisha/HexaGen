@@ -51,7 +51,6 @@ def retrieve_task(task_index):
 
 def extract_description(task):
   '''Extract the task description from the task info'''
-  print(task.keys())
   return f"# task index: {task['index']}, " \
          f"image: {task['image_index']}, " \
          f"collection round: {task['collection_round']}, " \
@@ -77,7 +76,7 @@ def read_task(task_ind, print_description=False):
   '''Read a task and return the processed information'''
   task = retrieve_task(task_ind)
   task_dict = {'instructions': extract_instructions(task), 'gold_boards': extract_boards(task),
-          'description': extract_description(task)}
+          'description': extract_description(task), 'group': task['group']}
   if print_description:
     print(task_dict['description'])
   return task_dict
