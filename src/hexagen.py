@@ -645,7 +645,7 @@ class Shape:
     spacing: int
       Number of tiles between the original shape and the new shape
     num_copies: int
-      The total number of copies to create.
+      The number of copies to create, not including the original shape.
       If not specified, the method creates the maximal possible number of complete copies.
 
     Returns:
@@ -1366,19 +1366,10 @@ class Triangle(Shape):
 
 if __name__ == '__main__':
 
-  gold_boards = list(read_task(24)['gold_boards'])
-
   HexagonsGame.start()
 
-  HexagonsGame.record_step('aaa')
-  ring = Tile(2, 2).neighbors()
-  ring.draw('purple')
-
-  HexagonsGame.record_step('bbb')
-  four_rings = ring.grid('right', 1, num_copies = 3)
-  four_rings.draw('purple')
+  shape = Shape([Tile(1, 4), Tile(1, 5), Tile(2, 4)])
+  shape.draw('black')
+  shape.grid(shift_direction='right', spacing=2, num_copies=2)
 
   HexagonsGame.plot()
-  HexagonsGame.plot(multiple=True)
-  HexagonsGame.plot(gold_boards=gold_boards)
-  HexagonsGame.plot(multiple=True, gold_boards=gold_boards)
