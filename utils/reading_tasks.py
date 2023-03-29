@@ -126,4 +126,5 @@ if __name__ == '__main__':
   #   print(task_dict['instructions'])
   #   ind += 1
 
-  print(read_task(1, True)['instructions'])
+  # print(read_task(12)['instructions'])
+  print(search_tasks_by_keyword('[Tt]riangle'))
