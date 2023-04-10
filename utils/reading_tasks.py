@@ -76,7 +76,7 @@ def read_task(task_ind, print_description=False):
   '''Read a task and return the processed information'''
   task = retrieve_task(task_ind)
   task_dict = {'instructions': extract_instructions(task), 'gold_boards': extract_boards(task),
-          'description': extract_description(task), 'group': task['group']}
+          'description': extract_description(task), 'group': task['group'], 'full': task}
   if print_description:
     print(task_dict['description'])
   return task_dict
@@ -119,12 +119,14 @@ def search_tasks_by_keyword(reg_exp, at_least=1, avoid_reg_exp=None, which_tasks
   return tasks_inds_that_contain_keyword
 
 if __name__ == '__main__':
-  # tasks_containing_repeat = search_tasks_by_keyword('[Ss]tep')
-  # ind = 0
+  tasks = search_tasks_by_keyword('above', which_tasks=['train'])
+  ind = 0
+  print(tasks)
   # while input("press enter to show the next task, press 's' and then enter to stop") == '':
-  #   task_dict = read_task(tasks_containing_repeat[ind], True)
+  #   task_dict = read_task(tasks[ind], True)
+  #   print(ind)
   #   print(task_dict['instructions'])
   #   ind += 1
 
-  # print(read_task(12)['instructions'])
-  print(search_tasks_by_keyword('[Tt]riangle'))
+  # print(search_tasks_by_keyword('[Ll]ine'))
+
