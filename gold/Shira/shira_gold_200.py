@@ -2,7 +2,7 @@ from utils.reading_tasks import read_task
 from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 task_index = 200
-gold_board = list(read_task(task_index)['gold_boards'][-1])
+gold_boards = list(read_task(task_index)['gold_boards'])
 
 HexagonsGame.start()
 
@@ -47,4 +47,4 @@ for i in range(7):
   Line(start_tile = Tile(column, -1), direction = 'up', end_tiles = Shape.get_color('red')).draw('purple')
   column += 2
 
-HexagonsGame.plot(gold_board=gold_board)
+HexagonsGame.plot(gold_boards=gold_boards)
