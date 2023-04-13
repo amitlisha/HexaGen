@@ -2,7 +2,7 @@ from utils.reading_tasks import read_task
 from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 task_index = 549
-gold_board = list(read_task(task_index)['gold_boards'][-1])
+gold_boards = list(read_task(task_index)['gold_boards'])
 
 HexagonsGame.start()
 
@@ -141,4 +141,4 @@ shape_inside.draw('blue')
 shape_inside = shapes[2].get(criterion='inside')
 shape_inside.draw('green')
 
-HexagonsGame.plot(gold_board=gold_board)
+HexagonsGame.plot(gold_boards=gold_boards)
