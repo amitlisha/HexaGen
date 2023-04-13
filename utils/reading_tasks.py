@@ -11,6 +11,7 @@ import json
 from os.path import join
 import re
 import textwrap
+from src.plot_board import plot_boards
 
 # jsonl files that contain all the tasks
 data_dir = ROOT_DIR / 'data'
@@ -118,10 +119,14 @@ def search_tasks_by_keyword(reg_exp, at_least=1, avoid_reg_exp=None, which_tasks
   print(f'Found {reg_exp} in {len(tasks_inds_that_contain_keyword)} tasks')
   return tasks_inds_that_contain_keyword
 
+def plot_task(task_id):
+  d = read_task(task_id, True)
+  plot_boards(d['gold_boards'][-1])
+
 if __name__ == '__main__':
-  tasks = search_tasks_by_keyword('above', which_tasks=['train'])
-  ind = 0
-  print(tasks)
+  # tasks = search_tasks_by_keyword('above', which_tasks=['train'])
+  # ind = 0
+  # print(tasks)
   # while input("press enter to show the next task, press 's' and then enter to stop") == '':
   #   task_dict = read_task(tasks[ind], True)
   #   print(ind)
@@ -129,4 +134,6 @@ if __name__ == '__main__':
   #   ind += 1
 
   # print(search_tasks_by_keyword('[Ll]ine'))
+
+  plot_task(24)
 
