@@ -438,6 +438,8 @@ circle.get(criterion='endpoints').draw('red')
 We define the **boundary** of a shape to be the part of the shape that is adjacent to tiles that are not part of the shape.
 The `boundary` method returns the boundary of the given shape.
 
+Note that `boundary` returns tiles that are part of the original shape!
+
 To illustrate with an example, let's start with the following shape:
 <!--
 ```python
