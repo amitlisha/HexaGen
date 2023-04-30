@@ -73,11 +73,26 @@ def extract_instructions(task):
     instructions += f"'''\n{i + 1}. {wrap_txt}\n'''\n\n"
   return instructions
 
+def extract_instructions_for_gpt(task):
+  '''Extract the instructions from the task info
+  write them in a shorter form for the gpt prompt
+  '''
+  instructions = "'''"
+  for i, txt in enumerate([_[1] for _ in task['drawing_procedure'][1:]]):
+    wrap_txt = '\n'.join(textwrap.wrap(txt, width=80))
+    instructions += f"\n{i + 1}. {wrap_txt}\n"
+  instructions += "'''"
+  return instructions
+
 def read_task(task_ind, print_description=False):
   '''Read a task and return the processed information'''
   task = retrieve_task(task_ind)
-  task_dict = {'instructions': extract_instructions(task), 'gold_boards': extract_boards(task),
-          'description': extract_description(task), 'group': task['group'], 'full': task}
+  task_dict = {'instructions': extract_instructions(task),
+               'instructions_for_gpt': extract_instructions_for_gpt(task),
+               'gold_boards': extract_boards(task),
+               'description': extract_description(task),
+               'group': task['group'],
+               'full': task}
   if print_description:
     print(task_dict['description'])
   return task_dict
@@ -119,12 +134,16 @@ def search_tasks_by_keyword(reg_exp, at_least=1, avoid_reg_exp=None, which_tasks
   print(f'Found {reg_exp} in {len(tasks_inds_that_contain_keyword)} tasks')
   return tasks_inds_that_contain_keyword
 
-def plot_task(task_id):
+def plot_task(task_id, by_steps=False):
   d = read_task(task_id, True)
-  plot_boards(d['gold_boards'][-1])
+  if by_steps:
+    plot_boards(d['gold_boards'])
+  else:
+    plot_boards(d['gold_boards'][-1])
+
 
 if __name__ == '__main__':
-  # tasks = search_tasks_by_keyword('above', which_tasks=['train'])
+  # tasks = search_tasks_by_keyword('Paint all of the ', which_tasks=['train'])
   # ind = 0
   # print(tasks)
   # while input("press enter to show the next task, press 's' and then enter to stop") == '':
@@ -132,8 +151,8 @@ if __name__ == '__main__':
   #   print(ind)
   #   print(task_dict['instructions'])
   #   ind += 1
-
+  #
   # print(search_tasks_by_keyword('[Ll]ine'))
 
-  plot_task(24)
+  plot_task(116, by_steps=True)
 
