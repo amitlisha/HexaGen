@@ -36,8 +36,42 @@ class HexagonsGame:
     HexagonsGame.height = height
     HexagonsGame.board_state = [0] * width * height
     HexagonsGame.board_states = {}
-    HexagonsGame._step = 'primary'
-    HexagonsGame._drawn_hexagons = {'all': [], 'primary': []}
+    HexagonsGame._current_step_name = None
+    HexagonsGame._step_drawn_hexagons = {}
+    HexagonsGame._current_batch_name = None
+    HexagonsGame._batch_draws = {}
+
+  def _start_batch_record(batch_name):
+    '''This is a method used to analyze a procedure, it is not meant to use as part of the game
+    After calling this method with some name for the batch, the series of calls to _Hexagon._draw
+    will be recorded under the batch's name. The list can later be retrieved using
+    the method '_get_batch_record'
+
+    Parameters:
+    ---------------
+    batch_name:
+      The name of the batch, should be a string or an integer
+    '''
+    HexagonsGame._current_batch_name = batch_name
+    HexagonsGame._batch_draws[batch_name] = []
+
+  def _get_batch_record(batch_name):
+    '''Retrieving a list of draw commands in a batch
+
+    Parameters:
+    ---------------
+    batch_name: str or int
+      The batch to retrieve
+
+    Returns:
+    ---------------
+    List of dictionaries
+      Each dictionary describes a draw action, and has the folowing keys: ['index', 'row', 'column', 'color']
+      Note that if the tile is not on the board, 'index' will be None
+    '''
+
+    return HexagonsGame._batch_draws[batch_name]
+
 
   def record_step(step_name):
     '''After calling this method with some name for the step, all the tiles that are drawn
@@ -49,10 +83,10 @@ class HexagonsGame:
     step_name:
       The name of the step, should be a string or an integer
     '''
-    if HexagonsGame._step != 'primary' or HexagonsGame.board_state != [0] * HexagonsGame.width * HexagonsGame.height:
-      HexagonsGame.board_states[HexagonsGame._step] = copy(HexagonsGame.board_state)
-    HexagonsGame._step = step_name
-    HexagonsGame._drawn_hexagons[step_name] = []
+    if HexagonsGame._current_step_name is not None:
+      HexagonsGame.board_states[HexagonsGame._current_step_name] = copy(HexagonsGame.board_state)
+    HexagonsGame._current_step_name = step_name
+    HexagonsGame._step_drawn_hexagons[step_name] = []
 
   def get_record(step_names):
     '''Retrieving a shape consisting of the tiles drawn in previous step/steps
@@ -70,9 +104,7 @@ class HexagonsGame:
 
     if not isinstance(step_names, list):
       step_names = [step_names]
-    drawn_hexagons = []
-    for step_name in step_names:
-      drawn_hexagons += HexagonsGame._drawn_hexagons[step_name]
+    drawn_hexagons = [_ for step_name in step_names for _ in HexagonsGame._step_drawn_hexagons[step_name]]
     return Shape(drawn_hexagons, from_hexagons=True)
 
   def plot(gold_boards=None, multiple=False, file_name=None):
@@ -95,7 +127,10 @@ class HexagonsGame:
     def diff(board1, board2):
       return list(map(lambda x, y: 0 if x == y else 1, board1, board2))
 
-    HexagonsGame.board_states[HexagonsGame._step] = copy(HexagonsGame.board_state)
+    if HexagonsGame._current_step_name is None:
+      HexagonsGame.board_states['final'] = copy(HexagonsGame.board_state)
+    else:
+      HexagonsGame.board_states[HexagonsGame._current_step_name] = copy(HexagonsGame.board_state)
     boards = list(HexagonsGame.board_states.values())
     titles = list(HexagonsGame.board_states.keys())
     if not multiple:
@@ -180,7 +215,7 @@ class _Vec:
     return ls[-k:] + ls[:-k]
 
   def _show(self):
-    print(f'{self.__class__.__name__} instance: cube = {self._cube}')
+    print(f'{self.__class__.__name__} instance: cube={self._cube}')
 
   def _has_direction(self):
     # q*r*s=0 means that vec is proportional to one of the six direction vecs
@@ -289,7 +324,7 @@ class _Hexagon:
 
   def _show(self):
     print(
-      f'{self.__class__.__name__} instance: column = {self._column}, row = {self._row}, lind = {self._lind}, color = {self._color_id}')
+      f'{self.__class__.__name__} instance: column={self._column}, row={self._row}, lind={self._lind}, color={self._color_id}')
 
   def _from_lind(lind):
     '''Returns a hexagon by its linear index on the board'''
@@ -386,8 +421,11 @@ class _Hexagon:
       HexagonsGame.board_state[self._lind] = color_id
     else:
       self._saved_color_id = color_id
-    HexagonsGame._drawn_hexagons['all'].append(self)
-    HexagonsGame._drawn_hexagons[HexagonsGame._step].append(self)
+    if HexagonsGame._current_step_name is not None:
+      HexagonsGame._step_drawn_hexagons[HexagonsGame._current_step_name].append(self)
+    if HexagonsGame._current_batch_name is not None:
+      HexagonsGame._batch_draws[HexagonsGame._current_batch_name].append({'index':self._lind, 'row':self._row, 'column':self._column, 'color': color})
+
     return self
 
   def _neighbor(self, direction):
@@ -489,7 +527,7 @@ class Shape:
     return [hexagon._s for hexagon in self._hexagons]
 
   def _show(self):
-    print(f'{self.__class__.__name__} instance: size = {self._size}, linds = {self._linds}')
+    print(f'{self.__class__.__name__} instance: size={self._size}, linds={self._linds}')
 
   def __iter__(self):
     self.n = 0
@@ -1067,7 +1105,7 @@ class Tile(Shape):
 
   def _show(self):
     print(
-      f'{self.__class__.__name__} instance: column = {self.column}, row = {self.row}, lind = {self._lind}, color = {self.color}')
+      f'{self.__class__.__name__} instance: column={self.column}, row={self.row}, lind={self._lind}, color={self.color}')
 
   def _to_tile(_hexagon):
     return Shape([_hexagon], from_hexagons=True)
@@ -1170,8 +1208,8 @@ class Line(Shape):
       self.constant_value = hexagons[0]._cube[qrs_ind]
 
   def _show(self):
-    print(f'{self.__class__.__name__} instance: linds = {self._linds}, size = {self._size}, direction = {self.direction}, \
-    start = {self.tiles[0].offset}, end = {self.tiles[-1].offset}, color = {self.color}')
+    print(f'{self.__class__.__name__} instance: linds={self._linds}, size={self._size}, direction={self.direction}, \
+    start={self.tiles[0].offset}, end={self.tiles[-1].offset}, color={self.color}')
 
   def parallel(self, shift_direction, spacing):
     '''Create a new line parallel to self, in the given direction, with the given spacing from self
@@ -1288,7 +1326,7 @@ class Circle(Shape):
 
   def _show(self):
     print(
-      f'{self.__class__.__name__} instance: linds = {self._linds}, size = {self._size}, center = {self.center_tile.offset}, color = {self.color}')
+      f'{self.__class__.__name__} instance: linds={self._linds}, size={self._size}, center={self.center_tile.offset}, color={self.color}')
 
   def draw(self, color):
     '''Draw the circle in the given color.
@@ -1348,7 +1386,7 @@ class Triangle(Shape):
 
   def _show(self):
     print(
-      f'{self.__class__.__name__} instance: linds = {self._linds}, size = {self._size}, center = {self.center_tile.offset}, color = {self.color}')
+      f'{self.__class__.__name__} instance: linds={self._linds}, size={self._size}, center={self.center_tile.offset}, color={self.color}')
 
   def draw(self, color):
     '''Draw the triangle in the given color
@@ -1367,9 +1405,10 @@ class Triangle(Shape):
 if __name__ == '__main__':
 
   HexagonsGame.start()
-
-  shape = Shape([Tile(1, 4), Tile(1, 5), Tile(2, 4)])
-  shape.draw('black')
-  shape.grid(shift_direction='right', spacing=2, num_copies=2)
+  HexagonsGame._start_batch_record('batch 1')
+  Tile(column=1, row=1).draw(color='yellow')
+  Tile(column=-1, row=-1).draw(color='red')
+  Tile(column=1, row=1).neighbor('up').draw(color='blue')
+  print(HexagonsGame._get_batch_record('batch 1'))
 
   HexagonsGame.plot()

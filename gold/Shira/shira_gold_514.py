@@ -28,12 +28,10 @@ the leftmost to the topmost tile. Then continue for two more rows.
 '''
 line2 = line1.parallel(shift_direction='down', spacing=1)
 line2.draw('red')
-lines = []
 line = line2
 for i in range(2):
   line = line.parallel(shift_direction='down', spacing=1)
   line.draw('red')
-  lines.append(line)
 '''
 4. Using purple from now through the last column to be colored purple, color every
 other column beginning with the bottom leftmost tile. Every other column needs
