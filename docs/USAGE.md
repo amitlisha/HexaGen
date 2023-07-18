@@ -80,13 +80,13 @@ HexagonsGame.plot(gold_board=gold_board)
 <img src="board_examples/hexagonsgame_plot_gold.png" alt="HexagonsGame plot gold board" width="100%" height="100%">
 
 #### `HexagonsGame.record_step(step_name)` and `HexagonsGame.get_record(step_names)`
-The `record_step` and `get_record` methods enable users to define steps in their drawing process, 
+The `record_step` and `get_record` methods enable users to define steps in the drawing process, 
 save the tiles drawn in each step, and refer to them in later steps.
 
 For instance, let's say we want to execute the following two steps:
 
 >1. draw a red flower with a yellow center, centered at the seventh column and fifth row
->2. make a copy the flower from step 1 to the right, creating a space of 3 between the flowers
+>2. make a copy of the flower from step 1 to the right, creating a space of 3 between the flowers
 
 To reference the tiles drawn in the first step while executing the second step, 
 we can use the `record_step` and `get_record` methods as follows:
@@ -97,7 +97,7 @@ center = Tile(column=7, row=5)
 center.draw(color='yellow')
 center.neighbors().draw(color='red')
 
-# 2. make a copy the flower from step 1 to the right, creating a space of 3 between the flower
+# 2. make a copy of the flower from step 1 to the right, creating a space of 3 between the flower
 HexagonsGame.record_step(step_name='2')
 flower = HexagonsGame.get_record(step_names=['1'])
 flower.copy_paste(shift_direction='right', spacing=3)
