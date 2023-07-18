@@ -26,8 +26,12 @@ class HexagonsGameTests(HexagonsTests):
   def test(self):
     HexagonsGame.start()
     HexagonsGame.record_step(step_name='1')
+    Tile(column=7, row=5).draw(color='black')
+    HexagonsGame.record_step(step_name='2')
     Tile(column=7, row=5).neighbors().draw(color='yellow')
-    self.assertShapeLinds(HexagonsGame.get_record(step_names=['1']), [77, 79, 96, 61, 59, 60])
+
+    self.assertShapeLinds(HexagonsGame.get_record(step_names=['1','2']), [78, 77, 79, 96, 61, 59, 60])
+    self.assertShapeLinds(HexagonsGame.get_record(step_names='2'), [77, 79, 96, 61, 59, 60])
 
 class _VecTests(HexagonsTests):
   @HexagonsTests.wrap_test
