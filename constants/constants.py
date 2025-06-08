@@ -1,6 +1,5 @@
 from pathlib import Path
 ROOT_DIR = Path(__file__).parent.parent
-print(ROOT_DIR)
 
 WIDTH = 18 # the board's width
 HEIGHT = 10 # the board's height
