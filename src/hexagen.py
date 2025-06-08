@@ -16,6 +16,7 @@ Contains 7 classes:
 '''
 
 from copy import copy
+import logging
 import numpy as np
 from scipy.spatial.transform import Rotation
 from typing import Callable, Optional, List  # Union
@@ -23,6 +24,8 @@ from typing import Callable, Optional, List  # Union
 from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 import src.plot_board as pb
 from utils.reading_tasks import read_task
+
+logger = logging.getLogger(__name__)
 
 class HexagonsGame:
   '''Class HexagonsGame manages the board: reset the board, hold the board parameters and constants,
@@ -146,8 +149,9 @@ class HexagonsGame:
         drawn_titles = titles
         gold_boards = gold_boards if isinstance(gold_boards[0], list) else [gold_boards]
         if len(drawn_boards) != len(gold_boards):
-          print(f"number of recorded steps ({len(drawn_boards)}) "
-                f"doesn't match number of gold steps ({len(gold_boards)})")
+          logger.debug(
+            "number of recorded steps (%s) doesn't match number of gold steps (%s)",
+            len(drawn_boards), len(gold_boards))
           return
         boards = []
         titles = []
@@ -215,7 +219,7 @@ class _Vec:
     return ls[-k:] + ls[:-k]
 
   def _show(self):
-    print(f'{self.__class__.__name__} instance: cube={self._cube}')
+    logger.debug("%s instance: cube=%s", self.__class__.__name__, self._cube)
 
   def _has_direction(self):
     # q*r*s=0 means that vec is proportional to one of the six direction vecs
@@ -226,13 +230,13 @@ class _Vec:
       norm = self._norm()
       direction_cube = [x // norm for x in self._cube]
       return _Vec(*direction_cube)
-    print(f'vec {self._cube} is not a direction vector')
+    logger.debug("vec %s is not a direction vector", self._cube)
 
   def _direction_str(self):
     # returns a string describing the direction of the vector
     if self._has_direction():
       return list(DIRECTIONS.keys())[list(DIRECTIONS.values()).index(self._normalize()._cube)]
-    print(f'vec {self._cube} is not a direction vector')
+    logger.debug("vec %s is not a direction vector", self._cube)
 
   def __add__(self, other):
     new_cube = [_ for _ in [x + y for x, y in zip(self._cube, other._cube)]]
@@ -323,8 +327,9 @@ class _Hexagon:
     return self._offset[1]
 
   def _show(self):
-    print(
-      f'{self.__class__.__name__} instance: column={self._column}, row={self._row}, lind={self._lind}, color={self._color_id}')
+    logger.debug(
+      "%s instance: column=%s, row=%s, lind=%s, color=%s",
+      self.__class__.__name__, self._column, self._row, self._lind, self._color_id)
 
   def _from_lind(lind):
     '''Returns a hexagon by its linear index on the board'''
@@ -333,7 +338,7 @@ class _Hexagon:
       row = lind // (HexagonsGame.width) + 1
       column = lind % HexagonsGame.width + 1
       return _Hexagon(column=column, row=row)
-    print(f'lind {lind} not valid')
+    logger.debug("lind %s not valid", lind)
 
   def _on_board(self):
     '''Returns True iff self lies on the board'''
@@ -527,7 +532,8 @@ class Shape:
     return [hexagon._s for hexagon in self._hexagons]
 
   def _show(self):
-    print(f'{self.__class__.__name__} instance: size={self._size}, linds={self._linds}')
+    logger.debug(
+      "%s instance: size=%s, linds=%s", self.__class__.__name__, self._size, self._linds)
 
   def __iter__(self):
     self.n = 0
@@ -1104,8 +1110,9 @@ class Tile(Shape):
     return self._hexagon._offset
 
   def _show(self):
-    print(
-      f'{self.__class__.__name__} instance: column={self.column}, row={self.row}, lind={self._lind}, color={self.color}')
+    logger.debug(
+      "%s instance: column=%s, row=%s, lind=%s, color=%s",
+      self.__class__.__name__, self.column, self.row, self._lind, self.color)
 
   def _to_tile(_hexagon):
     return Shape([_hexagon], from_hexagons=True)
@@ -1208,8 +1215,10 @@ class Line(Shape):
       self.constant_value = hexagons[0]._cube[qrs_ind]
 
   def _show(self):
-    print(f'{self.__class__.__name__} instance: linds={self._linds}, size={self._size}, direction={self.direction}, \
-    start={self.tiles[0].offset}, end={self.tiles[-1].offset}, color={self.color}')
+    logger.debug(
+      "%s instance: linds=%s, size=%s, direction=%s, start=%s, end=%s, color=%s",
+      self.__class__.__name__, self._linds, self._size, self.direction,
+      self.tiles[0].offset, self.tiles[-1].offset, self.color)
 
   def parallel(self, shift_direction, spacing):
     '''Create a new line parallel to self, in the given direction, with the given spacing from self
@@ -1325,8 +1334,9 @@ class Circle(Shape):
     # self.color = None
 
   def _show(self):
-    print(
-      f'{self.__class__.__name__} instance: linds={self._linds}, size={self._size}, center={self.center_tile.offset}, color={self.color}')
+    logger.debug(
+      "%s instance: linds=%s, size=%s, center=%s, color=%s",
+      self.__class__.__name__, self._linds, self._size, self.center_tile.offset, self.color)
 
   def draw(self, color):
     '''Draw the circle in the given color.
@@ -1385,8 +1395,9 @@ class Triangle(Shape):
     # self.color = None
 
   def _show(self):
-    print(
-      f'{self.__class__.__name__} instance: linds={self._linds}, size={self._size}, center={self.center_tile.offset}, color={self.color}')
+    logger.debug(
+      "%s instance: linds=%s, size=%s, center=%s, color=%s",
+      self.__class__.__name__, self._linds, self._size, self.center_tile.offset, self.color)
 
   def draw(self, color):
     '''Draw the triangle in the given color
@@ -1409,6 +1420,6 @@ if __name__ == '__main__':
   Tile(column=1, row=1).draw(color='yellow')
   Tile(column=-1, row=-1).draw(color='red')
   Tile(column=1, row=1).neighbor('up').draw(color='blue')
-  print(HexagonsGame._get_batch_record('batch 1'))
+  logger.info(HexagonsGame._get_batch_record('batch 1'))
 
   HexagonsGame.plot()
