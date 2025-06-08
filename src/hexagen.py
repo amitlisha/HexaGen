@@ -1177,7 +1177,7 @@ class Line(Shape):
       The line's length
     include_start_tile: bool
       If false, do not include the tile 'start_tile' in the line
-    include_end: bool
+    include_end_tile: bool
       If false, do not include the tile 'end_tile' in the line
     end_tiles: Shape
       Continue the line until you reach a tile that belong to the shape
