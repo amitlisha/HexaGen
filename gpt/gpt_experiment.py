@@ -7,12 +7,10 @@ Before running experiments for some task, for example 16, create a folder 'gpt/r
 '''
 
 import importlib
-import sys
+from pathlib import Path
 from openai_tools import call_gpt
-sys.path.append('../utils')
-from reading_tasks import read_task
-sys.path.append('../data')
-sys.path.append('../results')
+from utils.reading_tasks import read_task
+from constants.constants import ROOT_DIR
 
 # set parameters for the experiment
 task_ind = 24
@@ -22,11 +20,12 @@ max_tokens = 256
 temp = 0.5
 
 # creating a prompt
+data_dir = ROOT_DIR / 'data'
 # reading the api documentation
-with open('../data/api_documentation_01.txt', 'r') as file:
+with open(data_dir / 'api_documentation_01.txt', 'r') as file:
   api_doc = file.read()
 # reading the instructions for gpt describing the general setup
-with open('../data/gpt_instructions_01.txt', 'r') as file:
+with open(data_dir / 'gpt_instructions_01.txt', 'r') as file:
   gpt_instructions = file.read()
 task_dict = read_task(task_ind=task_ind)
 task_instructions = task_dict['instructions_for_gpt']
