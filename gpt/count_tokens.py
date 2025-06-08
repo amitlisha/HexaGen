@@ -1,17 +1,16 @@
 import importlib
-import sys
+from pathlib import Path
 from openaitools import call_gpt3
-sys.path.append('../utils')
-sys.path.append('../data')
-sys.path.append('../results')
+from constants.constants import ROOT_DIR
 
 # set parameters for the experiment
 model = 'code-davinci-002' #'text-davinci-003'
 max_total_tokens = {'code-davinci-002':8000, 'text-davinci-003':4000}[model]
 
-with open('../data/api_documentation_01.txt', 'r') as file:
+data_dir = ROOT_DIR / 'data'
+with open(data_dir / 'api_documentation_01.txt', 'r') as file:
   api_doc = file.read()
-with open('../data/task_instructions_01.txt', 'r') as file:
+with open(data_dir / 'task_instructions_01.txt', 'r') as file:
   instructions = file.read()
 
 # conclusion: api_doc + instructions = 3513 tokens with 'code-davinci-002'

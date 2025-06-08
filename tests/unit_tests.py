@@ -1,8 +1,6 @@
 from functools import wraps
-import sys
 import unittest
-sys.path.append('../src')
-from hexagen import HexagonsGame, _Vec, _Hexagon, Tile, Shape, Line, Circle, Triangle
+from src.hexagen import HexagonsGame, _Vec, _Hexagon, Tile, Shape, Line, Circle, Triangle
 
 class HexagonsTests(unittest.TestCase):
 
