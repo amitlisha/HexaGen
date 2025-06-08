@@ -7,11 +7,14 @@ from matplotlib.collections import PatchCollection
 from matplotlib.colors import ListedColormap
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import logging
 import numbers
 import numpy as np
 from typing import List, Union
 
 from constants.constants import COLORS, COLORS_RGB_INT
+
+logger = logging.getLogger(__name__)
 
 MAX_INPUT_LEN = 512
 MAX_OUTPUT_LEN = 512
@@ -42,7 +45,7 @@ def plot_boards(boards, fig_size=(5, 5), width=18, height=10, max_in_row=6, h_pa
   num_cols = np.min([num_boards, max_in_row])
   fig = plt.figure(figsize=[fig_size[0] * num_cols, fig_size[1] * num_rows])
   axes = fig.subplots(num_rows, num_cols)
-  print(axes)
+  logger.debug(axes)
   if num_rows > 1 and num_cols > 1:
     axes = [_ for ls in axes for _ in ls]
     unused_axes = axes[num_boards:]
@@ -67,7 +70,7 @@ def plot_boards(boards, fig_size=(5, 5), width=18, height=10, max_in_row=6, h_pa
       H = board.shape[0]
       W = board.shape[1]
       board = board.reshape(-1)
-      print('reshaped board from 2 dim to 1 dim')
+      logger.debug('reshaped board from 2 dim to 1 dim')
     else:
       board = board.reshape(height, width)
       board = board.transpose()
