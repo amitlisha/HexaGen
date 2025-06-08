@@ -20,36 +20,39 @@ from constants.constants import ROOT_DIR
 import os.path
 from utils.reading_tasks import read_task
 
+
 def main():
+    """Generate a new empty gold file for a given task."""
+    # read the task from jsonl files
+    user_name = input("Please enter a username: ")
+    task_index = int(input("Please provide the task index: "))
+    task_dict = read_task(task_index)
+    if task_dict['group'] != 'train':
+        print(f"\nWarning! Task {task_index} is in {task_dict['group']} set")
+        if input('Would you like continue? enter y/n ') == 'n':
+            return
 
-  # read the task from jsonl files
-  user_name = input("Please enter a username: ")
-  task_index = int(input("Please provide the task index: "))
-  task_dict = read_task(task_index)
-  if task_dict['group'] != 'train':
-    print(f"\nWarning! Task {task_index} is in {task_dict['group']} set")
-    if input('Would you like continue? enter y/n ') == 'n':
-      return
+    # use template to create file
+    template_path = ROOT_DIR / 'gold' / 'template.txt'
+    with open(template_path, 'r') as file:
+        template = file.read().split('\n')
 
-  # use template to create file
-  with open('../gold/template.txt', 'r') as file:
-    template = file.read().split('\n')
+    # create new file and write to it
+    file_name = f'{user_name}_gold_{task_index:0>3}.py'
+    gold_dir = ROOT_DIR / 'gold'
+    if os.path.exists(os.path.join(gold_dir, file_name)):
+        print(f'\nfile {file_name} already exists! not creating a new file\n')
+    else:
+        print(f'creating file {file_name}')
+        with open(os.path.join(gold_dir, file_name), 'w+') as file_id:
+            file_id.write(f'# Created by by {user_name}\n\n')
+            file_id.write('\n'.join(template[:3]))
+            file_id.write(f'\ntask_index = {task_index}\n')
+            file_id.write('\n'.join(template[4:9]))
+            file_id.write(f"\n{task_dict['description']}\n\n")
+            file_id.write(task_dict['instructions'])
+            file_id.write('\n'.join(template[12:]))
 
-  # create new file and write to it
-  file_name = f'{user_name}_gold_{task_index:0>3}.py'
-  gold_dir = ROOT_DIR / 'gold'
-  if os.path.exists(os.path.join(gold_dir, file_name)):
-    print(f'\nfile {file_name} already exists! not creating a new file\n')
-  else:
-    print(f'creating file {file_name}')
-    with open(os.path.join(gold_dir, file_name), 'w+') as file_id:
-      file_id.write(f'# Created by by {user_name}\n\n')
-      file_id.write('\n'.join(template[:3]))
-      file_id.write(f'\ntask_index = {task_index}\n')
-      file_id.write('\n'.join(template[4:9]))
-      file_id.write(f"\n{task_dict['description']}\n\n")
-      file_id.write(task_dict['instructions'])
-      file_id.write('\n'.join(template[12:]))
 
 if __name__ == "__main__":
-  main()
+    main()
