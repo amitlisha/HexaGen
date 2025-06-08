@@ -21,7 +21,7 @@ HEIGHT = 10 # the board's height
 COLORS = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange'] # the supported colors
 ```
 
-The project also uses the following list of directions on the boardwhich are dictated by the geometry of the Hexagons board and should not be changed:
+The project also uses the following list of directions on the board which are dictated by the geometry of the Hexagons board and should not be changed:
 ```python
 DIRECTIONS = {'up': (0, -1, 1), 'down': (0, 1, -1), 'down_right': (1, 0, -1), 
               'up_left': (-1, 0, 1), 'down_left': (-1, 1, 0), 'up_right': (1, -1, 0)}
