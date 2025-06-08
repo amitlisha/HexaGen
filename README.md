@@ -76,7 +76,7 @@ as well as any necessary imports and other commands. After the file is generated
 TODO
 
 ## License
-TODO
+This project is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgments
 I would like to express my gratitude to Professor Reut Tsarfaty, head of the ONLP lab, for her valuable guidance and support throughout this project. Her expertise and insights have been invaluable.
