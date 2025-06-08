@@ -34,10 +34,18 @@ In addition, we made an effort to ensure that the code was robust enough to hand
 ## Requirements
 
 Before you get started, make sure you have the following requirements installed:
-  
+
 - Python 3.x
 - NumPy
 - SciPy
+
+## Installation
+
+Clone the repository and install the package and its dependencies with `pip`:
+
+```bash
+pip install -e .
+```
 
 ## Usage of the `hexagen` module
 The [src.hexagen](src/hexagen.py) module is at the core of our formalism. 
