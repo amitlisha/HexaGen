@@ -1,6 +1,6 @@
 """HexaGen public API."""
 
-from src.hexagen import (
+from hexagen import (
     HexagonsGame,
     Tile,
     Shape,
