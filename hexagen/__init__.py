@@ -1,21 +1,24 @@
+"""HexaGen public API."""
+
 from src.hexagen import (
     HexagonsGame,
-    _Vec,
-    _Hexagon,
     Tile,
     Shape,
     Line,
     Circle,
     Triangle,
 )
+from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 
 __all__ = [
     "HexagonsGame",
-    "_Vec",
-    "_Hexagon",
     "Tile",
     "Shape",
     "Line",
     "Circle",
     "Triangle",
+    "COLORS",
+    "WIDTH",
+    "HEIGHT",
+    "DIRECTIONS",
 ]
