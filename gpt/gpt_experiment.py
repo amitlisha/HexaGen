@@ -52,7 +52,7 @@ for i in range(total):
   # write the response to the file
   # wrap it with all the necessary imports and commands to run the code
   with open(f'results/task_{task_ind}/{file_name}.py', 'w+') as file_id:
-    file_id.write('from src.hexagen import HexagonsGame, Shape, Line, Circle, Triangle\n\n')
+    file_id.write('from hexagen import HexagonsGame, Shape, Line, Circle, Triangle\n\n')
     file_id.write('def func(pr=False):\n')
     # file_id.write(f"  print(f'code number {i}')\n")
     file_id.write('  HexagonsGame.start()\n\n')

@@ -1,7 +1,7 @@
 # Created by maor
 
 from utils.reading_tasks import read_task
-from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 task_index = 87
 gold_boards = list(read_task(task_index)['gold_boards'])

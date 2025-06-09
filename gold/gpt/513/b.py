@@ -1,7 +1,7 @@
 # Created by chat gpt
 
 from utils.reading_tasks import read_task
-from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 from constants.constants import *
 
 HexagonsGame.start()
