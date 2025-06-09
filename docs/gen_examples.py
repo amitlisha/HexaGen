@@ -2,7 +2,7 @@
 This script was used to create plots for the projects USAGE.md file
 '''
 
-from src.hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 HexagonsGame.start()
 

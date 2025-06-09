@@ -48,10 +48,17 @@ pip install -e .
 ```
 
 ## Usage of the `hexagen` module
-The [src.hexagen](src/hexagen.py) module is at the core of our formalism. 
-It offers essential classes, such as `Tile` and `Shape`, along with a broad range of methods that enable drawing on the hexagonal board. 
-To learn how to utilize this module, please consult our [usage guide](docs/USAGE.md), which provides comprehensive instructions. 
-The guide also offers numerous code examples that will assist you in getting started with using the module.
+The `hexagen` package provides the main classes and constants for drawing on the
+board. After installing the package you can simply write:
+
+```python
+from hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from hexagen import COLORS, WIDTH, HEIGHT, DIRECTIONS
+```
+
+To learn how to use these building blocks, consult our
+[usage guide](docs/USAGE.md), which provides comprehensive instructions and
+numerous code examples to help you get started.
 
 ## The Hexagons dataset
 The dataset for Hexagons is stored in the [data](data/) folder as jsonl files. 

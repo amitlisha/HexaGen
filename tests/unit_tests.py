@@ -1,6 +1,6 @@
 from functools import wraps
 import unittest
-from src.hexagen import HexagonsGame, _Vec, _Hexagon, Tile, Shape, Line, Circle, Triangle
+from hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
 
 class HexagonsTests(unittest.TestCase):
 
@@ -31,66 +31,7 @@ class HexagonsGameTests(HexagonsTests):
     self.assertShapeLinds(HexagonsGame.get_record(step_names=['1','2']), [78, 77, 79, 96, 61, 59, 60])
     self.assertShapeLinds(HexagonsGame.get_record(step_names='2'), [77, 79, 96, 61, 59, 60])
 
-class _VecTests(HexagonsTests):
-  @HexagonsTests.wrap_test
-  def test(self):
-    self.assertEqual(_Vec('up')._cube, (0, -1, 1))
-    self.assertEqual(_Vec(1, 1, -2)._cube, (1, 1, -2))
-    self.assertEqual(_Vec(2, 3)._cube, (2, 2, -4))
-    self.assertEqual(_Vec.cyclic_permutation([0,1,2,3], 2), [2, 3, 0, 1])
-    self.assertEqual(_Vec.cyclic_permutation([0,1,2,3], -1), [1, 2, 3, 0])
-    self.assertEqual(_Vec(.7, .8, -1.5)._round()._cube, (1, 1, -2))
-    self.assertEqual(_Vec(.2, .3, -.5)._round()._cube, (0, 0, 0))
-    self.assertEqual(_Vec(5.3, -2.1, -3.2)._norm(), 5.3)
-    self.assertEqual(_Vec(1,0,-1)._scale(3)._cube, (3, 0, -3))
-    self.assertEqual((_Vec(-3, -4, 7) - _Vec(1, -6, 5))._cube, (-4, 2, 2))
-    self.assertEqual((_Vec(-3, -4, 7) + _Vec(1, -6, 5))._cube, (-2, -10, 12))
-    self.assertEqual(_Vec(-4, 0, 4)._direction_str(), 'up_left')
-    self.assertEqual(_Vec(-4, 0, 4)._normalize()._cube, (-1, 0, 1))
-    self.assertEqual(_Vec(0, -3, 3)._has_direction(), True)
-    self.assertEqual(_Vec(1, -4, 3)._has_direction(), False)
-    self.assertEqual(_Vec(0, -3, 3)._has_direction(), True)
 
-class _HexagonTests(HexagonsTests):
-  @HexagonsTests.wrap_test
-  def test(self):
-
-    HexagonsGame.start()
-    self.assertEqual(_Hexagon._from_lind(17)._offset, (18, 1))
-    self.assertIs(_Hexagon._from_lind(180), None)
-
-    HexagonsGame.start()
-    self.assertTrue(_Hexagon(7, 6)._on_board())
-    self.assertFalse(_Hexagon(-7, 6)._on_board())
-    self.assertFalse(_Hexagon(0, 0, 0)._on_board())
-
-    HexagonsGame.start()
-    self.assertEqual((_Hexagon(7, 6) - _Hexagon(8, 5))._cube, (-1, 1, 0))
-
-    HexagonsGame.start(2, 2)
-    _Hexagon(1,2)._draw('black')
-    _Hexagon(1,2)._copy_paste(_Vec('up'))
-    self.assertEqual(HexagonsGame.board_state, [1, 0, 1, 0])
-    HexagonsGame.start(2, 2)
-    _Hexagon(1, 2)._draw('black')
-    _Hexagon(1, 2)._copy_paste(_Vec('up'), color='yellow')
-    self.assertEqual(HexagonsGame.board_state, [2, 0, 1, 0])
-
-    HexagonsGame.start()
-    self.assertEqual(_Hexagon(1,2)._shift(_Vec(-2, 3))._offset, (-1, 5))
-    self.assertEqual(_Hexagon(1,2)._shift(_Vec(0, -1, 1))._offset, (1, 1))
-    self.assertEqual(_Hexagon(1,2)._shift(0, -1, 1)._offset, (1, 1))
-
-    HexagonsGame.start(4, 6)
-    # self.assertEqual() Line!
-    self.assertEqual(_Hexagon(1,2)._reflect(axis_direction='up_right', hexagon_on_axis=_Hexagon(2, 3))._cube, (2, 3, -5))
-    self.assertEqual(_Hexagon(1,2)._reflect(column=3)._offset, (5, 2))
-    self.assertEqual(_Hexagon(2,2)._rotate(_Hexagon(3,3), 120)._offset, (3, 4))
-    _Hexagon(3,1)._draw('black')
-    self.assertEqual(HexagonsGame.board_state, [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    self.assertEqual(_Hexagon(3,1)._neighbor('up')._offset, (3, 0))
-    self.assertEqual(_Hexagon(3,1)._neighbor('down')._offset, (3, 2))
-    self.assertShapeLinds(Shape(_Hexagon(3,1)._neighbors(), from_hexagons=True), [None, 6, 3, 1])
 
 class ShapeTests(HexagonsTests):
 #   def _size(self):
@@ -116,7 +57,6 @@ class ShapeTests(HexagonsTests):
     HexagonsGame.start()
     self.assertShapeLinds(Shape(tiles=[Tile(1, 1), Tile(2, 3)]), [0, 37])
     self.assertShapeLinds(Shape(tiles=[0, 5], from_linds=True), [0, 5])
-    self.assertShapeLinds(Shape(tiles=[_Hexagon(1, 1), _Hexagon(2, 3)], from_hexagons=True), [0, 37])
 
     HexagonsGame.start()
     self.assertShapeLinds((Shape([0, 1], from_linds=True) + Shape([1, 2], from_linds=True)), [0, 1, 2])
@@ -157,7 +97,6 @@ class ShapeTests(HexagonsTests):
     self.assertEqual(HexagonsGame.board_state, [4, 3, 4, 0, 0, 0])
 
     HexagonsGame.start()
-    self.assertShapeLinds(Shape([38, 39, 58, 59, 78], from_linds=True)._shift(_Vec(6, -2, -4)), [102, 82, 83, 62, 63])
 
     HexagonsGame.start()
     S1=Shape([61, 117, 65], from_linds=True)
