@@ -109,9 +109,9 @@ we can use the `record_step` and `get_record` methods as follows:
 # 1. draw a red flower with a yellow center, centered at the seventh column and fifth row
 with Game() as g:
     g.record_step(step_name='1')
-center = Tile(column=7, row=5)
-center.draw(color='yellow')
-center.neighbors().draw(color='red')
+    center = Tile(column=7, row=5)
+    center.draw(color='yellow')
+    center.neighbors().draw(color='red')
 
 # 2. make a copy of the flower from step 1 to the right, creating a space of 3 between the flower
     g.record_step(step_name='2')
