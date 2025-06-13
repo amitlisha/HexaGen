@@ -48,7 +48,6 @@ class Game:
 
   def __exit__(self, exc_type, exc, tb):
     _game_context.pop()
-    self.plot()
     return False
 
   def start(self, width: int = WIDTH, height: int = HEIGHT):
