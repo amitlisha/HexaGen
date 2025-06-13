@@ -137,9 +137,10 @@ To plot an image using the Hexagons project, a script should follow the followin
 ```python
 from src.hexagons_classes import Game, Tile, Shape, Line, Circle, Triangle
 with Game() as g:
+
     # insert code here
-    tile = Tile(5, 7)
-    tile.draw('blue')
+
+    g.plot()
 ```
 
 For example:
@@ -147,8 +148,11 @@ For example:
 ```python
 from src.hexagons_classes import Game, Tile, Shape, Line, Circle, Triangle
 with Game() as g:
+
     tile = Tile(5, 7)
     tile.draw('blue')
+
+    g.plot()
 ```
 
 The code generates the following image:
