@@ -135,7 +135,7 @@ The resulting image shows the two steps:
 To plot an image using the Hexagons project, a script should follow the following structure:
 
 ```python
-from src.hexagons_classes import Game, Tile, Shape, Line, Circle, Triangle
+from hexagen import Game, Tile, Shape, Line, Circle, Triangle
 with Game() as g:
 
     # insert code here
@@ -146,7 +146,7 @@ with Game() as g:
 For example:
 
 ```python
-from src.hexagons_classes import Game, Tile, Shape, Line, Circle, Triangle
+from hexagen import Game, Tile, Shape, Line, Circle, Triangle
 with Game() as g:
 
     tile = Tile(5, 7)
