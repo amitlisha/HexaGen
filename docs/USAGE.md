@@ -3,9 +3,9 @@ Welcome to the Hexagons usage guide. This guide provides detailed instructions o
 and visuals to help you get started.
 
 ## Overview
-Our formalism is comprised of several classes that work together to enable drawing on the hexagonal board. These classes are:
-
-- `HexagonsGame`: responsible for managing the board
+- Our formalism is comprised of several classes that work together to enable drawing on the hexagonal board. These classes are:
+-
+- `Game`: responsible for managing the board
 - `Tile`: represents a single tile on the board
 - `Shape`: represents any set of tiles on the board, and has three useful subclasses: `Circle`, `Line`, and `Triangle`
 
@@ -27,33 +27,33 @@ DIRECTIONS = {'up': (0, -1, 1), 'down': (0, 1, -1), 'down_right': (1, 0, -1),
               'up_left': (-1, 0, 1), 'down_left': (-1, 1, 0), 'up_right': (1, -1, 0)}
 ```
 
-## `HexagonsGame` Class
-The `HexagonsGame` class is responsible for managing the game board. 
+## `Game` Class
+The `Game` class is responsible for managing the game board.
 It provides methods for starting a new game and displaying the board on the screen. 
 Additionally, it allows users to divide the game into steps.
 
 ### Attributes
-The `HexagonsGame` class has the following read-only static attributes:
+The `Game` class has the following attributes:
 - `width`: an integer specifying the width of the board
 - `height`: and integer specifying the height of the board
 - `board_state`: a list of integers specifying the current board state
 
 ### Methods
 
-#### `HexagonsGame.start(width=WIDTH, height=HEIGHT)`
+#### `Game.start(width=WIDTH, height=HEIGHT)`
 The `start` method creates a new blank board and is used to start a new game. 
 By default, the width and height are set to 18 and 10, respectively, as constants in the project. 
 However, it is possible to set different values when starting a new game, as shown in the following example:
 ```python
-HexagonsGame.start(width=5, height=8)
-HexagonsGame.plot()
+game = Game(width=5, height=8)
+game.plot()
 ```
 This will create a new game board with a width of 5 and a height of 8, and create the following plot on the screen:
 
 <img src="board_examples/hexagonsgame_start.png" alt="HexagonsGame start" width="40%" height="40%">
 
-#### `HexagonsGame.plot(gold_board=None, file_name=None)`
-The `plot` method generate a plot of the current board state. 
+#### `Game.plot(gold_board=None, file_name=None)`
+The `plot` method generates a plot of the current board state.
 It takes two optional parameters:
 - `gold_board`: a list of integers specifying some board state. If provided, the plot will show the gold board, the current board state, and the difference between the two. 
 - `file_name`: if provided, the plot will be saved under this name.
@@ -64,22 +64,21 @@ Then, a new board is created, and a flower is drawn on it in a slightly differen
 Finally, the `plot` method is called with `gold_board` set to the variable `plot_board`. 
 This generates a plot that displays the two boards and the difference between them.
 ```python
-HexagonsGame.start(width=8, height=4)
-tile = Tile(4, 2)
-tile.draw('orange')
-tile.neighbors().draw('purple')
-gold_board = HexagonsGame.board_state
+with Game(8, 4) as g:
+    tile = Tile(4, 2)
+    tile.draw('orange')
+    tile.neighbors().draw('purple')
+    gold_board = g.board_state
 
-HexagonsGame.start(width=8, height=4)
-tile = Tile(5, 2)
-tile.draw('orange')
-tile.neighbors().draw('purple')
-
-HexagonsGame.plot(gold_board=gold_board)
+with Game(8, 4) as g:
+    tile = Tile(5, 2)
+    tile.draw('orange')
+    tile.neighbors().draw('purple')
+    g.plot(gold_board=gold_board)
 ```
 <img src="board_examples/hexagonsgame_plot_gold.png" alt="HexagonsGame plot gold board" width="100%" height="100%">
 
-#### `HexagonsGame.record_step(step_name)` and `HexagonsGame.get_record(step_names)`
+#### `Game.record_step(step_name)` and `Game.get_record(step_names)`
 The `record_step` and `get_record` methods enable users to define steps in the drawing process, 
 save the tiles drawn in each step, and refer to them in later steps.
 
@@ -92,15 +91,16 @@ To reference the tiles drawn in the first step while executing the second step,
 we can use the `record_step` and `get_record` methods as follows:
 ```python
 # 1. draw a red flower with a yellow center, centered at the seventh column and fifth row
-HexagonsGame.record_step(step_name='1')
+with Game() as g:
+    g.record_step(step_name='1')
 center = Tile(column=7, row=5)
 center.draw(color='yellow')
 center.neighbors().draw(color='red')
 
 # 2. make a copy of the flower from step 1 to the right, creating a space of 3 between the flower
-HexagonsGame.record_step(step_name='2')
-flower = HexagonsGame.get_record(step_names=['1'])
-flower.copy_paste(shift_direction='right', spacing=3)
+    g.record_step(step_name='2')
+    flower = g.get_record(step_names=['1'])
+    flower.copy_paste(shift_direction='right', spacing=3)
 ```
 In this code, `Tile` objects represent the hexagonal tiles on the board, and the `draw` method is used to color objects on the board. 
 The `neighbors` method returns the six neighboring tiles of the current tile.
@@ -116,22 +116,18 @@ The resulting image shows the two steps:
 ## Code Structure
 To plot an image using the Hexagons project, a script should follow the following structure:
 ```python
-from src.hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
-HexagonsGame.start()
-
-# insert code here
-
-HexagonsGame.plot()
+from src.hexagons_classes import Game, Tile, Shape, Line, Circle, Triangle
+with Game() as g:
+    # insert code here
+    tile = Tile(5, 7)
+    tile.draw('blue')
 ```
 For example:
 ```python
-from src.hexagons_classes import HexagonsGame, Tile, Shape, Line, Circle, Triangle
-HexagonsGame.start()
-
-tile = Tile(5,7)
-tile.draw('blue')
-
-HexagonsGame.plot()
+from src.hexagons_classes import Game, Tile, Shape, Line, Circle, Triangle
+with Game() as g:
+    tile = Tile(5, 7)
+    tile.draw('blue')
 ```
 The code generates the following image:
 

@@ -1,13 +1,13 @@
 from utils.reading_tasks import read_task
-from hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from hexagen import Game, Tile, Shape, Line, Circle, Triangle
 
 task_index = ?
 gold_boards = list(read_task(task_index)['gold_boards'])
 
-HexagonsGame.start()
+with Game() as g:
 
 # description:
 
 # instructions:
 
-HexagonsGame.plot(gold_boards=gold_boards, multiple=0)
+    g.plot(gold_boards=gold_boards, multiple=0)

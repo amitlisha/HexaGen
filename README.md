@@ -52,7 +52,7 @@ The `hexagen` package provides the main classes and constants for drawing on the
 board. After installing the package you can simply write:
 
 ```python
-from hexagen import HexagonsGame, Tile, Shape, Line, Circle, Triangle
+from hexagen import Game, Tile, Shape, Line, Circle, Triangle
 from hexagen import COLORS, WIDTH, HEIGHT, DIRECTIONS
 ```
 
