@@ -92,8 +92,8 @@ with Game(8, 4) as g:
 
 <img src="board_examples/hexagonsgame_plot_gold.png" alt="HexagonsGame plot gold board" width="100%" height="100%">
 
-#### `Game.record_step(step_name)` and `Game.get_record(step_names)`
-
+from hexagen import Game, Tile, Shape, Line, Circle, Triangle
+from hexagen import Game, Tile, Shape, Line, Circle, Triangle
 The `record_step` and `get_record` methods enable users to define steps in the drawing process,
 save the tiles drawn in each step, and refer to them in later steps.
 
