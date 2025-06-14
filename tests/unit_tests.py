@@ -1,8 +1,3 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-
 from functools import wraps
 import unittest
 from hexagen import Game, Tile, Shape, Line, Circle, Triangle
