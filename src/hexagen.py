@@ -4,8 +4,8 @@ This module contains tools for drawing on a hexagons board.
 The purpose of these tools is to translate drawing instructions given in natural language
 into code.
 
-Contains 7 classes:
-- HexagonsGame - manages the board
+Contains the main classes:
+- Game - manages the board
 - _Vec (for internal use only)
 - _Hexagon (for internal use only)
 - Shape - manages shapes (any set of tiles) on the board
@@ -27,115 +27,107 @@ from utils.reading_tasks import read_task
 
 logger = logging.getLogger(__name__)
 
-class HexagonsGame:
-  '''Class HexagonsGame manages the board: reset the board, hold the board parameters and constants,
-  hold the board state, keep track of drawing steps
+_game_context = []
+
+
+def _active_game():
+  '''Return the active ``Game`` instance.
+
+  Raises:
+  -------
+  RuntimeError
+    If no ``Game`` is currently active.
   '''
 
-  # _COLORS_LIST = ['white', 'black', 'yellow', 'green', 'red', 'blue', 'purple', 'orange']
-
-  def start(width = WIDTH, height = HEIGHT):
-    HexagonsGame.width = width
-    HexagonsGame.height = height
-    HexagonsGame.board_state = [0] * width * height
-    HexagonsGame.board_states = {}
-    HexagonsGame._current_step_name = None
-    HexagonsGame._step_drawn_hexagons = {}
-    HexagonsGame._current_batch_name = None
-    HexagonsGame._batch_draws = {}
-
-  def _start_batch_record(batch_name):
-    '''This is a method used to analyze a procedure, it is not meant to use as part of the game
-    After calling this method with some name for the batch, the series of calls to _Hexagon._draw
-    will be recorded under the batch's name. The list can later be retrieved using
-    the method '_get_batch_record'
-
-    Parameters:
-    ---------------
-    batch_name:
-      The name of the batch, should be a string or an integer
-    '''
-    HexagonsGame._current_batch_name = batch_name
-    HexagonsGame._batch_draws[batch_name] = []
-
-  def _get_batch_record(batch_name):
-    '''Retrieving a list of draw commands in a batch
-
-    Parameters:
-    ---------------
-    batch_name: str or int
-      The batch to retrieve
-
-    Returns:
-    ---------------
-    List of dictionaries
-      Each dictionary describes a draw action, and has the folowing keys: ['index', 'row', 'column', 'color']
-      Note that if the tile is not on the board, 'index' will be None
-    '''
-
-    return HexagonsGame._batch_draws[batch_name]
+  if not _game_context:
+    raise RuntimeError("No active Game. Use 'with Game() as g:' or pass game= explicitly")
+  return _game_context[-1]
 
 
-  def record_step(step_name):
-    '''After calling this method with some name for the step, all the tiles that are drawn
-    will be saved in a list under the step's name. The list can later be retrieved using
-    the method 'get_record'
+class Game:
+  """Manage a single hexagon board."""
 
-    Parameters:
-    ---------------
-    step_name:
-      The name of the step, should be a string or an integer
-    '''
-    if HexagonsGame._current_step_name is not None:
-      HexagonsGame.board_states[HexagonsGame._current_step_name] = copy(HexagonsGame.board_state)
-    HexagonsGame._current_step_name = step_name
-    HexagonsGame._step_drawn_hexagons[step_name] = []
+  def __init__(self, width: int = WIDTH, height: int = HEIGHT):
+    """Create a new game with the given board dimensions."""
 
-  def get_record(step_names):
-    '''Retrieving a shape consisting of the tiles drawn in previous step/steps
+    self.start(width, height)
 
-    Parameters:
-    ---------------
-    step_names: str or List[str]
-      The step(s) to retrieve
+  def __enter__(self):
+    """Activate the game context."""
 
-    Returns:
-    ---------------
-    Shape
-      New Shape object
-    '''
+    _game_context.append(self)
+    return self
+
+  def __exit__(self, exc_type, exc, tb):
+    """Deactivate the game context."""
+
+    _game_context.pop()
+    return False
+
+  def start(self, width: int = WIDTH, height: int = HEIGHT):
+    """Initialize the board with the given size."""
+
+    self.width = width
+    self.height = height
+    self.board_state = [0] * width * height
+    self.board_states = {}
+    self._current_step_name = None
+    self._step_drawn_hexagons = {}
+    self._current_batch_name = None
+    self._batch_draws = {}
+    return self
+
+  def _start_batch_record(self, batch_name):
+    """Begin recording draw commands under ``batch_name``."""
+
+    self._current_batch_name = batch_name
+    self._batch_draws[batch_name] = []
+
+  def _get_batch_record(self, batch_name):
+    """Return recorded commands for ``batch_name``."""
+
+    return self._batch_draws[batch_name]
+
+  def record_step(self, step_name):
+    """Start a new drawing step called ``step_name``."""
+
+    if self._current_step_name is not None:
+      self.board_states[self._current_step_name] = copy(self.board_state)
+    self._current_step_name = step_name
+    self._step_drawn_hexagons[step_name] = []
+
+  def get_record(self, step_names):
+    """Return the tiles recorded in the provided step or steps."""
 
     if not isinstance(step_names, list):
       step_names = [step_names]
-    drawn_hexagons = [_ for step_name in step_names for _ in HexagonsGame._step_drawn_hexagons[step_name]]
+    drawn_hexagons = [
+        h for step_name in step_names for h in self._step_drawn_hexagons[step_name]
+    ]
     return Shape(drawn_hexagons, from_hexagons=True)
 
-  def plot(gold_boards=None, multiple=False, file_name=None):
-    '''Plot the current state of the board
+  def plot(self, gold_boards=None, multiple=False, file_name=None):
+    """Plot the current board state.
 
-    Parameters:
-    -----------
-    gold_boards: List[int] or List[List[int]]
-      if provided, the two boards will be plotted side by side,
-      together with the difference between them.
-
-    file_name: string
-      if provided, the plot will be saved under this file name.
-
-    Returns:
-    ---------
-    A marplotlib figure.
-    '''
+    Parameters
+    ----------
+    gold_boards: list[int] or list[list[int]], optional
+      If provided, compare the drawn board with these boards.
+    multiple: bool, optional
+      Whether to plot all recorded steps.
+    file_name: str, optional
+      If provided, save the figure to this path.
+    """
 
     def diff(board1, board2):
       return list(map(lambda x, y: 0 if x == y else 1, board1, board2))
 
-    if HexagonsGame._current_step_name is None:
-      HexagonsGame.board_states['final'] = copy(HexagonsGame.board_state)
+    if self._current_step_name is None:
+      self.board_states['final'] = copy(self.board_state)
     else:
-      HexagonsGame.board_states[HexagonsGame._current_step_name] = copy(HexagonsGame.board_state)
-    boards = list(HexagonsGame.board_states.values())
-    titles = list(HexagonsGame.board_states.keys())
+      self.board_states[self._current_step_name] = copy(self.board_state)
+    boards = list(self.board_states.values())
+    titles = list(self.board_states.keys())
     if not multiple:
       boards = [boards[-1]]
       titles = ['']
@@ -157,19 +149,18 @@ class HexagonsGame:
         titles = []
         for i in range(len(drawn_boards)):
           boards += [drawn_boards[i], gold_boards[i], diff(drawn_boards[i], gold_boards[i])]
-          titles += [f'code generated ({drawn_titles[i]})',f'gold ({i+1})','difference']
+          titles += [f'code generated ({drawn_titles[i]})', f'gold ({i+1})', 'difference']
 
     fig = pb.plot_boards(boards=boards,
                          fig_size=[7, 5],
-                         height=HexagonsGame.height,
-                         width=HexagonsGame.width,
+                         height=self.height,
+                         width=self.width,
                          max_in_row=3,
                          h_pad=2,
                          titles=titles)
 
     if file_name is not None:
       fig.savefig(file_name)
-
 
     return fig
 
@@ -266,7 +257,7 @@ class _Hexagon:
   It is for internal use only.
   '''
 
-  def complete_arguments(column, row, cube):
+  def complete_arguments(column, row, cube, game):
     '''An hexagon can be defined be two different sets of coordinates:
     offset (column, row) and cube (q, r, s).
     This method completes missing coordinates'''
@@ -283,15 +274,16 @@ class _Hexagon:
         raise Exception(f'cube coordinates {[q, r, s]} don\'t sum up to 0')
       column = q + 1
       row = r + (q - (q % 2)) // 2 + 1
-    if 1 <= column <= HexagonsGame.width and 1 <= row <= HexagonsGame.height:
-      lind = int((row - 1) * HexagonsGame.width + (column - 1))
+    if 1 <= column <= game.width and 1 <= row <= game.height:
+      lind = int((row - 1) * game.width + (column - 1))
     else:
       # tile is not on board, so it has no linear index
       lind = None
     return lind, (column, row), (q, r, s)
 
-  def __init__(self, column=None, row=None, cube=None):
-    self._lind, self._offset, self._cube = _Hexagon.complete_arguments(column, row, cube)
+  def __init__(self, column=None, row=None, cube=None, game=None):
+    self._game = game or _active_game()
+    self._lind, self._offset, self._cube = _Hexagon.complete_arguments(column, row, cube, self._game)
     if self._lind is None:
       self._saved_color_id = 0
 
@@ -312,7 +304,7 @@ class _Hexagon:
     if self._lind is None:
       return self._saved_color_id
     else:
-      return HexagonsGame.board_state[self._lind]
+      return self._game.board_state[self._lind]
 
   @property
   def _color(self):
@@ -331,13 +323,14 @@ class _Hexagon:
       "%s instance: column=%s, row=%s, lind=%s, color=%s",
       self.__class__.__name__, self._column, self._row, self._lind, self._color_id)
 
-  def _from_lind(lind):
+  def _from_lind(lind, game=None):
     '''Returns a hexagon by its linear index on the board'''
 
-    if lind in range(HexagonsGame.width * HexagonsGame.height):
-      row = lind // (HexagonsGame.width) + 1
-      column = lind % HexagonsGame.width + 1
-      return _Hexagon(column=column, row=row)
+    g = game or _active_game()
+    if lind in range(g.width * g.height):
+      row = lind // (g.width) + 1
+      column = lind % g.width + 1
+      return _Hexagon(column=column, row=row, game=g)
     logger.debug("lind %s not valid", lind)
 
   def _on_board(self):
@@ -389,7 +382,7 @@ class _Hexagon:
     v_direction_reciprocal = v_direction_reciprocal / np.linalg.norm(v_direction_reciprocal)
     if column is not None:
       # we assume if axis_value is given it represents a column number
-      column = column % (HexagonsGame.width + 1)
+      column = column % (self._game.width + 1)
       axis_value = column - 1
       ind = direction_vec._cube.index(0)
       cube = _Vec.cyclic_permutation([axis_value, -axis_value, 0], ind)
@@ -423,13 +416,13 @@ class _Hexagon:
 
     color_id = COLORS.index(color) if isinstance(color, str) else color
     if self._lind is not None:
-      HexagonsGame.board_state[self._lind] = color_id
+      self._game.board_state[self._lind] = color_id
     else:
       self._saved_color_id = color_id
-    if HexagonsGame._current_step_name is not None:
-      HexagonsGame._step_drawn_hexagons[HexagonsGame._current_step_name].append(self)
-    if HexagonsGame._current_batch_name is not None:
-      HexagonsGame._batch_draws[HexagonsGame._current_batch_name].append({'index':self._lind, 'row':self._row, 'column':self._column, 'color': color})
+    if self._game._current_step_name is not None:
+      self._game._step_drawn_hexagons[self._game._current_step_name].append(self)
+    if self._game._current_batch_name is not None:
+      self._game._batch_draws[self._game._current_batch_name].append({'index':self._lind, 'row':self._row, 'column':self._column, 'color': color})
 
     return self
 
@@ -452,7 +445,7 @@ class Shape:
   '''Class Shape represents any set of tiles on the board,
   including an empty set and a single tile'''
 
-  def __init__(self, tiles, from_linds=False, from_hexagons=False):
+  def __init__(self, tiles, from_linds=False, from_hexagons=False, game=None):
     '''
     Construct a new Shape from a list of tiles.
 
@@ -462,9 +455,10 @@ class Shape:
       The tiles that compose the shape
     '''
 
+    self.game = game or _active_game()
     if from_linds:
       linds = tiles
-      hexagons = [_Hexagon._from_lind(lind) for lind in linds]
+      hexagons = [_Hexagon._from_lind(lind, game=self.game) for lind in linds]
     else:
       if from_hexagons:
         hexagons = tiles
@@ -589,7 +583,7 @@ class Shape:
       else:
         return _Vec(direction)._scale(k)
 
-    for k in range(max(HexagonsGame.width, HexagonsGame.height), -1, -1):
+    for k in range(max(self.game.width, self.game.height), -1, -1):
       if reference_shape.overlaps(initial_new_shape._shift(scale_shift(direction, k))):
         break
 
@@ -781,37 +775,41 @@ class Shape:
 
     return Shape([hexagon._shift(V) for hexagon in self._hexagons], from_hexagons=True)
 
-  def get_entire_board():
+  def get_entire_board(game=None):
     '''Return a Shape object containing all the tiles on the board'''
 
+    g = game or _active_game()
     tiles = []
-    for row in range(1, HexagonsGame.height + 1):
-      for column in range(1, HexagonsGame.width + 1):
+    for row in range(1, g.height + 1):
+      for column in range(1, g.width + 1):
         tiles.append(Tile(column, row))
-    return Shape(tiles)
+    return Shape(tiles, game=g)
 
-  def get_board_perimeter():
+  def get_board_perimeter(game=None):
     '''Return a Shape object containing all the tiles on the board's perimeter'''
 
-    B = Shape.get_entire_board()
+    g = game or _active_game()
+    B = Shape.get_entire_board(game=g)
 
     def tile_on_perimeter(tile):
-      return tile.column in [1, HexagonsGame.width] or tile.row in [1, HexagonsGame.height]
+      return tile.column in [1, g.width] or tile.row in [1, g.height]
 
-    return Shape([tile for tile in B if tile_on_perimeter(tile)])
+    return Shape([tile for tile in B if tile_on_perimeter(tile)], game=g)
 
-  def get_color(color):
+  def get_color(color, game=None):
     '''Return a Shape object containing all the tiles painted in the given color
     If color is 'any' is will return all the tiles that are not white'''
 
+    g = game or _active_game()
     if color in ['all', 'any']:
-      return Shape([tile for tile in Shape.get_entire_board().tiles if tile.color != 'white'])
-    return Shape([tile for tile in Shape.get_entire_board().tiles if tile.color == color])
+      return Shape([tile for tile in Shape.get_entire_board(game=g).tiles if tile.color != 'white'], game=g)
+    return Shape([tile for tile in Shape.get_entire_board(game=g).tiles if tile.color == color], game=g)
 
-  def get_column(column):
+  def get_column(column, game=None):
     '''Return a Shape object containing all the tiles in the given column'''
 
-    return Shape([Tile(column, row) for row in range(1, HexagonsGame.height + 1)])
+    g = game or _active_game()
+    return Shape([Tile(column, row) for row in range(1, g.height + 1)], game=g)
 
   def get(self, criterion):
     '''
@@ -825,9 +823,9 @@ class Shape:
     '''
 
     if criterion == 'outside':
-      S_ext = Shape.get_board_perimeter() - self
+      S_ext = Shape.get_board_perimeter(game=self.game) - self
       while True:
-        S_ext_neighbors_not_in_self = (S_ext.neighbors('all') - self) * Shape.get_entire_board()
+        S_ext_neighbors_not_in_self = (S_ext.neighbors('all') - self) * Shape.get_entire_board(game=self.game)
         # stop if S_ext didn't grow in the last iteration
         if S_ext_neighbors_not_in_self._size == 0:
           break
@@ -836,7 +834,7 @@ class Shape:
       return S_ext
 
     if criterion == 'inside':
-      return (Shape.get_entire_board() - self) - self.get('outside')
+      return (Shape.get_entire_board(game=self.game) - self) - self.get('outside')
 
     if criterion == 'above':
       criterion = 'up'
@@ -850,7 +848,7 @@ class Shape:
       next_grows = (direction_cube[next_ind] == 1)
       shape_lines = [cube[direction_ind] for cube in self._cubes]
       hexagons = []
-      entire_board_hexagons = Shape.get_entire_board()._hexagons
+      entire_board_hexagons = Shape.get_entire_board(game=self.game)._hexagons
       for val in np.unique(shape_lines):
         hexagons_with_val = [hexagon for hexagon in self._hexagons if hexagon._cube[direction_ind] == val]
         if next_grows:
@@ -1001,7 +999,7 @@ class Shape:
     if criterion == 'inside':
       return self.neighbors('all') * self.get('inside')
     if criterion == 'white':
-      return Shape([tile for tile in Shape.get_entire_board() if tile.color == 'white']) * self.neighbors()
+      return Shape([tile for tile in Shape.get_entire_board(game=self.game) if tile.color == 'white'], game=self.game) * self.neighbors()
     if criterion in DIRECTIONS:
       return self.get(criterion) * self.neighbors()
 
@@ -1068,7 +1066,7 @@ class Tile(Shape):
     The color of the tile
   '''
 
-  def __init__(self, column, row):
+  def __init__(self, column, row, game=None):
     '''
     Construct a new tile. The default color is ‘white’.
 
@@ -1081,9 +1079,10 @@ class Tile(Shape):
       The row on which this tile is located. Starts from 1 and counted from top to bottom.
       A negative value represents counting from bottom to top. E.g., the first row from the bottom is -1.
     '''
-    column = column % (HexagonsGame.width + 1)
-    row = row % (HexagonsGame.height + 1)
-    self._hexagons = [_Hexagon(column=column, row=row, cube=None)]
+    self.game = game or _active_game()
+    column = column % (self.game.width + 1)
+    row = row % (self.game.height + 1)
+    self._hexagons = [_Hexagon(column=column, row=row, cube=None, game=self.game)]
 
   @property
   def _hexagon(self):
@@ -1162,7 +1161,7 @@ class Line(Shape):
   '''
 
   def __init__(self, start_tile: Tile, end_tile: Optional[Tile] = None, direction: str = None, length: int = None,
-               end_tiles: Shape = Shape([]), include_start_tile: bool = True, include_end_tile: bool = True):
+               end_tiles: Optional[Shape] = None, include_start_tile: bool = True, include_end_tile: bool = True):
     '''
     Parameters:
     ---------------
@@ -1179,13 +1178,16 @@ class Line(Shape):
       If false, do not include the tile 'start_tile' in the line
     include_end_tile: bool
       If false, do not include the tile 'end_tile' in the line
-    end_tiles: Shape
-      Continue the line until you reach a tile that belong to the shape
+    end_tiles: Shape | None
+      Continue the line until you reach a tile that belongs to the shape
     '''
 
     shexagon = start_tile._hexagon
+    g = start_tile.game
+    if end_tiles is None:
+      end_tiles = Shape([], game=g)
     if length is None:
-      length = max(HexagonsGame.height, HexagonsGame.width)
+      length = max(g.height, g.width)
     if end_tile is not None:
       ehexagon = end_tile._hexagon
       v = ehexagon - shexagon
@@ -1203,7 +1205,8 @@ class Line(Shape):
       hexagons.append(hexagon)
       hexagon = hexagon._shift(direction_vec)
       count += 1
-    super().__init__(hexagons, from_hexagons=True)
+    super().__init__(hexagons, from_hexagons=True, game=g)
+    self.game = g
     self.length = len(hexagons)
     # self.color = None
     self._direction_vec = direction_vec
@@ -1319,6 +1322,7 @@ class Circle(Shape):
       The radius of the circle
     '''
 
+    g = center_tile.game
     rctile = center_tile._hexagon
     hexagons = []
     shifts = []
@@ -1329,8 +1333,9 @@ class Circle(Shape):
       for i in range(3):
         shift = _Vec(*[d[i % 3], d[(1 + i) % 3], d[(2 + i) % 3]])
         hexagons.append(rctile._shift(shift))
-    super().__init__(hexagons, from_hexagons=True)
+    super().__init__(hexagons, from_hexagons=True, game=g)
     self.center_tile = center_tile
+    self.game = g
     # self.color = None
 
   def _show(self):
@@ -1389,7 +1394,9 @@ class Triangle(Shape):
       for _ in range(side_length - 1):
         tiles.append(tile)
         tile = tile.neighbor(directions[i_edge])
-    super().__init__(tiles)
+    g = start_tile.game
+    super().__init__(tiles, game=g)
+    self.game = g
     self.point = point
     self.side_length = side_length
     # self.color = None
@@ -1415,11 +1422,9 @@ class Triangle(Shape):
 
 if __name__ == '__main__':
 
-  HexagonsGame.start()
-  HexagonsGame._start_batch_record('batch 1')
-  Tile(column=1, row=1).draw(color='yellow')
-  Tile(column=-1, row=-1).draw(color='red')
-  Tile(column=1, row=1).neighbor('up').draw(color='blue')
-  logger.info(HexagonsGame._get_batch_record('batch 1'))
-
-  HexagonsGame.plot()
+  with Game() as g:
+    g._start_batch_record('batch 1')
+    Tile(column=1, row=1).draw(color='yellow')
+    Tile(column=-1, row=-1).draw(color='red')
+    Tile(column=1, row=1).neighbor('up').draw(color='blue')
+    logger.info(g._get_batch_record('batch 1'))

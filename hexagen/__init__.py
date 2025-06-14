@@ -1,7 +1,7 @@
 """HexaGen public API."""
 
-from hexagen import (
-    HexagonsGame,
+from src.hexagen import (
+    Game,
     Tile,
     Shape,
     Line,
@@ -11,7 +11,7 @@ from hexagen import (
 from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 
 __all__ = [
-    "HexagonsGame",
+    "Game",
     "Tile",
     "Shape",
     "Line",
