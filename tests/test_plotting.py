@@ -1,5 +1,5 @@
 from utils.reading_tasks import read_task
-from hexagen import Game, Tile, Shape, Line, Circle, Triangle
+from hexagen import Game, Tile
 
 task_index = 24
 gold_boards = list(read_task(task_index)['gold_boards'])
