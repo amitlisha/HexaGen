@@ -1,6 +1,6 @@
 import unittest
 from hexagen import Tile, Triangle
-from .base import HexagonsTests
+from tests.base import HexagonsTests
 
 class TriangleTests(HexagonsTests):
     @HexagonsTests.wrap_test

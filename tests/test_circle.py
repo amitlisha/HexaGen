@@ -1,6 +1,6 @@
 import unittest
 from hexagen import Tile, Circle
-from .base import HexagonsTests
+from tests.base import HexagonsTests
 
 class CircleTests(HexagonsTests):
     @HexagonsTests.wrap_test

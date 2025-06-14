@@ -1,6 +1,6 @@
 import unittest
 from hexagen import Tile, Line
-from .base import HexagonsTests
+from tests.base import HexagonsTests
 
 class LineTests(HexagonsTests):
     @HexagonsTests.wrap_test
