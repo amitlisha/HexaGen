@@ -16,7 +16,10 @@ class HexagonsTests(unittest.TestCase):
     return self.assertEqual(set(S._linds), set(linds))
 
   def assertBoardNonZeros(self, game, indices):
-    board_nz_indices=[i for i in range(len(game.board_state)) if game.board_state[i] != 0]
+    board_nz_indices = [
+        i for i in range(len(game.board_state)) if game.board_state[i] != 0
+    ]
+    return self.assertEqual(set(board_nz_indices), set(indices))
 class GameTests(HexagonsTests):
   @HexagonsTests.wrap_test
   def test(self):
