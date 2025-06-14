@@ -31,6 +31,14 @@ _game_context = []
 
 
 def _active_game():
+  '''Return the active ``Game`` instance.
+
+  Raises:
+  -------
+  RuntimeError
+    If no ``Game`` is currently active.
+  '''
+
   if not _game_context:
     raise RuntimeError("No active Game. Use 'with Game() as g:' or pass game= explicitly")
   return _game_context[-1]
@@ -40,17 +48,25 @@ class Game:
   """Manage a single hexagon board."""
 
   def __init__(self, width: int = WIDTH, height: int = HEIGHT):
+    """Create a new game with the given board dimensions."""
+
     self.start(width, height)
 
   def __enter__(self):
+    """Activate the game context."""
+
     _game_context.append(self)
     return self
 
   def __exit__(self, exc_type, exc, tb):
+    """Deactivate the game context."""
+
     _game_context.pop()
     return False
 
   def start(self, width: int = WIDTH, height: int = HEIGHT):
+    """Initialize the board with the given size."""
+
     self.width = width
     self.height = height
     self.board_state = [0] * width * height
@@ -62,19 +78,27 @@ class Game:
     return self
 
   def _start_batch_record(self, batch_name):
+    """Begin recording draw commands under ``batch_name``."""
+
     self._current_batch_name = batch_name
     self._batch_draws[batch_name] = []
 
   def _get_batch_record(self, batch_name):
+    """Return recorded commands for ``batch_name``."""
+
     return self._batch_draws[batch_name]
 
   def record_step(self, step_name):
+    """Start a new drawing step called ``step_name``."""
+
     if self._current_step_name is not None:
       self.board_states[self._current_step_name] = copy(self.board_state)
     self._current_step_name = step_name
     self._step_drawn_hexagons[step_name] = []
 
   def get_record(self, step_names):
+    """Return the tiles recorded in the provided step or steps."""
+
     if not isinstance(step_names, list):
       step_names = [step_names]
     drawn_hexagons = [
@@ -83,6 +107,18 @@ class Game:
     return Shape(drawn_hexagons, from_hexagons=True)
 
   def plot(self, gold_boards=None, multiple=False, file_name=None):
+    """Plot the current board state.
+
+    Parameters
+    ----------
+    gold_boards: list[int] or list[list[int]], optional
+      If provided, compare the drawn board with these boards.
+    multiple: bool, optional
+      Whether to plot all recorded steps.
+    file_name: str, optional
+      If provided, save the figure to this path.
+    """
+
     def diff(board1, board2):
       return list(map(lambda x, y: 0 if x == y else 1, board1, board2))
 
