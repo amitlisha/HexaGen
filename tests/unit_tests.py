@@ -1,9 +1,13 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
 from functools import wraps
 import unittest
 from hexagen import Game, Tile, Shape, Line, Circle, Triangle
 
 class HexagonsTests(unittest.TestCase):
-
   def wrap_test(func):
     @wraps(func)
     def mod_test(*args, **kwargs):
@@ -20,6 +24,7 @@ class HexagonsTests(unittest.TestCase):
         i for i in range(len(game.board_state)) if game.board_state[i] != 0
     ]
     return self.assertEqual(set(board_nz_indices), set(indices))
+  
 class GameTests(HexagonsTests):
   @HexagonsTests.wrap_test
   def test(self):
