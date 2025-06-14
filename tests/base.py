@@ -3,9 +3,6 @@ import os
 from functools import wraps
 import unittest
 
-# Ensure package is importable when running tests directly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from hexagen import Game
 
 class HexagonsTests(unittest.TestCase):
