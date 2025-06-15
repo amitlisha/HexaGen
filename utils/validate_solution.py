@@ -34,21 +34,17 @@ class ValidationGame(OriginalGame):
         return self
 
     def plot(self, gold_boards=None, multiple=False, file_name=None):
-        # Use provided gold boards or fallback to the one supplied by the script
         boards = gold_boards if gold_boards is not None else _gold_board
         if boards is not None:
             gold_board = boards if not isinstance(boards[0], list) else boards[-1]
             self.validation_passed = self.board_state == gold_board
-        # Disable plotting
+
         return None
 
-# Patch Game class used by solution files
 hexagen.Game = ValidationGame
 hexagen.hexagen.Game = ValidationGame
 
-# Prevent plotting windows
 plt.show = lambda *args, **kwargs: None
-
 
 def _extract_task_index(file_path: Path) -> int | None:
     """Try to infer the task index from the file name or its contents."""
@@ -79,7 +75,7 @@ def _validate_file(file_path: Path):
 
     try:
         runpy.run_path(str(file_path), run_name="__main__")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         print(f"{file_path}: ERROR during execution - {exc}")
         _gold_board = None
         return 2
