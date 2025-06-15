@@ -3,7 +3,7 @@ This script was used to create plots for Shira's presentation in the lab meeting
 '''
 
 from utils.reading_tasks import read_task
-from src.plot_board import plot_boards
+from hexagen.plot_board import plot_boards
 import textwrap
 
 task_id = 132
