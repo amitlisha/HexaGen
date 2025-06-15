@@ -1,22 +1,16 @@
-import unittest
 from hexagen import Tile
-from tests.base import HexagonsTests
+from tests.helpers import assert_board_non_zeros
 
-class TileTests(HexagonsTests):
-    @HexagonsTests.wrap_test
-    def test_on_board_and_draw(self):
-        self.assertTrue(Tile(1, 1).on_board())
-        self.assertTrue(Tile(-3, -1).on_board())
-        Tile(1, 1).draw('black')
-        self.assertBoardNonZeros([0])
 
-    @HexagonsTests.wrap_test
-    def test_neighbor(self):
-        self.assertEqual(Tile(1, 1).neighbor(direction='down')._lind, 18)
-        self.assertTrue(Tile(1, 1).neighbor(direction='down').on_board())
-        self.assertFalse(Tile(1, 1).neighbor(direction='up').on_board())
+def test_on_board_and_draw(game):
+    assert Tile(1, 1).on_board()
+    assert Tile(-3, -1).on_board()
+    Tile(1, 1).draw('black')
+    assert_board_non_zeros(game, [0])
 
-def load_tests(loader, tests, pattern):
-    suite = unittest.TestSuite()
-    suite.addTests(loader.loadTestsFromTestCase(TileTests))
-    return suite
+
+def test_neighbor(game):
+    assert Tile(1, 1).neighbor(direction='down')._lind == 18
+    assert Tile(1, 1).neighbor(direction='down').on_board()
+    assert not Tile(1, 1).neighbor(direction='up').on_board()
+
