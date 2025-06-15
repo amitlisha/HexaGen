@@ -11,7 +11,7 @@ import json
 from os.path import join
 import re
 import textwrap
-from src.plot_board import plot_boards
+from hexagen.plot_board import plot_boards
 
 # jsonl files that contain all the tasks
 data_dir = ROOT_DIR / 'data'
