@@ -17,4 +17,4 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["src", "hexagen", "constants", "utils", "gpt"]
+packages = ["hexagen", "constants", "utils", "gpt"]
