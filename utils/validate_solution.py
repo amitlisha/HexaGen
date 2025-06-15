@@ -1,7 +1,7 @@
 """Validate a solution file by comparing its final board to the gold board."""
 import runpy
 import sys
-import types
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 
@@ -31,21 +31,40 @@ hexagen.hexagen.Game = ValidationGame
 # Prevent plotting windows
 plt.show = lambda *args, **kwargs: None
 
-def main(path):
-    runpy.run_path(path, run_name="__main__")
+def _validate_file(file_path: Path):
+    global _latest_game
+    _latest_game = None
+    runpy.run_path(str(file_path), run_name="__main__")
     if _latest_game is None:
-        print("No Game instance detected")
+        print(f"{file_path}: No Game instance detected")
         return 2
     if getattr(_latest_game, "validation_passed", False):
-        print("VALID SOLUTION")
+        print(f"{file_path}: VALID SOLUTION")
         return 0
     else:
-        print("INVALID SOLUTION")
+        print(f"{file_path}: INVALID SOLUTION")
         return 1
+
+
+def main(path):
+    target = Path(path)
+    if target.is_file():
+        return _validate_file(target)
+    elif target.is_dir():
+        codes = [_validate_file(p) for p in sorted(target.glob("*.py"))]
+        if all(c == 0 for c in codes):
+            return 0
+        elif any(c == 1 for c in codes):
+            return 1
+        else:
+            return 2
+    else:
+        print(f"Path {path} not found")
+        return 2
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: validate_solution.py <solution_file>")
+        print("Usage: validate_solution.py <path_to_solution_or_folder>")
         sys.exit(2)
     sys.exit(main(sys.argv[1]))
 
