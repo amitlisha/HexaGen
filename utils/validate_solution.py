@@ -1,9 +1,10 @@
 """Validate solution files by comparing their final board to the gold board.
 
-The script can validate either a single Python file or all ``.py`` files under a
-directory. It will attempt to extract the task index from each file name or
-``task_index`` variable inside the file in order to load the corresponding gold
-board using :func:`utils.reading_tasks.read_task`.
+The script can validate either a single Python file or every ``.py`` file under
+a directory. When a directory is supplied, all Python files in nested
+subfolders are processed as well. For each file the task index is inferred from
+its name or a ``task_index`` variable inside the file in order to load the
+corresponding gold board using :func:`utils.reading_tasks.read_task`.
 
 If running a file raises an exception, the error will be reported but the
 validation process will continue.
@@ -108,7 +109,7 @@ def main(path):
     if target.is_file():
         return _validate_file(target)
     elif target.is_dir():
-        codes = [_validate_file(p) for p in sorted(target.glob("*.py"))]
+        codes = [_validate_file(p) for p in sorted(target.rglob("*.py"))]
         if all(c == 0 for c in codes):
             return 0
         elif any(c == 1 for c in codes):
@@ -121,7 +122,7 @@ def main(path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: validate_solution.py <path_to_solution_or_folder>")
+        print("Usage: validate_solution.py <path_to_solution_or_directory>")
         sys.exit(2)
     sys.exit(main(sys.argv[1]))
 
