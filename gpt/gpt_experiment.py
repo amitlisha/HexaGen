@@ -3,14 +3,20 @@ This script takes a task_ind, creates a prompt, runs it through GPT using the AP
 writes the response (which is Python code that creates a board) to a Python file,
 tries to run the file, if the file can run it compares the board to the gold board.
 
-Before running experiments for some task, for example 16, create a folder 'gpt/results/task_15'
+Before running experiments for some task, for example 16, create a folder
+'data/generated/results/task_15'
 '''
 
 import importlib
 from pathlib import Path
+import sys
 from openai_tools import call_gpt
 from utils.reading_tasks import read_task
 from constants.constants import ROOT_DIR
+
+generated_dir = ROOT_DIR / 'data' / 'generated'
+sys.path.append(str(generated_dir))
+results_dir = generated_dir / 'results'
 
 # set parameters for the experiment
 task_ind = 24
@@ -51,7 +57,7 @@ for i in range(total):
 
   # write the response to the file
   # wrap it with all the necessary imports and commands to run the code
-  with open(f'results/task_{task_ind}/{file_name}.py', 'w+') as file_id:
+  with open(results_dir / f'task_{task_ind}/{file_name}.py', 'w+') as file_id:
     file_id.write('from hexagen import HexagonsGame, Shape, Line, Circle, Triangle\n\n')
     file_id.write('def func(pr=False):\n')
     # file_id.write(f"  print(f'code number {i}')\n")
