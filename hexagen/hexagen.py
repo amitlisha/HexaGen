@@ -23,7 +23,6 @@ from typing import Callable, Optional, List  # Union
 
 from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 import hexagen.plot_board as pb
-from utils.reading_tasks import read_task
 
 logger = logging.getLogger(__name__)
 
