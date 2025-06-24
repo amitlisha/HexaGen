@@ -10,14 +10,13 @@ If running a file raises an exception, the error will be reported but the
 validation process will continue.
 """
 
-from __future__ import annotations
-
 import re
 import runpy
 import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from hexagen.hexagen import Game as OriginalGame
 import hexagen
@@ -38,12 +37,10 @@ class ValidationGame(OriginalGame):
         if boards is not None:
             gold_board = boards if not isinstance(boards[0], list) else boards[-1]
             self.validation_passed = self.board_state == gold_board
-
         return None
 
 hexagen.Game = ValidationGame
 hexagen.hexagen.Game = ValidationGame
-
 plt.show = lambda *args, **kwargs: None
 
 def _extract_task_index(file_path: Path) -> int | None:
@@ -65,11 +62,11 @@ def _extract_task_index(file_path: Path) -> int | None:
 def _validate_file(file_path: Path):
     global _latest_game, _gold_board
     _latest_game = None
-
     task_index = _extract_task_index(file_path)
+
     if task_index is None:
         print(f"{file_path}: could not determine task index")
-        return 2
+        return dict(task_number=None, path=str(file_path), status="failed", error_message="could not determine task index")
 
     _gold_board = read_task(task_index)["gold_boards"]
 
@@ -77,12 +74,11 @@ def _validate_file(file_path: Path):
         runpy.run_path(str(file_path), run_name="__main__")
     except Exception as exc:
         print(f"{file_path}: ERROR during execution - {exc}")
-        _gold_board = None
-        return 2
+        return dict(task_number=task_index, path=str(file_path), status="failed", error_message=str(exc))
 
     if _latest_game is None:
         print(f"{file_path}: No Game instance detected")
-        return 2
+        return dict(task_number=task_index, path=str(file_path), status="failed", error_message="No Game instance detected")
 
     if not hasattr(_latest_game, "validation_passed") and _gold_board is not None:
         boards = _gold_board
@@ -90,30 +86,36 @@ def _validate_file(file_path: Path):
         _latest_game.validation_passed = _latest_game.board_state == gold_board
 
     if getattr(_latest_game, "validation_passed", False):
-        result = 0
         print(f"{file_path}: VALID SOLUTION")
+        status = "valid"
     else:
-        result = 1
         print(f"{file_path}: INVALID SOLUTION")
+        status = "invalid"
 
-    _gold_board = None
-    return result
-
+    return dict(task_number=task_index, path=str(file_path), status=status, error_message="")
 
 def main(path):
     target = Path(path)
+    results = []
+
     if target.is_file():
-        return _validate_file(target)
+        results.append(_validate_file(target))
     elif target.is_dir():
-        codes = [_validate_file(p) for p in sorted(target.rglob("*.py"))]
-        if all(c == 0 for c in codes):
-            return 0
-        elif any(c == 1 for c in codes):
-            return 1
-        else:
-            return 2
+        for p in sorted(target.rglob("*.py")):
+            results.append(_validate_file(p))
     else:
         print(f"Path {path} not found")
+        sys.exit(2)
+
+    df = pd.DataFrame(results)
+    df.to_csv("validation_results.csv", index=False)
+    print("\nSaved results to validation_results.csv")
+
+    if all(r["status"] == "valid" for r in results):
+        return 0
+    elif any(r["status"] == "invalid" for r in results):
+        return 1
+    else:
         return 2
 
 if __name__ == "__main__":
@@ -121,4 +123,3 @@ if __name__ == "__main__":
         print("Usage: validate_solution.py <path_to_solution_or_directory>")
         sys.exit(2)
     sys.exit(main(sys.argv[1]))
-

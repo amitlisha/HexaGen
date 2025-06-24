@@ -21,9 +21,20 @@ with Game() as g:
     '''
     2. Fill every other spot in the 8th column with blue starting at the top.
     '''
-    
+    column = 8
+    row = 1
+
+    from constants import HEIGHT
+
+    while row < HEIGHT+1:
+        Tile(column, row).draw('blue')
+        row += 2
+
     '''
     3. Make a diagonal line going down from each blue spot.
     '''
+    for tile in Shape.get_color('blue'):
+        line = Line(start_tile=tile, direction='down_right')
+        line.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

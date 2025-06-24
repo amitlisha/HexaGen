@@ -56,7 +56,7 @@ with Game() as g:
     '''
     start_v_tile = black_tile.neighbor('up')
     v_shape = Line(start_tile = start_v_tile, direction = 'up_right') +Line(start_tile = start_v_tile, direction = 'up_left')
-    v_shape.draw('black')
+    v_shape.draw('purple')
     '''
     9. Inside the V, paint the eleven tiles across the top of the V yellow.
     '''
