@@ -174,13 +174,13 @@ with Game() as g:
     '''
     12. In column # 18 paint sixth, eight and tenth tiles from the top blue.
     '''
-    tile = Tile(column=17, row=6)
+    tile = Tile(column=18, row=6)
     tile.draw('blue')
     
-    tile = Tile(column=17, row=8)
+    tile = Tile(column=18, row=8)
     tile.draw('blue')
     
-    tile = Tile(column=17, row=10)
+    tile = Tile(column=18, row=10)
     tile.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

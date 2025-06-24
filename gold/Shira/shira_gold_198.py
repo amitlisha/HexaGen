@@ -17,14 +17,25 @@ with Game() as g:
     '''
     red_tile = Tile(1, 1)
     red_tile.draw('red')
-    next_tile = red_tile.neighbor('down_right').neighbor('down_right').neighbor('down_right').neighbor('down_right')
-    line = Line(start_tile = Tile(1, 3), direction = 'up_right', length = 5)
+
+    line = Line(start_tile = Tile(1, 3), direction = 'up_right')
     line.draw('red')
+
+    for i in range(5, 10, 2):
+        line = Line(start_tile = Tile(1, i), direction = 'up_right')
+        line.draw('red')
     '''
     2. Color purple every other row, below the longest hexagonal red line made in step
     one. Start this alternating pattern with Bottommost, left most tile, skipping
     the second row from left, but then on every other row to the right, (third,
     fifth, seventh, etc.) color the vertical line(s) purple.
     '''
+    from constants import WIDTH
+
+    line = Line(start_tile=Tile(1, 9), direction='up_right')
     
+    for tile in line.tiles:
+        if tile.column in range(1, WIDTH, 2):
+            Line(start_tile=tile, direction='down', include_start_tile=False).draw('purple')
+
     g.plot(gold_boards=gold_boards)

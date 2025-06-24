@@ -32,7 +32,7 @@ with Game() as g:
     
     for d in DIRECTIONS:
       tile2 = tile1.neighbor(direction=d)
-      while tile2.row in range(1, HEIGHT) and tile2.column in range(1, WIDTH):
+      while tile2.row in range(1, HEIGHT+1) and tile2.column in range(1, WIDTH+1):
           tile2.draw('red')
           tile2 = tile2.neighbor(direction=d)
           tile2.draw('yellow')
