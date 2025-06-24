@@ -44,7 +44,7 @@ with Game() as g:
     4. Color all tiles with the rows just created.
     '''
     shape1 = Shape(line1 + line2 + line3 + line4)
-    shape2 = shape.get(criterion='inside')
+    shape2 = shape1.get(criterion='inside')
     shape2.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

@@ -27,15 +27,17 @@ with Game() as g:
     3. Make diagonal lines that alternate red and yellow out from every spot
     surrounding the orange spot.
     '''
-    from constants.constants import DIRECTIONS
+    from constants import DIRECTIONS
     
     for d in DIRECTIONS:
+      i=0
       tile2 = tile1.neighbor(direction=d)
-      for i in range(10):
+      while tile2.on_board():
         if i % 2 == 0:
           tile2.draw('red')
         else:
           tile2.draw('yellow')
         tile2 = tile2.neighbor(direction=d)
+        i+=1
     
     g.plot(gold_boards=gold_boards, multiple=0)
