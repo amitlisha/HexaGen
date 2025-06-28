@@ -1,5 +1,0 @@
-
-
-# We now provide you with a drawing procedure on the board, written in natural language.
-# Use the Hexagons package to convert the instructions into Python code.
-
