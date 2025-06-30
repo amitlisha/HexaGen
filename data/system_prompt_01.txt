@@ -16,3 +16,4 @@ Rules:
    Later steps may reuse these variables.
 4. Write all new lines with the same **4-space indentation** that the `# TODO` comment uses, make sure to indent the first line as well.
 5. Never overwrite previously defined variables and add no extra comments, prints, or plots.
+6. Columns and Rows start from 1.
