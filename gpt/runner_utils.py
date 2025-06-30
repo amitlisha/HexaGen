@@ -37,4 +37,7 @@ def save_plot(board_state: List[int], gold_board: List[int] | List[List[int]], o
     """Plot board vs. gold and save PNG."""
     with Game() as g:
         g.board_state = board_state.copy()
-        g.plot(gold_boards=gold_board, multiple=False, file_name=str(out), show=False)
+        if gold_board:
+            g.plot(gold_boards=gold_board, multiple=False, file_name=str(out), show=False)
+        else:
+            g.plot(multiple=False, file_name=str(out), show=False)
