@@ -1,0 +1,7 @@
+##### CONTEXT (completed instructions so far)
+{HISTORY_BLOCK}
+
+##### NEXT INSTRUCTION
+{NEXT_STEP}
+
+Provide the tiles as a list of (row,column,color) tuples:
