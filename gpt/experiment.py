@@ -18,10 +18,12 @@ from runner_utils import (
     DATA_DIR,
     ensure_task_dir,
     extract_code,
+    parse_tile_actions,
     save_json,
     save_plot,
     timestamp,
 )
+from constants.constants import WIDTH, HEIGHT
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CLI helpers
@@ -42,10 +44,11 @@ def parse_args() -> argparse.Namespace:
                    help="Max attempts per step (0 = unlimited)")
     p.add_argument(
         "--mode",
-        choices=["step", "full"],
+        choices=["step", "full", "tiles"],
         default="step",
         help="step = one instruction at a time (default); "
-             "full = send ALL instructions in one prompt",
+             "full = send ALL instructions in one prompt; "
+             "tiles = predict tiles step-by-step instead of code",
     )
     p.add_argument("--vision", action="store_true",
                    help="Attach current board image to each prompt")
@@ -55,13 +58,24 @@ def parse_args() -> argparse.Namespace:
 # Prompt helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def build_prompts() -> tuple[str, str]:
-    """Load system & user templates (checks required placeholders)."""
-    system_tmpl = (DATA_DIR / "system_prompt_01.txt").read_text()
-    user_tmpl   = (DATA_DIR / "user_message_01.txt").read_text()
-    for tag in ("{HISTORY_BLOCK}", "{CODE_SO_FAR}", "{NEXT_STEP}"):
+def build_prompts(mode: str) -> tuple[str, str]:
+    """Load system & user templates for the selected mode."""
+    if mode == "tiles":
+        sys_p = DATA_DIR / "system_prompt_tiles.txt"
+        user_p = DATA_DIR / "user_message_tiles.txt"
+    else:
+        sys_p = DATA_DIR / "system_prompt_01.txt"
+        user_p = DATA_DIR / "user_message_01.txt"
+
+    system_tmpl = sys_p.read_text()
+    user_tmpl = user_p.read_text()
+
+    tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]
+    if mode != "tiles":
+        tags.append("{CODE_SO_FAR}")
+    for tag in tags:
         if tag not in user_tmpl:
-            raise ValueError(f"user_message_01.txt missing placeholder {tag}")
+            raise ValueError(f"{user_p.name} missing placeholder {tag}")
     return system_tmpl, user_tmpl
 
 
@@ -71,6 +85,14 @@ def make_user_prompt(instr: str, history: List[str], template: str, code: str) -
             .replace("{HISTORY_BLOCK}", hist_block)
             .replace("{CODE_SO_FAR}", code.rstrip())
             .replace("{NEXT_STEP}", f'    # TODO: {instr.strip()}'))
+
+
+def make_tile_prompt(instr: str, history: List[str], template: str) -> str:
+    """Format prompt for tile prediction mode."""
+    hist_block = "\n".join(f"{i+1}. {h}" for i, h in enumerate(history)) or "(none yet)"
+    return (template
+            .replace("{HISTORY_BLOCK}", hist_block)
+            .replace("{NEXT_STEP}", instr.strip()))
 
 # ──────────────────────────────────────────────────────────────────────────────
 # GPT ↔ execution loop
@@ -139,6 +161,51 @@ def run_step(cfg: argparse.Namespace, sys_prompt: str, user_tmpl: str,
                 return log, False, code, image_path  # keep previous image
 
 
+def run_step_tiles(cfg: argparse.Namespace, sys_prompt: str, user_tmpl: str,
+                   instr: str, history: List[str], board: List[int],
+                   gold_board: List[int], image_path: Optional[Path],
+                   out_dir: Path, step_idx: int, run_ts: str)
+                   -> tuple[Dict, bool, List[int], Path | None]:
+    """Prompt GPT for tile predictions and update board state."""
+    attempt = 0
+    from constants.constants import COLORS, WIDTH, HEIGHT
+    while True:
+        attempt += 1
+        prompt = make_tile_prompt(instr, history, user_tmpl)
+        resp = call_gpt(
+            prompt        = prompt,
+            system_prompt = sys_prompt,
+            model         = cfg.model,
+            temperature   = cfg.temperature,
+            max_tokens    = cfg.max_tokens,
+            seed          = cfg.seed,
+            images        = [str(image_path)] if image_path else None,
+        )
+
+        tiles = parse_tile_actions(resp["text"])
+        new_board = board.copy()
+        for r, c, col in tiles:
+            if 1 <= r <= HEIGHT and 1 <= c <= WIDTH and col in COLORS:
+                idx = (r - 1) * WIDTH + (c - 1)
+                new_board[idx] = COLORS.index(col)
+
+        log = {
+            "step"   : step_idx,
+            "attempt": attempt,
+            "usage"  : resp["usage"],
+            "tiles"  : tiles,
+            "valid"  : True,
+            "correct": new_board == gold_board,
+        }
+
+        plot_path = out_dir / f"{run_ts}_plot_{step_idx:02}_{attempt:02}.png"
+        plot_with_gold_path = out_dir / (
+            f"{run_ts}_plot_{step_idx:02}_{attempt:02}_gold.png")
+        save_plot(new_board, None, plot_path)
+        save_plot(new_board, gold_board, plot_with_gold_path)
+        return log, True, new_board, plot_path
+
+
 def run_full(cfg: argparse.Namespace, sys_prompt: str, user_tmpl: str,
              instructions: List[str], code_so_far: str, gold_final: List[int],
              image_path: Optional[Path], task_dir: Path,
@@ -187,6 +254,8 @@ def run_full(cfg: argparse.Namespace, sys_prompt: str, user_tmpl: str,
 
     return log
 
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Main entry
 # ──────────────────────────────────────────────────────────────────────────────
@@ -195,7 +264,7 @@ def main() -> None:
     cfg = parse_args()
     random.seed(cfg.seed)
 
-    sys_prompt, user_tmpl = build_prompts()
+    sys_prompt, user_tmpl = build_prompts(cfg.mode)
     task          = read_task(cfg.task)
     instructions  = task["steps"]
     gold_boards   = task["gold_boards"]
@@ -219,6 +288,7 @@ def main() -> None:
 
     history: List[str] = []
     logs:    List[Dict] = []
+    board_state: List[int] = [0] * (WIDTH * HEIGHT)
 
     if cfg.mode == "step":
         for idx, instr in enumerate(instructions, 1):
@@ -237,7 +307,7 @@ def main() -> None:
             print(f"[step {idx}/{len(instructions)}] "
                   f"{'✓✓' if log['correct'] else ('✓' if log['valid'] else '✗')}"
                   f" (try {log['attempt']})")
-    else:
+    elif cfg.mode == "full":
         log = run_full(
             cfg, sys_prompt, user_tmpl,
             instructions, code_so_far,
@@ -247,8 +317,22 @@ def main() -> None:
         logs = [log]
         print("FULL RUN →",
               "✓✓" if log["correct"] else ("✓" if log["valid"] else "✗"))
+    else:  # tiles mode (step-wise predictions)
+        for idx, instr in enumerate(instructions, 1):
+            gold_current = gold_boards[idx - 1]
+            log, _, board_state, plot_path = run_step_tiles(
+                cfg, sys_prompt, user_tmpl, instr,
+                history, board_state, gold_current,
+                current_img, run_dir, idx, run_ts)
+            logs.append(log)
+            history.append(instr)
+            if cfg.vision and log["valid"]:
+                current_img = plot_path
+            print(f"[step {idx}/{len(instructions)}] "
+                  f"{'✓✓' if log['correct'] else ('✓' if log['valid'] else '✗')}"
+                  f" (try {log['attempt']})")
 
-    if cfg.mode == "step":
+    if cfg.mode in ("step", "tiles"):
         total_steps = len(instructions)
         valid_cnt   = sum(l["valid"]   for l in logs)
         exact_cnt   = sum(l["correct"] for l in logs)
