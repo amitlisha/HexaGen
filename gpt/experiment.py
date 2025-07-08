@@ -161,11 +161,19 @@ def run_step(cfg: argparse.Namespace, sys_prompt: str, user_tmpl: str,
                 return log, False, code, image_path  # keep previous image
 
 
-def run_step_tiles(cfg: argparse.Namespace, sys_prompt: str, user_tmpl: str,
-                   instr: str, history: List[str], board: List[int],
-                   gold_board: List[int], image_path: Optional[Path],
-                   out_dir: Path, step_idx: int, run_ts: str)
-                   -> tuple[Dict, bool, List[int], Path | None]:
+def run_step_tiles(
+    cfg: argparse.Namespace,
+    sys_prompt: str,
+    user_tmpl: str,
+    instr: str,
+    history: List[str],
+    board: List[int],
+    gold_board: List[int],
+    image_path: Optional[Path],
+    out_dir: Path,
+    step_idx: int,
+    run_ts: str
+) -> tuple[Dict, bool, List[int], Optional[Path]]:
     """Prompt GPT for tile predictions and update board state."""
     attempt = 0
     from constants.constants import COLORS, WIDTH, HEIGHT
