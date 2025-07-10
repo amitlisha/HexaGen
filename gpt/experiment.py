@@ -11,11 +11,13 @@ import random
 import traceback
 from pathlib import Path
 from typing import Dict, List, Optional
+import json
 
 from openai_wrapper import call_gpt
 from utils.reading_tasks import read_task
 from runner_utils import (
     DATA_DIR,
+    RESULTS_DIR,
     ensure_task_dir,
     extract_code,
     parse_tile_actions,
@@ -31,7 +33,12 @@ from constants.constants import WIDTH, HEIGHT
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
-    p.add_argument("--task", type=int, required=True)
+    
+    grp = p.add_mutually_exclusive_group(required=True)
+    grp.add_argument("--task", type=int,
+                     help="Run a single task ID (legacy mode)")
+    grp.add_argument("--set", choices=["train", "dev", "test"],
+                     help="Run every task listed in the chosen JSONL file")
     p.add_argument("--model", default="gpt-4o")
     p.add_argument("--temperature", type=float, default=1)
     p.add_argument("--max-tokens", type=int, default=512)
@@ -53,6 +60,18 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--vision", action="store_true",
                    help="Attach current board image to each prompt")
     return p.parse_args()
+
+def iter_set_tasks(split: str):
+    import json
+    path = DATA_DIR / f"{split}.jsonl"
+    with path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            o = json.loads(line)
+            proc = [r for r in o["drawing_procedure"] if r[1] != "NONE"]
+            yield o["index"], {
+                "steps": [r[1] for r in proc],
+                "gold_boards": [r[2] for r in proc],
+            }
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Prompt helpers
@@ -262,37 +281,30 @@ def run_full(cfg: argparse.Namespace, sys_prompt: str, user_tmpl: str,
 
     return log
 
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Main entry
-# ──────────────────────────────────────────────────────────────────────────────
-
-def main() -> None:
-    cfg = parse_args()
-    random.seed(cfg.seed)
-
+def run_single_task(cfg: argparse.Namespace,
+                    task_id: int,
+                    task: Dict) -> Dict:
+    """
+    Execute ONE Hexagons task and return its stats dictionary.
+    This is the original single-task logic extracted from main().
+    """
     sys_prompt, user_tmpl = build_prompts(cfg.mode)
-    task          = read_task(cfg.task)
     instructions  = task["steps"]
     gold_boards   = task["gold_boards"]
-    out_dir       = ensure_task_dir(cfg.task)
-    run_ts        = timestamp()
-    run_dir       = out_dir / run_ts
+
+    out_dir  = ensure_task_dir(task_id)
+    run_ts   = timestamp()
+    run_dir  = out_dir / run_ts
+    run_dir.mkdir(parents=True, exist_ok=True)
 
     code_so_far = (
         "from hexagen import Game, Tile, Shape, Line, Circle, Triangle\n"
         "with Game() as g:\n"
     )
 
-    run_dir.mkdir(parents=True, exist_ok=True)
-
-    # Image to send with the very first prompt (only used if --vision set)
-    current_img: Optional[Path]
-    if cfg.vision:
-        current_img = DATA_DIR / "empty_board.png"  # you must have this file
-    else:
-        current_img = None
+    current_img: Optional[Path] = (
+        DATA_DIR / "empty_board.png" if cfg.vision else None
+    )
 
     history: List[str] = []
     logs:    List[Dict] = []
@@ -304,39 +316,44 @@ def main() -> None:
             log, _, code_so_far, plot_path = run_step(
                 cfg, sys_prompt, user_tmpl, instr,
                 history, code_so_far, gold_current,
-                current_img, run_dir, idx, run_ts)
+                current_img, run_dir, idx, run_ts,
+            )
             logs.append(log)
             history.append(instr)
 
-            # update image for next step
             if cfg.vision and log["valid"]:
                 current_img = plot_path
 
-            print(f"[step {idx}/{len(instructions)}] "
+            print(f"[task {task_id}] [step {idx}/{len(instructions)}] "
                   f"{'✓✓' if log['correct'] else ('✓' if log['valid'] else '✗')}"
                   f" (try {log['attempt']})")
+
     elif cfg.mode == "full":
         log = run_full(
             cfg, sys_prompt, user_tmpl,
             instructions, code_so_far,
             gold_boards[-1], current_img,
-            run_dir, run_ts
+            run_dir, run_ts,
         )
         logs = [log]
-        print("FULL RUN →",
+        print(f"[task {task_id}] FULL RUN →",
               "✓✓" if log["correct"] else ("✓" if log["valid"] else "✗"))
-    else:  # tiles mode (step-wise predictions)
+
+    else:  # cfg.mode == "tiles"
         for idx, instr in enumerate(instructions, 1):
             gold_current = gold_boards[idx - 1]
             log, _, board_state, plot_path = run_step_tiles(
                 cfg, sys_prompt, user_tmpl, instr,
                 history, board_state, gold_current,
-                current_img, run_dir, idx, run_ts)
+                current_img, run_dir, idx, run_ts,
+            )
             logs.append(log)
             history.append(instr)
+
             if cfg.vision and log["valid"]:
                 current_img = plot_path
-            print(f"[step {idx}/{len(instructions)}] "
+
+            print(f"[task {task_id}] [step {idx}/{len(instructions)}] "
                   f"{'✓✓' if log['correct'] else ('✓' if log['valid'] else '✗')}"
                   f" (try {log['attempt']})")
 
@@ -344,26 +361,90 @@ def main() -> None:
         total_steps = len(instructions)
         valid_cnt   = sum(l["valid"]   for l in logs)
         exact_cnt   = sum(l["correct"] for l in logs)
-    else:
+    else:  # full mode
         total_steps = 1
         valid_cnt   = 1 if logs[0]["valid"]   else 0
         exact_cnt   = 1 if logs[0]["correct"] else 0
 
+    successful_steps = [i + 1 for i, lg in enumerate(logs) if lg["correct"]]
+    failed_steps     = [i + 1 for i, lg in enumerate(logs) if not lg["correct"]]
+
     stats = {
-        "task_id"        : cfg.task,
+        "task_id"        : task_id,
         "mode"           : cfg.mode,
         "steps"          : total_steps,
         "total_attempts" : sum(l["attempt"] for l in logs),
         "valid"          : valid_cnt,
         "exact"          : exact_cnt,
+        "successful_steps": successful_steps,
+        "failed_steps"    : failed_steps,
     }
 
-    print(f"\nFinished task {cfg.task}")
-    print(f"  • valid code : {stats['valid']}/{stats['steps']}")
-    print(f"  • exact match: {stats['exact']}/{stats['steps']}")
-
+    # save per-task log
     save_json({"stats": stats, "runs": logs},
               run_dir / f"run_{timestamp()}.json")
+
+    print(f"\nFinished task {task_id}")
+    print(f"  • valid code : {stats['valid']}/{stats['steps']}")
+    print(f"  • exact match: {stats['exact']}/{stats['steps']}")
+    return stats
+
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Main entry
+# ──────────────────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    cfg = parse_args()
+    random.seed(cfg.seed)
+
+    if cfg.set:
+        print(f"Running full set: {cfg.set}")
+        per_task_stats = []
+        for tid, tsk in iter_set_tasks(cfg.set):
+            print(f"\n=== TASK {tid} ===")
+            st = run_single_task(cfg, tid, tsk)
+            per_task_stats.append(st)
+
+        # aggregate report
+        total_steps = sum(s["steps"] for s in per_task_stats)
+        valid_total = sum(s["valid"] for s in per_task_stats)
+        exact_total = sum(s["exact"] for s in per_task_stats)
+        print("\n=== SET SUMMARY ===")
+        print(f"  • tasks        : {len(per_task_stats)}")
+        print(f"  • valid code   : {valid_total}/{total_steps}")
+        print(f"  • exact match  : {exact_total}/{total_steps}")
+
+        out_dir = RESULTS_DIR / cfg.set
+
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        summary_payload = [
+            {
+                "task_id"         : s["task_id"],
+                "successful_steps": s["successful_steps"],
+                "failed_steps"    : s["failed_steps"],
+            }
+            for s in per_task_stats
+        ]
+        save_json(summary_payload,
+                  out_dir / f"summary_{timestamp()}.json")
+
+        # save once per split
+        out_dir.mkdir(exist_ok=True)
+        save_json(
+            {"aggregate": {
+                 "set": cfg.set,
+                 "n_tasks": len(per_task_stats),
+                 "total_steps": total_steps,
+                 "valid": valid_total,
+                 "exact": exact_total,
+             },
+             "per_task": per_task_stats},
+            out_dir / f"runs_{timestamp()}.json")
+    else:                                          # single-task (unchanged)
+        _ = run_single_task(cfg, cfg.task, read_task(cfg.task))
 
 if __name__ == "__main__":
     main()
