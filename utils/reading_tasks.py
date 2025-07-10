@@ -15,9 +15,9 @@ from hexagen.plot_board import plot_boards
 
 # jsonl files that contain all the tasks
 data_dir = ROOT_DIR / 'data'
-f_train = '2022_01_19_hexagon_dataset_extended_public_hard1_train.jsonl'
-f_dev = '2022_01_19_hexagon_dataset_extended_public_hard1_dev_abstraction.jsonl'
-f_test = '2022_01_19_hexagon_dataset_extended_public_hard1_test.jsonl'
+f_train = 'train.jsonl'
+f_dev = 'dev.jsonl'
+f_test = 'test.jsonl'
 
 def read_tasks(which_tasks=['train','dev','test']):
   ''' Read the entire dataset of tasks
@@ -53,8 +53,8 @@ def retrieve_task(task_index):
 def extract_description(task):
   '''Extract the task description from the task info'''
   return f"# task index: {task['index']}, " \
-         f"image: {task['image_index']}, " \
-         f"collection round: {task['collection_round']}, " \
+         f"image: {task['image_id']}, " \
+         f"annotation round: {task['annotation_round']}, " \
          f"category: {task['category']}, " \
          f"group: {task['group']}\n" \
          f"# agreement scores: {task['agreement_scores']}"
