@@ -65,3 +65,9 @@ def parse_tile_actions(raw: str) -> List[tuple[int, int, str]]:
     pattern = r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*['\"]?([a-zA-Z]+)['\"]?\s*\)"
     return [(int(r), int(c), col.lower())
             for r, c, col in re.findall(pattern, raw)]
+
+
+def f1_score(precision: float, recall: float) -> float:
+    """Return harmonic F1 score given precision and recall."""
+    return 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
+
