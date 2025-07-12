@@ -8,14 +8,16 @@ from runner_utils import DATA_DIR
 
 def build_prompts(mode: str) -> Tuple[str, str]:
     """Load system and user templates for the selected mode."""
-    if mode == "tiles":
-        sys_p = DATA_DIR / "system_prompt_tiles.txt"
-        user_p = DATA_DIR / "user_message_tiles.txt"
-    else:
-        sys_p = DATA_DIR / "system_prompt_01.txt"
-        user_p = DATA_DIR / "user_message_01.txt"
+    shared_sys_p = DATA_DIR / "shared_system_prompt.txt"
 
-    system_tmpl = sys_p.read_text()
+    if mode == "tiles":
+        sys_p = DATA_DIR / "tiles_system_prompt.txt"
+        user_p = DATA_DIR / "tiles_user_message.txt"
+    else:
+        sys_p = DATA_DIR / "code_system_prompt.txt"
+        user_p = DATA_DIR / "code_user_message.txt"
+
+    system_tmpl = f"{shared_sys_p.read_text()}\n\n{sys_p.read_text()}"
     user_tmpl = user_p.read_text()
 
     tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]

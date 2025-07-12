@@ -169,6 +169,18 @@ def run_step_code(
         except Exception:
             log["traceback"] = traceback.format_exc()
             if cfg.retries and attempt >= cfg.retries:
+                log.update(
+                    {
+                        "precision_board": 0.0,
+                        "recall_board": 0.0,
+                        "f1_board": 0.0,
+                        "exact_board": False,
+                        "precision_action": 0.0,
+                        "recall_action": 0.0,
+                        "f1_action": 0.0,
+                        "exact_action": False,
+                    }
+                )
                 return log, False, code, image_path  # keep previous image
 
 
@@ -291,6 +303,18 @@ def run_full(
         save_plot(board_pred, gold_final, task_dir / f"{run_ts}_plot_full.png")
     except Exception:
         log["traceback"] = traceback.format_exc()
+        log.update(
+            {
+                "precision_board": 0.0,
+                "recall_board": 0.0,
+                "f1_board": 0.0,
+                "exact_board": False,
+                "precision_action": 0.0,
+                "recall_action": 0.0,
+                "f1_action": 0.0,
+                "exact_action": False,
+            }
+        )
 
     return log
 
@@ -299,18 +323,18 @@ def summarize_logs(logs: List[Dict], mode: str, task_id: int) -> Dict:
     """Compute accuracy statistics for a single task."""
     if mode in ("step", "tiles"):
         total_steps = len(logs)
-        valid_cnt = sum(l["valid"] for l in logs)
-        exact_cnt = sum(l["exact_board"] for l in logs)
-        exact_action_cnt = sum(l["exact_action"] for l in logs)
-        avg_f1_board = sum(l["f1_board"] for l in logs) / total_steps
-        avg_f1_action = sum(l["f1_action"] for l in logs) / total_steps
+        valid_cnt = sum(l.get("valid", False) for l in logs)
+        exact_cnt = sum(l.get("exact_board", False) for l in logs)
+        exact_action_cnt = sum(l.get("exact_action", False) for l in logs)
+        avg_f1_board = sum(l.get("f1_board", 0.0) for l in logs) / total_steps
+        avg_f1_action = sum(l.get("f1_action", 0.0) for l in logs) / total_steps
     else:
         total_steps = 1
-        valid_cnt = 1 if logs[0]["valid"] else 0
-        exact_cnt = 1 if logs[0]["exact_board"] else 0
-        exact_action_cnt = 1 if logs[0]["exact_board"] else 0
-        avg_f1_board = logs[0]["f1_board"]
-        avg_f1_action = logs[0]["f1_board"]
+        valid_cnt = 1 if logs[0].get("valid", False) else 0
+        exact_cnt = 1 if logs[0].get("exact_board", False) else 0
+        exact_action_cnt = 1 if logs[0].get("exact_board", False) else 0
+        avg_f1_board = logs[0].get("f1_board", 0.0)
+        avg_f1_action = logs[0].get("f1_board", 0.0)
 
     successful_steps = [i + 1 for i, lg in enumerate(logs) if lg["correct"]]
     failed_steps = [i + 1 for i, lg in enumerate(logs) if not lg["correct"]]
@@ -346,6 +370,7 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 
     code_so_far = (
         "from hexagen import Game, Tile, Shape, Line, Circle, Triangle\n"
+        "from constants import HEIGHT, WIDTH\n"
         "with Game() as g:\n"
     )
 
