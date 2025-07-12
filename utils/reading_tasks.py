@@ -15,9 +15,9 @@ from hexagen.plot_board import plot_boards
 
 # jsonl files that contain all the tasks
 data_dir = ROOT_DIR / 'data'
-f_train = '2022_01_19_hexagon_dataset_extended_public_hard1_train.jsonl'
-f_dev = '2022_01_19_hexagon_dataset_extended_public_hard1_dev_abstraction.jsonl'
-f_test = '2022_01_19_hexagon_dataset_extended_public_hard1_test.jsonl'
+f_train = 'train.jsonl'
+f_dev = 'dev.jsonl'
+f_test = 'test.jsonl'
 
 def read_tasks(which_tasks=['train','dev','test']):
   ''' Read the entire dataset of tasks
@@ -53,8 +53,8 @@ def retrieve_task(task_index):
 def extract_description(task):
   '''Extract the task description from the task info'''
   return f"# task index: {task['index']}, " \
-         f"image: {task['image_index']}, " \
-         f"collection round: {task['collection_round']}, " \
+         f"image: {task['image_id']}, " \
+         f"annotation round: {task['annotation_round']}, " \
          f"category: {task['category']}, " \
          f"group: {task['group']}\n" \
          f"# agreement scores: {task['agreement_scores']}"
@@ -73,28 +73,38 @@ def extract_instructions(task):
     instructions += f"'''\n{i + 1}. {wrap_txt}\n'''\n\n"
   return instructions
 
+def extract_steps(task):
+    """
+    Return a clean list of natural-language instructions, one per step,
+    without line-wrapping or trailing whitespace.
+    """
+    raw_texts = [step[1] for step in task["drawing_procedure"][1:]]
+    return [f"{i+1}. {txt.strip()}"          # <— no textwrap, just strip
+            for i, txt in enumerate(raw_texts)]
+
 def extract_instructions_for_gpt(task):
-  '''Extract the instructions from the task info
-  write them in a shorter form for the gpt prompt
-  '''
-  instructions = "'''"
-  for i, txt in enumerate([_[1] for _ in task['drawing_procedure'][1:]]):
-    wrap_txt = '\n'.join(textwrap.wrap(txt, width=80))
-    instructions += f"\n{i + 1}. {wrap_txt}\n"
-  instructions += "'''"
-  return instructions
+  """
+  Flatten the instructions into a single string suitable for the *whole-task*
+  prompt. No triple quotes; each step on its own line.
+  """
+  return "\n".join(extract_steps(task))
 
 def read_task(task_ind, print_description=False):
-  '''Read a task and return the processed information'''
   task = retrieve_task(task_ind)
-  task_dict = {'instructions': extract_instructions(task),
-               'instructions_for_gpt': extract_instructions_for_gpt(task),
-               'gold_boards': extract_boards(task),
-               'description': extract_description(task),
-               'group': task['group'],
-               'full': task}
+
+  steps_list = extract_steps(task)
+
+  task_dict = {
+      "instructions"        : extract_instructions(task),
+      "instructions_for_gpt": extract_instructions_for_gpt(task),
+      "steps"               : steps_list,
+      "gold_boards"         : extract_boards(task),
+      "description"         : extract_description(task),
+      "group"               : task["group"],
+      "full"                : task,
+  }
   if print_description:
-    print(task_dict['description'])
+    print(task_dict["description"])
   return task_dict
 
 def search_tasks_by_keyword(reg_exp, at_least=1, avoid_reg_exp=None, which_tasks=['train','dev','test']):
@@ -140,19 +150,4 @@ def plot_task(task_id, by_steps=False):
     plot_boards(d['gold_boards'])
   else:
     plot_boards(d['gold_boards'][-1])
-
-
-if __name__ == '__main__':
-  # tasks = search_tasks_by_keyword('Paint all of the ', which_tasks=['train'])
-  # ind = 0
-  # print(tasks)
-  # while input("press enter to show the next task, press 's' and then enter to stop") == '':
-  #   task_dict = read_task(tasks[ind], True)
-  #   print(ind)
-  #   print(task_dict['instructions'])
-  #   ind += 1
-  #
-  # print(search_tasks_by_keyword('[Ll]ine'))
-
-  plot_task(116, by_steps=True)
 

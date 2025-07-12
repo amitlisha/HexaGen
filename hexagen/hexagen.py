@@ -19,7 +19,7 @@ from copy import copy
 import logging
 import numpy as np
 from scipy.spatial.transform import Rotation
-from typing import Callable, Optional, List  # Union
+from typing import Optional, List, Iterable
 
 from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 import hexagen.plot_board as pb
@@ -105,7 +105,7 @@ class Game:
     ]
     return Shape(drawn_hexagons, from_hexagons=True)
 
-  def plot(self, gold_boards=None, multiple=False, file_name=None):
+  def plot(self, gold_boards=None, multiple=False, file_name=None, show=True):
     """Plot the current board state.
 
     Parameters
@@ -156,7 +156,8 @@ class Game:
                          width=self.width,
                          max_in_row=3,
                          h_pad=2,
-                         titles=titles)
+                         titles=titles,
+                         show=show)
 
     if file_name is not None:
       fig.savefig(file_name)
@@ -444,35 +445,59 @@ class Shape:
   '''Class Shape represents any set of tiles on the board,
   including an empty set and a single tile'''
 
-  def __init__(self, tiles, from_linds=False, from_hexagons=False, game=None):
-    '''
-    Construct a new Shape from a list of tiles.
+  def __init__(self, tiles, from_linds: bool = False, from_hexagons: bool = False, game=None):
+    """
+    Construct a new Shape from tiles, shapes, or any mixture of them.
 
-    Parameters:
-    -----------
-    tiles: list[Tile]
-      The tiles that compose the shape
-    '''
+    Parameters
+    ----------
+    tiles : Tile | Shape | Iterable[Tile | Shape]
+        Components that will make up the shape.  Examples:
 
+            Shape(Tile(1,1))                         # single tile
+            Shape(other_shape)                       # copy‐constructor
+            Shape([Tile(1,1), Tile(2,1)])            # list of tiles
+            Shape([shape_a, Tile(3,3), shape_b])     # **mixed tiles & shapes**
+    """
     self.game = game or _active_game()
+
+    # ── Handle the three special constructor modes ───────────────────────────
     if from_linds:
       linds = tiles
       hexagons = [_Hexagon._from_lind(lind, game=self.game) for lind in linds]
+
+    elif from_hexagons:
+      hexagons = tiles
+
+    # ── Normal mode: accept Tile, Shape, or Iterable containing them ─────────
     else:
-      if from_hexagons:
-        hexagons = tiles
-      elif isinstance(tiles, Shape):
-        hexagons = tiles._hexagons
-      else:
-        hexagons = [tile._hexagon for tile in tiles]
-    unique_hexagons = []
-    unique_cubes = []
-    for hexagon in hexagons:
-      if hexagon._cube not in unique_cubes:
-        unique_cubes.append(hexagon._cube)
-        unique_hexagons.append(hexagon)
+      # Wrap single objects so that we can iterate uniformly
+      if isinstance(tiles, (Tile, Shape)):
+        tiles = [tiles]
+
+      # Flatten whatever mixture we were given
+      hexagons: List[_Hexagon] = []
+      for item in tiles:
+        if isinstance(item, Tile):
+          hexagons.append(item._hexagon)
+        elif isinstance(item, Shape):
+          hexagons.extend(item._hexagons)
+        else:
+          raise TypeError(
+            f"Shape components must be Tile or Shape instances, not {type(item)}"
+          )
+
+    # ── Deduplicate vertices ─────────────────────────────────────────────────
+    unique_hexagons: List[_Hexagon] = []
+    seen_cubes = set()
+    for hx in hexagons:
+      if hx._cube not in seen_cubes:
+        seen_cubes.add(hx._cube)
+        unique_hexagons.append(hx)
     self._hexagons = tuple(unique_hexagons)
-    if len(unique_hexagons) == 1:
+
+    # A shape of size 1 behaves like a Tile
+    if len(self._hexagons) == 1:
       self.__class__ = Tile
 
   @property
@@ -625,6 +650,8 @@ class Shape:
 
     for hexagon in self._hexagons:
       hexagon._draw(color)
+
+    return self
 
   def copy_paste(self, shift_direction=None, spacing=0, reference_shape=None,
                  source=None, destination=None, shift=None):

@@ -23,7 +23,7 @@ def add_to_dict_set(d, key, item):
 for task in train_tasks:
   category = task['category']
   task_id = task['index']
-  image_id = task['image_index']
+  image_id = task['image_id']
   add_to_dict_set(tasks_per_category, category,  task_id)
   add_to_dict_set(tasks_per_image, image_id,  task_id)
   add_to_dict_set(images_per_category, category,  image_id)
