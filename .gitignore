@@ -1,2 +1,7 @@
 *.pyc
 hexagen.egg-info/
+*.DS_Store
+*.csv
+*.ipynb
+results/
+launch.json
