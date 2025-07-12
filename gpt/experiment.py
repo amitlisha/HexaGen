@@ -1,10 +1,3 @@
-"""Run GPT step-wise code-completion for a single Hexagons task.
-
-Usage
------
-$ python experiment.py --task 24 --model gpt-4o [--vision]
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -12,7 +5,6 @@ import random
 import traceback
 from pathlib import Path
 from typing import Dict, List, Optional
-import json
 
 from openai_wrapper import call_gpt
 from utils.reading_tasks import read_task
@@ -25,9 +17,10 @@ from runner_utils import (
     save_json,
     save_plot,
     timestamp,
-    f1_score,
 )
 from constants.constants import WIDTH, HEIGHT
+from prompts import build_prompts, make_user_prompt, make_tile_prompt
+from metrics import evaluate_prediction
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CLI helpers
@@ -41,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     grp.add_argument("--task", type=int, help="Run a single task ID (legacy mode)")
     grp.add_argument(
         "--set",
-        choices=["train", "dev", "test"],
+        choices=["train", "dev", "test", "4-samples"],
         help="Run every task listed in the chosen JSONL file",
     )
     p.add_argument("--model", default="gpt-4o")
@@ -92,89 +85,6 @@ def iter_set_tasks(split: str):
                 "steps": [r[1] for r in proc],
                 "gold_boards": [r[2] for r in proc],
             }
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Prompt helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def build_prompts(mode: str) -> tuple[str, str]:
-    """Load system & user templates for the selected mode."""
-    if mode == "tiles":
-        sys_p = DATA_DIR / "system_prompt_tiles.txt"
-        user_p = DATA_DIR / "user_message_tiles.txt"
-    else:
-        sys_p = DATA_DIR / "system_prompt_01.txt"
-        user_p = DATA_DIR / "user_message_01.txt"
-
-    system_tmpl = sys_p.read_text()
-    user_tmpl = user_p.read_text()
-
-    tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]
-    if mode != "tiles":
-        tags.append("{CODE_SO_FAR}")
-    for tag in tags:
-        if tag not in user_tmpl:
-            raise ValueError(f"{user_p.name} missing placeholder {tag}")
-    return system_tmpl, user_tmpl
-
-
-def make_user_prompt(instr: str, history: List[str], template: str, code: str) -> str:
-    hist_block = "\n".join(f"{i+1}. {h}" for i, h in enumerate(history)) or "(none yet)"
-    return (
-        template.replace("{HISTORY_BLOCK}", hist_block)
-        .replace("{CODE_SO_FAR}", code.rstrip())
-        .replace("{NEXT_STEP}", f"    # TODO: {instr.strip()}")
-    )
-
-
-def make_tile_prompt(instr: str, history: List[str], template: str) -> str:
-    """Format prompt for tile prediction mode."""
-    hist_block = "\n".join(f"{i+1}. {h}" for i, h in enumerate(history)) or "(none yet)"
-    return template.replace("{HISTORY_BLOCK}", hist_block).replace(
-        "{NEXT_STEP}", instr.strip()
-    )
-
-
-def _board_metrics(
-    pred: List[int], gold: List[int]
-) -> tuple[float, float, float, bool]:
-    """Return precision, recall, F1 and exact match for two board states."""
-    correct = sum(1 for p, g in zip(pred, gold) if p == g and g != 0)
-    pred_colored = sum(1 for p in pred if p != 0)
-    gold_colored = sum(1 for g in gold if g != 0)
-    if pred_colored:
-        precision = correct / pred_colored
-    else:
-        precision = 1.0 if gold_colored == 0 else 0.0
-    if gold_colored:
-        recall = correct / gold_colored
-    else:
-        recall = 1.0 if pred_colored == 0 else 0.0
-    f1 = f1_score(precision, recall)
-    exact = pred == gold
-    return precision, recall, f1, exact
-
-
-def _action_metrics(
-    prev_pred: List[int], pred: List[int], prev_gold: List[int], gold: List[int]
-) -> tuple[float, float, float, bool]:
-    """Metrics for changed tiles only (action-based)."""
-    pred_diff = {i for i, (a, b) in enumerate(zip(prev_pred, pred)) if a != b}
-    gold_diff = {i for i, (a, b) in enumerate(zip(prev_gold, gold)) if a != b}
-    correct = {i for i in pred_diff if i in gold_diff and pred[i] == gold[i]}
-    if pred_diff:
-        precision = len(correct) / len(pred_diff)
-    else:
-        precision = 1.0 if not gold_diff else 0.0
-    if gold_diff:
-        recall = len(correct) / len(gold_diff)
-    else:
-        recall = 1.0 if not pred_diff else 0.0
-    f1 = f1_score(precision, recall)
-    exact = pred_diff == gold_diff and all(pred[i] == gold[i] for i in pred_diff)
-    return precision, recall, f1, exact
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -246,22 +156,8 @@ def run_step_code(
             exec(new_script, ns)
             pred = ns["board_state"]
             log["valid"] = True
-            b_prec, b_rec, b_f1, b_exact = _board_metrics(pred, gold_board)
-            a_prec, a_rec, a_f1, a_exact = _action_metrics(
-                prev_pred_board, pred, prev_gold_board, gold_board
-            )
             log.update(
-                {
-                    "correct": b_exact,
-                    "precision_board": b_prec,
-                    "recall_board": b_rec,
-                    "f1_board": b_f1,
-                    "exact_board": b_exact,
-                    "precision_action": a_prec,
-                    "recall_action": a_rec,
-                    "f1_action": a_f1,
-                    "exact_action": a_exact,
-                }
+                evaluate_prediction(prev_pred_board, pred, prev_gold_board, gold_board)
             )
             plot_path = out_dir / f"{run_ts}_plot_{step_idx:02}_{attempt:02}.png"
             plot_with_gold_path = (
@@ -314,25 +210,14 @@ def run_tile_step(
                 idx = (r - 1) * WIDTH + (c - 1)
                 new_board[idx] = COLORS.index(col)
 
-        b_prec, b_rec, b_f1, b_exact = _board_metrics(new_board, gold_board)
-        a_prec, a_rec, a_f1, a_exact = _action_metrics(
-            board, new_board, prev_gold_board, gold_board
-        )
+        metrics = evaluate_prediction(board, new_board, prev_gold_board, gold_board)
         log = {
             "step": step_idx,
             "attempt": attempt,
             "usage": resp["usage"],
             "tiles": tiles,
             "valid": True,
-            "correct": b_exact,
-            "precision_board": b_prec,
-            "recall_board": b_rec,
-            "f1_board": b_f1,
-            "exact_board": b_exact,
-            "precision_action": a_prec,
-            "recall_action": a_rec,
-            "f1_action": a_f1,
-            "exact_action": a_exact,
+            **metrics,
         }
 
         plot_path = out_dir / f"{run_ts}_plot_{step_idx:02}_{attempt:02}.png"
@@ -395,19 +280,13 @@ def run_full(
         exec(new_code, ns)
         board_pred = ns["board_state"]
         log["valid"] = True
-        b_prec, b_rec, b_f1, b_exact = _board_metrics(board_pred, gold_final)
         log.update(
-            {
-                "correct": b_exact,
-                "precision_board": b_prec,
-                "recall_board": b_rec,
-                "f1_board": b_f1,
-                "exact_board": b_exact,
-                "precision_action": b_prec,
-                "recall_action": b_rec,
-                "f1_action": b_f1,
-                "exact_action": b_exact,
-            }
+            evaluate_prediction(
+                [0] * (WIDTH * HEIGHT),
+                board_pred,
+                [0] * (WIDTH * HEIGHT),
+                gold_final,
+            )
         )
         save_plot(board_pred, gold_final, task_dir / f"{run_ts}_plot_full.png")
     except Exception:
