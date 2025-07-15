@@ -18,7 +18,7 @@ with Game() as g:
     connected line of tiles green, descending to the bottom tile of the rightmost
     column.
     '''
-    line=Line(start_tile=Tile(column=1,row=2), direction='down_right')
+    line=Line(start_tile=Tile(row=2, column=1), direction='down_right')
     line.draw('green')
     
     '''

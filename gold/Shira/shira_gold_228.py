@@ -13,7 +13,7 @@ with Game() as g:
     connected line of tiles green, descending to the bottom tile of the rightmost
     column.
     '''
-    green_line = Line(start_tile = Tile(1, 2), end_tile = Tile(-1, -1))
+    green_line = Line(start_tile = Tile(2, 1), end_tile = Tile(-1, -1))
     green_line.draw('green')
     '''
     2. Alternate putting green and blue tiles along the lower edge of the original

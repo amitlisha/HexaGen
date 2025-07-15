@@ -32,7 +32,7 @@ with Game() as g:
     
     # create an orange circle on 12th vertical row from left, 3rd tile down
     g.record_step('orange_circle_2')
-    tile1 = Tile(12, 3)
+    tile1 = Tile(3, 12)
     tile1.draw('orange')
     for i in range(6):
         tile2 = tile1.neighbor('down_right')
@@ -53,21 +53,21 @@ with Game() as g:
     
     # color all tiles touching the 8th row, 7th tile down, orange
     g.record_step('orange_touching_1')
-    tile1 = Tile(7, 8)
+    tile1 = Tile(8, 7)
     for direction in DIRECTIONS:
         tile2 = tile1.neighbor(direction)
         tile2.draw('orange')
     
     # color all tiles touching the 12th row, 7th tile down, orange
     g.record_step('orange_touching_2')
-    tile1 = Tile(7, 12)
+    tile1 = Tile(12, 7)
     for direction in DIRECTIONS:
         tile2 = tile1.neighbor(direction)
         tile2.draw('orange')
     
     # create a blue circle to fit in between the 4 orange circles drawn, of the same number of tiles, same size (six tiles, as in others)
     g.record_step('blue_circle')
-    tile1 = Tile(10, 5)
+    tile1 = Tile(5, 10)
     tile1.draw('blue')
     for i in range(6):
         tile2 = tile1.neighbor('down_right')

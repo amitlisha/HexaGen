@@ -17,9 +17,9 @@ with Game() as g:
     points are on the 8th column five tiles down, and on the 10th column, four and
     six tiles down.
     '''
-    tile1 = Tile(8, 5)
-    tile2 = Tile(10, 4)
-    tile3 = Tile(10, 6)
+    tile1 = Tile(5, 8)
+    tile2 = Tile(4, 10)
+    tile3 = Tile(6, 10)
     
     line1 = Line(start_tile=tile1, end_tile=tile2)
     line2 = Line(start_tile=tile1, end_tile=tile3)

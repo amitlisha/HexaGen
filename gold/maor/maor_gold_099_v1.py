@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Fill the 4th spot of the 7th column with orange.
     '''
-    tile1 = Tile(column=7, row=4)
+    tile1 = Tile(row=4, column=7)
     tile1.draw('orange')
     
     '''

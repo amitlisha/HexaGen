@@ -15,25 +15,25 @@ with Game() as g:
     '''
     1. With purple, paint the 7th column from the left.
     '''
-    line1 = Line(start_tile=Tile(7,1), direction='down')
+    line1 = Line(start_tile=Tile(1, 7), direction='down')
     line1.draw('purple')
     
     '''
     2. With blue, in the 8th column starting at the top row, paint every other cell.
     '''
-    tile1 = Tile(column=8, row=1)
+    tile1 = Tile(row=1, column=8)
     tile1.draw('blue')
     
-    tile2 = Tile(column=8, row=3)
+    tile2 = Tile(row=3, column=8)
     tile2.draw('blue')
     
-    tile3 = Tile(column=8, row=5)
+    tile3 = Tile(row=5, column=8)
     tile3.draw('blue')
     
-    tile4 = Tile(column=8, row=7)
+    tile4 = Tile(row=7, column=8)
     tile4.draw('blue')
     
-    tile5 = Tile(column=8, row=9)
+    tile5 = Tile(row=9, column=8)
     tile5.draw('blue')
     
     '''

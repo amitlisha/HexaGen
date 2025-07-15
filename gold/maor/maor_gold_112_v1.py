@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. With purple, paint the 7th column from the left.
     '''
-    line1 = Line(start_tile=Tile(7,1), direction='down')
+    line1 = Line(start_tile=Tile(1, 7), direction='down')
     line1.draw('purple')
     
     '''
@@ -24,7 +24,7 @@ with Game() as g:
     from constants.constants import HEIGHT
     
     for r in range(1, HEIGHT, 2):
-      tile = Tile(column=8, row=r)
+      tile = Tile(row=r, column=8)
       tile.draw('blue')
     
     '''

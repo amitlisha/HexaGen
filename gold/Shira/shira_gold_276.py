@@ -12,12 +12,12 @@ with Game() as g:
     1. Paint the tile black that is fifth from the top in the ninth column from the
     right.
     '''
-    black_tile = Tile(-9, 5)
+    black_tile = Tile(5, -9)
     black_tile.draw('black')
     '''
     2. Paint the fifth tile from the top of the far right column red.
     '''
-    red_tile = Tile(-1, 5)
+    red_tile = Tile(5, -1)
     red_tile.draw('red')
     '''
     3. Paint the four blank tiles that are touching the red tile purple.

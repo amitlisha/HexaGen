@@ -19,13 +19,13 @@ with Game() as g:
     bottom.
     '''
     g.record_step(step_name='zero1')
-    line1 = Line(start_tile=Tile(column=2, row=1), length=3, direction='down')
+    line1 = Line(start_tile=Tile(row=1, column=2), length=3, direction='down')
     line1.draw('purple')
-    line2 = Line(start_tile=Tile(column=4, row=1), length=3, direction='down')
+    line2 = Line(start_tile=Tile(row=1, column=4), length=3, direction='down')
     line2.draw('purple')
-    tile1 = Tile(column=3,row=1)
+    tile1 = Tile(row=1, column=3)
     tile1.draw('purple')
-    tile2 = Tile(column=3,row=4)
+    tile2 = Tile(row=4, column=3)
     tile2.draw('purple')
     g.record_step(step_name='zero1_end')
     
@@ -34,7 +34,7 @@ with Game() as g:
     between (so starting with the 6th column from the left).
     '''
     zero1 = g.get_record(step_names=['zero1'])
-    zero2 = zero1.copy_paste(source=zero1[0], destination=Tile(6,1))
+    zero2 = zero1.copy_paste(source=zero1[0], destination=Tile(1, 6))
     zero2.draw('orange')
     
     '''

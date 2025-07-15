@@ -17,9 +17,9 @@ with Game() as g:
     tiles from the top green and all the tiles adjacent to them purple.
     '''
     def pattern1(c, r, color):
-      tile1 = Tile(column=c, row=r)
+      tile1 = Tile(row=r, column=c)
       tile1.draw(color)
-      tile2 = Tile(column=c, row=r+1)
+      tile2 = Tile(row=r+1, column=c)
       tile2.draw(color)
     
       tiles = tile1+tile2
@@ -53,9 +53,9 @@ with Game() as g:
     '''
     
     def patterns2(c, r, color1, color2):
-      tile1 = Tile(column=c, row=r)
+      tile1 = Tile(row=r, column=c)
       tile1.draw(color1)
-      tile2 = Tile(column=c, row=r-1)
+      tile2 = Tile(row=r-1, column=c)
       tile2.draw(color2)
       pair = tile1+tile2
     

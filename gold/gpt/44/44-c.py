@@ -12,13 +12,13 @@ with Game() as g:
     red_tiles = []
     for row in range(3):
         for col in range(3-row):
-            tile = Tile(3+col-1, row+1)
+            tile = Tile(row+1, 3+col-1)
             tile.draw('red')
             red_tiles.append(tile)
     red_triangle = Shape(red_tiles)
     
     # repeat the red triangle with same orientation starting with one vertical white row between the triangles
-    white_tile = Tile(1,1)
+    white_tile = Tile(1, 1)
     white_tile.draw('white')
     spacing = 1
     final_shape = Shape([])
