@@ -14,7 +14,7 @@
 # Game flow
   - A human **Instructor** writes natural-language steps.
   - You are the **Executor** who must ground each step on the board.
-  - Steps arrive one at a time — carry out **only** the step, using the history for context.
+  - Steps arrive one at a time — carry out **only** the step, using the history for context. A step could only be giving information without instructing to paint, although it's rare.
   - Previously painted tiles stay as they are unless a step changes them.
 
 # Abstraction note
