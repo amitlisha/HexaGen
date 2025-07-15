@@ -15,180 +15,180 @@ with Game() as g:
     '''
     1. Use green to fill in the second spot on the 1st column.
     '''
-    tile = Tile(column=1, row=2)
+    tile = Tile(row=2, column=1)
     tile.draw('green')
     
     '''
     2. Fill in the 2nd and 3rd spots on the next column.
     '''
-    tile = Tile(column=2, row=2)
+    tile = Tile(row=2, column=2)
     tile.draw('green')
     
-    tile = Tile(column=2, row=3)
+    tile = Tile(row=3, column=2)
     tile.draw('green')
     
     '''
     3. Move to the next column and fill in the 2nd and 3rd spots.
     '''
-    tile = Tile(column=3, row=2)
+    tile = Tile(row=2, column=3)
     tile.draw('green')
     
-    tile = Tile(column=3, row=3)
+    tile = Tile(row=3, column=3)
     tile.draw('green')
     
     '''
     4. Fill in the 3rd - 5th spots on the next column.
     '''
-    line = Line(start_tile=Tile(4,3), end_tile=Tile(4,5))
+    line = Line(start_tile=Tile(3, 4), end_tile=Tile(5, 4))
     line.draw('green')
     
     '''
     5. Move to the next column and fill in the 3rd and 4th spots.
     '''
-    tile = Tile(column=5, row=3)
+    tile = Tile(row=3, column=5)
     tile.draw('green')
     
-    tile = Tile(column=5, row=4)
+    tile = Tile(row=4, column=5)
     tile.draw('green')
     
     '''
     6. Fill in the 2nd, and 4th - 7th spots on the next column.
     '''
-    tile = Tile(column=6, row=2)
+    tile = Tile(row=2, column=6)
     tile.draw('green')
     
-    line = Line(start_tile=Tile(column=6, row=4), end_tile=Tile(column=6, row=7))
+    line = Line(start_tile=Tile(row=4, column=6), end_tile=Tile(row=7, column=6))
     line.draw('green')
     
     '''
     7. On the next column fill in the 4th and 5th spots.
     '''
-    tile = Tile(column=7, row=4)
+    tile = Tile(row=4, column=7)
     tile.draw('green')
     
-    tile = Tile(column=7, row=5)
+    tile = Tile(row=5, column=7)
     tile.draw('green')
     
     '''
     8. Fill in the 3rd, and 5th - 9th spots on the next column.
     '''
-    tile = Tile(column=8, row=3)
+    tile = Tile(row=3, column=8)
     tile.draw('green')
     
-    line = Line(start_tile=Tile(column=8, row=5), end_tile=Tile(column=8, row=9))
+    line = Line(start_tile=Tile(row=5, column=8), end_tile=Tile(row=9, column=8))
     line.draw('green')
     
     '''
     9. Move to the next column and fill in the 3rd, 5th, and 6th spots.
     '''
-    tile = Tile(column=9, row=3)
+    tile = Tile(row=3, column=9)
     tile.draw('green')
     
-    tile = Tile(column=9, row=5)
+    tile = Tile(row=5, column=9)
     tile.draw('green')
     
-    tile = Tile(column=9, row=6)
+    tile = Tile(row=6, column=9)
     tile.draw('green')
     
     '''
     10. Fill in the 4th spot, skip a spot, and fill in the rest on the next column.
     '''
-    tile = Tile(column=10, row=4)
+    tile = Tile(row=4, column=10)
     tile.draw('green')
     
-    line = Line(start_tile=Tile(column=10, row=6), direction='down')
+    line = Line(start_tile=Tile(row=6, column=10), direction='down')
     line.draw('green')
     
     '''
     11. Move to the next column, and fill in the 4th, 6th, and 7th spots.
     '''
-    tile = Tile(column=11, row=4)
+    tile = Tile(row=4, column=11)
     tile.draw('green')
     
-    tile = Tile(column=11, row=6)
+    tile = Tile(row=6, column=11)
     tile.draw('green')
     
-    tile = Tile(column=11, row=7)
+    tile = Tile(row=7, column=11)
     tile.draw('green')
     
     '''
     12. Fill in the 3rd, 5th, and 7th-10th spots.
     '''
     
-    tile = Tile(column=12, row=3)
+    tile = Tile(row=3, column=12)
     tile.draw('green')
     
-    tile = Tile(column=12, row=5)
+    tile = Tile(row=5, column=12)
     tile.draw('green')
     
-    line = Line(start_tile=Tile(column=12, row=7), end_tile=Tile(column=12, row=10))
+    line = Line(start_tile=Tile(row=7, column=12), end_tile=Tile(row=10, column=12))
     line.draw('green')
     
     '''
     13. On the next column fill in the 5th, 7th, and 8th spots.
     '''
-    tile = Tile(column=13, row=5)
+    tile = Tile(row=5, column=13)
     tile.draw('green')
     
-    tile = Tile(column=13, row=7)
+    tile = Tile(row=7, column=13)
     tile.draw('green')
     
-    tile = Tile(column=13, row=8)
+    tile = Tile(row=8, column=13)
     tile.draw('green')
     
     '''
     14. Move to the next column, and fill in the 4th, 6th, and 8th-10th spots.
     '''
     
-    tile = Tile(column=14, row=4)
+    tile = Tile(row=4, column=14)
     tile.draw('green')
     
-    tile = Tile(column=14, row=6)
+    tile = Tile(row=6, column=14)
     tile.draw('green')
     
-    line = Line(start_tile=Tile(column=14, row=8), end_tile=Tile(column=14, row=10))
+    line = Line(start_tile=Tile(row=8, column=14), end_tile=Tile(row=10, column=14))
     line.draw('green')
     
     '''
     15. Fill in the 6th, 8th, and 9th spot on the next column.
     '''
     
-    tile = Tile(column=15, row=6)
+    tile = Tile(row=6, column=15)
     tile.draw('green')
     
-    tile = Tile(column=15, row=8)
+    tile = Tile(row=8, column=15)
     tile.draw('green')
     
-    tile = Tile(column=15, row=9)
+    tile = Tile(row=9, column=15)
     tile.draw('green')
     
     '''
     16. On the next column fill in the 7th, 9th and 10th spots.
     '''
     
-    tile = Tile(column=16, row=7)
+    tile = Tile(row=7, column=16)
     tile.draw('green')
     
-    tile = Tile(column=16, row=9)
+    tile = Tile(row=9, column=16)
     tile.draw('green')
     
-    tile = Tile(column=16, row=10)
+    tile = Tile(row=10, column=16)
     tile.draw('green')
     
     '''
     17. Move to the next column and fill in the last two spots.
     '''
-    tile = Tile(column=17, row=-2)
+    tile = Tile(row=-2, column=17)
     tile.draw('green')
     
-    tile = Tile(column=17, row=-1)
+    tile = Tile(row=-1, column=17)
     tile.draw('green')
     
     '''
     18. On the last column fill in only the last spot.
     '''
     
-    tile = Tile(column=-1, row=-1)
+    tile = Tile(row=-1, column=-1)
     tile.draw('green')
     
     g.plot(gold_boards=gold_boards, multiple=0)

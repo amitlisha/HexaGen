@@ -17,7 +17,7 @@ with Game() as g:
     '''
     for column in [4,14]:
       for row in list(range(3,6)) + [7, 8, 4, 14]:
-        tile = Tile(column=column, row=row)
+        tile = Tile(row=row, column=column)
         tile.draw('green')
     
     '''
@@ -25,7 +25,7 @@ with Game() as g:
     '''
     for column in [5,13]:
       for row in range(4,10):
-        tile = Tile(column=column, row=row)
+        tile = Tile(row=row, column=column)
         tile.draw('red')
     
     '''
@@ -33,7 +33,7 @@ with Game() as g:
     '''
     for column in [6,12]:
       for row in range(4,9):
-        tile = Tile(column=column, row=row)
+        tile = Tile(row=row, column=column)
         tile.draw('purple')
     
     '''
@@ -41,29 +41,29 @@ with Game() as g:
     '''
     for column in [7,11]:
       for row in range(5,8):
-        tile = Tile(column=column, row=row)
+        tile = Tile(row=row, column=column)
         tile.draw('orange')
     
     '''
     5. Make the 5th and 6th spots in the 8th and 10th columns yellow.
     '''
     for column in [8,10]:
-      tile = Tile(column=column, row=5)
+      tile = Tile(row=5, column=column)
       tile.draw('yellow')
-      tile = Tile(column=column, row=6)
+      tile = Tile(row=6, column=column)
       tile.draw('yellow')
     
     '''
     6. Use blue to fill the 3rd spots in the 8th and 10th columns, and the 4th-8th
     spots in the 9th column.
     '''
-    tile = Tile(column=8, row=3)
+    tile = Tile(row=3, column=8)
     tile.draw('blue')
-    tile = Tile(column=10, row=3)
+    tile = Tile(row=3, column=10)
     tile.draw('blue')
     
     for r in range(4,9):
-      tile = Tile(column=9, row=r)
+      tile = Tile(row=r, column=9)
       tile.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

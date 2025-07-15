@@ -16,7 +16,7 @@ with Game() as g:
     1. Paint the fourth hexagon in the seventh column orange and paint all of the
     hexagons surrounding it red.
     '''
-    tile = Tile(column=7, row=4)
+    tile = Tile(row=4, column=7)
     tile.draw('orange')
     tile.neighbors().draw('red')
     
@@ -26,10 +26,10 @@ with Game() as g:
     thirteen being yellow.
     '''
     for c, r in [(9,3), (11,2), (13,1)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('yellow')
     for c, r in [(10,2), (12,1)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('red')
     
     '''
@@ -38,10 +38,10 @@ with Game() as g:
     last column.
     '''
     for c, r in [(9,5), (11,6), (13,7), (15,8), (17,9)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('yellow')
     for c, r in [(10,5), (12,6), (14,7), (16,8), (18,9)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('red')
     
     '''
@@ -51,33 +51,33 @@ with Game() as g:
     lines.
     '''
     for c, r in [(7,6), (7,8), (7,10)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('yellow')
     for c, r in [(7,7), (7,9)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('red')
     
     for c, r in [(5, 3), (3, 2), (1, 1)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('yellow')
     for c, r in [(4, 2), (2, 1)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('red')
     
     for c, r in [(5, 5), (3, 6), (1, 7)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('yellow')
     for c, r in [(4, 5), (2, 6)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('red')
     
     '''
     5. Paint the first hexagon in the seventh column red and the second hexagon in the
     same column yellow.
     '''
-    tile = Tile(column=7,row=1)
+    tile = Tile(row=1, column=7)
     tile.draw('red')
-    tile = Tile(column=7,row=2)
+    tile = Tile(row=2, column=7)
     tile.draw('yellow')
     
     g.plot(gold_boards=gold_boards, multiple=0)

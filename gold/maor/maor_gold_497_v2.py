@@ -17,7 +17,7 @@ with Game() as g:
     points are on the 8th column five tiles down, and on the 10th column, four and
     six tiles down.
     '''
-    triangle = Triangle(start_tile=Tile(8, 5), point='left', start_tile_type='side', side_length=3)
+    triangle = Triangle(start_tile=Tile(5, 8), point='left', start_tile_type='side', side_length=3)
     triangle.draw('green')
     
     g.plot(gold_boards=gold_boards, multiple=0)

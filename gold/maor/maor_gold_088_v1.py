@@ -20,7 +20,7 @@ with Game() as g:
     '''
     2. Starting from the bottom paint three tiles green in a vertical line.
     '''
-    line1 = Line(start_tile=Tile(column=column, row=-1), direction='up', length=3)
+    line1 = Line(start_tile=Tile(row=-1, column=column), direction='up', length=3)
     line1.draw('green')
     
     '''

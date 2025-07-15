@@ -11,34 +11,34 @@ with Game() as g:
     '''
     1. Fill in all but the last spots with purple in columns 3 and 17.
     '''
-    purple_tiles = Shape.get_column(3) - Tile(3, -1) + Shape.get_column(17) - Tile(17, -1)
+    purple_tiles = Shape.get_column(3) - Tile(-1, 3) + Shape.get_column(17) - Tile(-1, 17)
     purple_tiles.draw('purple')
     '''
     2. Fill in the top and next to last spots of the 5th, 7th, 9th, 11th, 13, and 15th
     columns with purple.
     '''
     for column in [5, 7, 9, 11, 13, 15]:
-      Tile(column, 1).draw('purple')
-      Tile(column, -2).draw('purple')
+      Tile(1, column).draw('purple')
+      Tile(-2, column).draw('purple')
     '''
     3. Use red to fill the 3rd-7th spots in the 5th and 15th columns, and the 3rd and
     7th spots in the 7th, 9th, 11th, and 13th columns.
     '''
     for column in [5, 15]:
       for row in range(3, 8):
-        Tile(column, row).draw('red')
+        Tile(row, column).draw('red')
     for column in [7, 9, 11, 13]:
       for row in [3, 7]:
-        Tile(column, row).draw('red')
+        Tile(row, column).draw('red')
     '''
     4. Fill the 4th spots in the 6th-14th columns with blue.
     '''
     for column in range(6, 15):
-      Tile(column, 4).draw('blue')
+      Tile(4, column).draw('blue')
     '''
     5. Use orange to fill the 6th spots in the 6th-14th columns.
     '''
     for column in range(6, 15):
-      Tile(column, 6).draw('orange')
+      Tile(6, column).draw('orange')
     
     g.plot(gold_boards=gold_boards)

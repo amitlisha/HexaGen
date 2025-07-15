@@ -15,33 +15,33 @@ with Game() as g:
     '''
     1. Paint the leftmost and topmost cell orange
     '''
-    tile = Tile(column=1,row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('orange')
     
     '''
     2. Going to the right, paint the next three cells green.
     '''
     for c in [3,5,7]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('green')
     
     '''
     3. Paint the next cell orange.
     '''
-    tile = Tile(column=9,row=1)
+    tile = Tile(row=1, column=9)
     tile.draw('orange')
     
     '''
     4. Paint the next cell green.
     '''
-    tile = Tile(column=11,row=1)
+    tile = Tile(row=1, column=11)
     tile.draw('green')
     
     '''
     5. Paint the rest of the row orange.
     '''
     for c in [13,15,17]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('orange')
     
     '''
@@ -62,33 +62,33 @@ with Game() as g:
     8. Paint the cell on the very bottom right and the one to its left green.
     '''
     for c in [-1, -3]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('green')
     
     '''
     9. Moving leftwards on the very bottom row, paint the next three cells orange.
     '''
     for c in [-5,-7,-9]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('orange')
     
     '''
     10. Paint the next two cells green.
     '''
     for c in [-11,-13]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('green')
     
     '''
     11. Paint the next cell orange.
     '''
-    tile = Tile(column=-15, row=-1)
+    tile = Tile(row=-1, column=-15)
     tile.draw('orange')
     
     '''
     12. Paint the next cell green.
     '''
-    tile = Tile(column=-17, row=-1)
+    tile = Tile(row=-1, column=-17)
     tile.draw('green')
     
     '''

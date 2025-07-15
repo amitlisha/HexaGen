@@ -15,26 +15,26 @@ with Game() as g:
     '''
     1. Color tiles 2 through 5 in column 1 purple.
     '''
-    line = Line(start_tile=Tile(column=1,row=2), end_tile=Tile(column=1,row=5))
+    line = Line(start_tile=Tile(row=2, column=1), end_tile=Tile(row=5, column=1))
     line.draw('purple')
     '''
     2. Repeat step 1 in columns 9, 13, 15 and 17.
     '''
     for c in [9,13,15,17]:
-      line = Line(start_tile=Tile(column=c, row=2), end_tile=Tile(column=c, row=5))
+      line = Line(start_tile=Tile(row=2, column=c), end_tile=Tile(row=5, column=c))
       line.draw('purple')
     
     '''
     3. Color tiles 2 through 5 in column 3 blue.
     '''
-    line = Line(start_tile=Tile(column=3,row=2), end_tile=Tile(column=3,row=5))
+    line = Line(start_tile=Tile(row=2, column=3), end_tile=Tile(row=5, column=3))
     line.draw('purple')
     
     '''
     4. Repeat step 3 in columns 5, 7 and 11.
     '''
     for c in [3,5,7,11]:
-      line = Line(start_tile=Tile(column=c, row=2), end_tile=Tile(column=c, row=5))
+      line = Line(start_tile=Tile(row=2, column=c), end_tile=Tile(row=5, column=c))
       line.draw('blue')
     
     '''
@@ -51,10 +51,10 @@ with Game() as g:
     7. Color tiles 6 through 9 in column 2 blue and then tile 10 green.
     '''
     g.record_step(step_name='step_7')
-    line = Line(start_tile=Tile(column=2,row=6), end_tile=Tile(column=2,row=9))
+    line = Line(start_tile=Tile(row=6, column=2), end_tile=Tile(row=9, column=2))
     line.draw('blue')
     
-    tile=Tile(column=2, row=10)
+    tile=Tile(row=10, column=2)
     tile.draw('green')
     
     g.record_step(step_name='step_7_end')
@@ -65,16 +65,16 @@ with Game() as g:
     shape = g.get_record(step_names=['step_7'])
     
     for c in [6,8,16,18]:
-      shape.copy_paste(source=Tile(column=2,row=6), destination=Tile(column=c, row=6))
+      shape.copy_paste(source=Tile(row=6, column=2), destination=Tile(row=6, column=c))
     
     '''
     9. Color tiles 6 through 9 in column 4 purple and then tile 10 orange.
     '''
     g.record_step(step_name='step_9')
-    line = Line(start_tile=Tile(column=4,row=6), end_tile=Tile(column=4,row=9))
+    line = Line(start_tile=Tile(row=6, column=4), end_tile=Tile(row=9, column=4))
     line.draw('purple')
     
-    tile=Tile(column=4, row=10)
+    tile=Tile(row=10, column=4)
     tile.draw('orange')
     
     g.record_step(step_name='step_9_end')
@@ -85,6 +85,6 @@ with Game() as g:
     shape = g.get_record(step_names=['step_9'])
     
     for c in [10,12,14]:
-      shape.copy_paste(source=Tile(column=4,row=6), destination=Tile(column=c, row=6))
+      shape.copy_paste(source=Tile(row=6, column=4), destination=Tile(row=6, column=c))
     
     g.plot(gold_boards=gold_boards, multiple=0)

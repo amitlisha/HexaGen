@@ -12,7 +12,7 @@ with Game() as g:
     1. In the 9th column from the left, the 5th tile from the top will be blue. This
     will be our center.
     '''
-    center_tile = Tile(9, 5)
+    center_tile = Tile(5, 9)
     center_tile.draw('blue')
     '''
     2. There are 6 tiles surrounding (and touching) our center, color them red.

@@ -12,7 +12,7 @@ with Game() as g:
     row = 1
     column = 3
     for i in range(3):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
@@ -20,21 +20,21 @@ with Game() as g:
     row = 2
     column = 2
     for i in range(2):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
     
     row = 3
     column = 1
-    tile = Tile(column, row)
+    tile = Tile(row, column)
     tile.draw('red')
     
     # create the second triangle
     row = 6
     column = 3
     for i in range(3):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
@@ -42,21 +42,21 @@ with Game() as g:
     row = 5
     column = 2
     for i in range(2):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
     
     row = 4
     column = 1
-    tile = Tile(column, row)
+    tile = Tile(row, column)
     tile.draw('red')
     
     # create the third triangle
     row = 9
     column = 3
     for i in range(3):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
@@ -64,21 +64,21 @@ with Game() as g:
     row = 8
     column = 2
     for i in range(2):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
     
     row = 7
     column = 1
-    tile = Tile(column, row)
+    tile = Tile(row, column)
     tile.draw('red')
     
     # create the fourth triangle
     row = 12
     column = 3
     for i in range(3):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
@@ -86,14 +86,14 @@ with Game() as g:
     row = 11
     column = 2
     for i in range(2):
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.draw('red')
         column += 1
         row += 1
     
     row = 10
     column = 1
-    tile = Tile(column, row)
+    tile = Tile(row, column)
     tile.draw('red')
     
     # Save the record of the first triangle and retrieve it to make the remaining 3 triangles

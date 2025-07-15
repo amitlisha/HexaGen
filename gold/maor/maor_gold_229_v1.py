@@ -16,16 +16,16 @@ with Game() as g:
     1. Make a green line starting at the second tile of the first column and extending
     to the bottom right tile.
     '''
-    line=Line(start_tile=Tile(column=1,row=2), end_tile=Tile(-1,-1))
+    line=Line(start_tile=Tile(row=2, column=1), end_tile=Tile(-1, -1))
     line.draw('green')
     
     '''
     2. Extend out from the second tile by coloring the third tile in the second column
     and the second tile in the third column green.
     '''
-    tile = Tile(3,2)
+    tile = Tile(2, 3)
     tile.draw('green')
-    tile = Tile(2,3)
+    tile = Tile(3, 2)
     tile.draw('green')
     
     '''

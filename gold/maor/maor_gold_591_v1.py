@@ -17,28 +17,28 @@ with Game() as g:
     fifteen, and seventeen
     '''
     for c in [1, 9, 13, 15, 17]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('orange')
     
     '''
     2. Add four purple tiles directly below the orange tiles mentioned above
     '''
     for c in [1, 9, 13, 15, 17]:
-      line = Line(start_tile=Tile(c, 2), direction='down', length=4)
+      line = Line(start_tile=Tile(2, c), direction='down', length=4)
       line.draw('purple')
     
     '''
     3. Add orange to the bottom tiles in columns four, ten, twelve, and fourteen.
     '''
     for c in [4, 10, 12, 14]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('orange')
     
     '''
     4. Add four purple tiles directly above the orange tiles mentioned above
     '''
     for c in [4, 10, 12, 14]:
-      line = Line(start_tile=Tile(c, -2), direction='up', length=4)
+      line = Line(start_tile=Tile(-2, c), direction='up', length=4)
       line.draw('purple')
     
     '''
@@ -46,28 +46,28 @@ with Game() as g:
     eleven
     '''
     for c in [3, 5, 7, 11]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('green')
     
     '''
     6. Add four blue tiles directly beneath the green tiles mentioned above
     '''
     for c in [3, 5, 7, 11]:
-      line = Line(start_tile=Tile(c, 2), direction='down', length=4)
+      line = Line(start_tile=Tile(2, c), direction='down', length=4)
       line.draw('blue')
     
     '''
     7. Add green to the bottom tiles in columns two, six, eight, sixteen, and eighteen
     '''
     for c in [2, 6, 8, 16, 18]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('green')
     
     '''
     8. Add four blue tiles directly above the green tiles mentioned above
     '''
     for c in [2, 6, 8, 16, 18]:
-      line = Line(start_tile=Tile(c, -2), direction='up', length=4)
+      line = Line(start_tile=Tile(-2, c), direction='up', length=4)
       line.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

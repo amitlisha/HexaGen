@@ -15,14 +15,14 @@ with Game() as g:
     '''
     1. Fill the top-left most hex red.
     '''
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('red')
     
     '''
     2. Fill a red line from the first column on the left, 3rd hex from the top, to the
     top hex of the 5th column from the left.
     '''
-    line = Line(start_tile=Tile(1,3), end_tile=Tile(5,1))
+    line = Line(start_tile=Tile(3, 1), end_tile=Tile(1, 5))
     line.draw('red')
     
     '''
@@ -36,13 +36,13 @@ with Game() as g:
     '''
     4. Fill the bottom-most hex in the first column on the left with purple.
     '''
-    tile = Tile(column=1, row=-1)
+    tile = Tile(row=-1, column=1)
     tile.draw('purple')
     
     '''
     5. In the thirst column from the left, fill the bottom two hexes with purple.
     '''
-    line = Line(start_tile=Tile(column=3, row=-1), end_tile=Tile(column=3, row=-2))
+    line = Line(start_tile=Tile(row=-1, column=3), end_tile=Tile(row=-2, column=3))
     line.draw('purple')
     
     '''

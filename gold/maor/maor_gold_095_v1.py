@@ -15,33 +15,33 @@ with Game() as g:
     '''
     1. In the 5th column from the left, color the 3rd tile down yellow.
     '''
-    yellow_tile = Tile(column=5,row=3)
+    yellow_tile = Tile(row=3, column=5)
     yellow_tile.draw('yellow')
     
     '''
     2. In the 5th column from the left, color the third tile from the bottom black.
     '''
-    black_tile = Tile(column=5, row=-3)
+    black_tile = Tile(row=-3, column=5)
     black_tile.draw('black')
     
     '''
     3. In the 7th column from the right, color the 4th tile from the top blue.
     '''
-    blue_tile = Tile(column=-7, row=4)
+    blue_tile = Tile(row=4, column=-7)
     blue_tile.draw('blue')
     
     '''
     4. In the first column from the left start at the top tile and create a straight
     line in orange tiles to the yellow tile.
     '''
-    line1 = Line(start_tile=Tile(1,1), end_tile=yellow_tile, include_end_tile=False)
+    line1 = Line(start_tile=Tile(1, 1), end_tile=yellow_tile, include_end_tile=False)
     line1.draw('orange')
     
     '''
     5. In the 9th column from the left, start at the top tile and create a straight
     line in orange tiles to the yellow tile.
     '''
-    line2 = Line(start_tile=Tile(9,1), end_tile=yellow_tile, include_end_tile=False)
+    line2 = Line(start_tile=Tile(1, 9), end_tile=yellow_tile, include_end_tile=False)
     line2.draw('orange')
     
     '''
@@ -62,7 +62,7 @@ with Game() as g:
     straight line from here to the blue tile. Leave the black tile black, and leave
     the blue tile blue.
     '''
-    purple_tile = Tile(column=1, row=-1)
+    purple_tile = Tile(row=-1, column=1)
     purple_tile.draw('purple')
     
     line4 = Line(start_tile=purple_tile, end_tile=black_tile, include_end_tile=False, include_start_tile=False)
@@ -80,7 +80,7 @@ with Game() as g:
     '''
     10. In the first column from the right, color the 4th tile from the bottom purple.
     '''
-    purple_tile = Tile(column=-1, row=-4)
+    purple_tile = Tile(row=-4, column=-1)
     purple_tile.draw('purple')
     
     '''

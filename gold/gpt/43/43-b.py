@@ -9,18 +9,18 @@ gold_boards = list(read_task(task_index)['gold_boards'])
 with Game() as g:
     
     # Paint the cell at the 1st column on the left and 2nd row from top with red
-    tile = Tile(1, 2)
+    tile = Tile(2, 1)
     tile.draw('red')
     g.record_step('step1')
     
     # Paint the top 2 cells of the 2nd column from left with red
-    tile = Tile(2, 1)
+    tile = Tile(1, 2)
     tile.draw('red')
     tile.neighbor('down').draw('red')
     g.record_step('step2')
     
     # Paint the top 3 rows of the 3rd column from the left with red
-    tile = Tile(3, 1)
+    tile = Tile(1, 3)
     tile.draw('red')
     for i in range(2, 5):
       tile.neighbor('down').draw('red')
@@ -31,7 +31,7 @@ with Game() as g:
     # making sure to leave one empty column between each triangle
     for i in range(1, 4):
       # First triangle
-      tile = Tile(6 + i * 4, 2)
+      tile = Tile(2, 6 + i * 4)
       tile.draw('red')
       tile.neighbor('down_right').draw('red')
       tile.neighbor('down_left').draw('red')
@@ -40,7 +40,7 @@ with Game() as g:
       g.record_step(f'step4_{i}_1')
     
       # Second triangle
-      tile = Tile(8 + i * 4, 1)
+      tile = Tile(1, 8 + i * 4)
       tile.draw('red')
       tile.neighbor('down_right').draw('red')
       tile.neighbor('down_left').draw('red')
@@ -49,7 +49,7 @@ with Game() as g:
       g.record_step(f'step4_{i}_2')
     
       # Third triangle
-      tile = Tile(10 + i * 4, 1)
+      tile = Tile(1, 10 + i * 4)
       tile.draw('red')
       tile.neighbor('down_right').draw('red')
       tile.neighbor('down_left').draw('red')

@@ -7,7 +7,7 @@ from constants.constants import *
 with Game() as g:
     
     # initialize board
-    board = [[Tile(col + 1, row + 1) for col in range(WIDTH)] for row in range(HEIGHT)]
+    board = [[Tile(row + 1, col + 1) for col in range(WIDTH)] for row in range(HEIGHT)]
     
     # step 1
     board[1][2].draw('green')

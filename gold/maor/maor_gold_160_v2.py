@@ -16,17 +16,17 @@ with Game() as g:
     1. Leaving the center tile blank, draw a blue flower, using six tiles in the lower
     left corner.
     '''
-    flower1 = Circle(center_tile=Tile(2,-2))
+    flower1 = Circle(center_tile=Tile(-2, 2))
     flower1.draw('blue')
     
     '''
     2. Directly above the blue flower, draw a purple flower in the same way, and an
     orange flower above that one, so that the three flowers touch forming a stack.
     '''
-    flower2 = Circle(center_tile=Tile(2,-5))
+    flower2 = Circle(center_tile=Tile(-5, 2))
     flower2.draw('purple')
     
-    flower3 = Circle(center_tile=Tile(2,-8))
+    flower3 = Circle(center_tile=Tile(-8, 2))
     flower3.draw('orange')
     
     '''
@@ -35,7 +35,7 @@ with Game() as g:
     up, so that there is a blank column between the two stacks of flowers.
     '''
     stack = flower1 + flower2 + flower3
-    cpy = stack.copy_paste(source=Tile(2,1), destination=Tile(6,1))
+    cpy = stack.copy_paste(source=Tile(1, 2), destination=Tile(1, 6))
     cpy.recolor({'orange': 'blue', 'purple': 'orange', 'blue': 'purple'})
     
     '''
@@ -43,10 +43,10 @@ with Game() as g:
     the tenth column and blue, purple, orange centered in the fourteenth column,
     counting colors from bottom to top.
     '''
-    cpy = stack.copy_paste(source=Tile(2,1), destination=Tile(10,1))
+    cpy = stack.copy_paste(source=Tile(1, 2), destination=Tile(1, 10))
     cpy.recolor({'orange': 'purple', 'purple': 'blue', 'blue': 'orange'})
     
-    cpy = stack.copy_paste(source=Tile(2,1), destination=Tile(14,1))
+    cpy = stack.copy_paste(source=Tile(1, 2), destination=Tile(1, 14))
     
     '''
     5. Place an orange center in each blue flower, a blue center in each purple flower,

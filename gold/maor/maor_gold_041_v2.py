@@ -16,7 +16,7 @@ with Game() as g:
     1. Starting from the bottom left count over 5 cells that stick down and up 5. Paint
     this cell purple.
     '''
-    tile1 = Tile(10, 5)
+    tile1 = Tile(5, 10)
     tile1.draw('purple')
     
     '''
