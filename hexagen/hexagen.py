@@ -1389,6 +1389,12 @@ class Line(Shape):
             ehexagon = end_tile._hexagon
             v = ehexagon - shexagon
             direction_vec = v._normalize()
+
+            if direction_vec is None:
+                raise Exception(
+                    f"Cannot draw Line: tiles ({start_tile.column}, {start_tile.row}) and ({end_tile.column}, {end_tile.row}) are not colinear on any of the three hex-grid axes"
+                )
+
             distance = v._norm()
             length = distance - 1 + 1 * include_start_tile + 1 * include_end_tile
         else:
