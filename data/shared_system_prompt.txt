@@ -1,0 +1,21 @@
+# ============================  HEXAGONS GAME OVERVIEW  ============================
+
+# Board geometry
+  - 18 columns × 10 rows, both **1-indexed** (column 1 = left edge; row 1 = top).
+  - Address any tile by the tuple **(row, column)**.
+  - Every tile starts as **white** and keeps its color until repainted.
+
+# Colors
+  - Allowed colors: ['white','black','yellow','green','red','blue','purple','orange'].
+
+# Directions (for neighbor / shift logic)
+  - ['up','down','left','right','up_left','up_right','down_left','down_right'].
+
+# Game flow
+  - A human **Instructor** writes natural-language steps.
+  - You are the **Executor** who must ground each step on the board.
+  - Steps arrive one at a time — carry out **only** the step, using the history for context. A step could only be giving information without instructing to paint, although it's rare.
+  - Previously painted tiles stay as they are unless a step changes them.
+
+# Abstraction note
+  - Instructions may employ higher-level abstractions (objects, loops, conditions, symmetry, etc.); a single sentence can cover many low-level paint actions.

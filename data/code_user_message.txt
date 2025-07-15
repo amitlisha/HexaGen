@@ -1,0 +1,109 @@
+# ================================  HEXAGEN API SPEC  ===============================
+# One entity per line; two-space indentation shows containment.  
+# Extra “Notes:” lines clarify hidden behaviour.
+
+Import: from hexagen import Game, Tile, Shape, Line, Circle, Triangle
+
+Constant: WIDTH = 18  
+Constant: HEIGHT = 10  
+Constant: COLORS = ['white','black','yellow','green','red','blue','purple','orange']
+
+Constant: DIRECTIONS = ['up','down','up_right','down_left','up_left','down_right']
+
+# -------------------------------------------------------------------------------------
+Class: Game  
+  Method: __init__(width:int = WIDTH, height:int = HEIGHT)  
+  Method: start(width:int = WIDTH, height:int = HEIGHT) -> Game  
+  Method: __enter__() -> Game  
+  Method: __exit__(exc_type, exc, tb) -> bool  
+  Method: record_step(step_name:str)                        # Notes: closes previous step snapshot  
+  Method: get_record(step_names:str | list[str]) -> Shape   # tiles drawn in named step(s)  
+  Method: plot(gold_boards:list[int] | list[list[int]] | None = None,  
+               multiple:bool = False, file_name:str | None = None, show:bool = True) -> Figure
+
+# -------------------------------------------------------------------------------------
+Class: Shape           # Base class for collections of tiles  
+  Method: __init__(tiles:list[Tile] | Tile | Shape, from_linds:bool = False,  
+                   from_hexagons:bool = False, game:Game | None = None)  
+    Notes: duplicate tiles removed; single-tile ⇒ auto-up-casts to Tile.
+
+  # ── Painting helpers (ALL mutate active board **and** return the new Shape) ──
+  Method: draw(color:str) -> Shape                                       # auto-paints  
+  Method: copy_paste(shift_direction:str | None = None,                   # auto-paints
+                     spacing:int = 0, reference_shape:Shape | None = None,
+                     source:Tile | None = None, destination:Tile | None = None,
+                     shift:_Vec | None = None) -> Shape  
+    Param options: shift_direction ∈ {'left','right'} ∪ DIRECTIONS ∪ None  
+  Method: reflect(axis_line:Line | None = None, column:int | None = None,  # auto-paints
+                  axis_direction:str | None = None, tile_on_axis:Tile | None = None) -> Shape  
+    Param options: axis_direction ∈ {'horizontal','vertical'} ∪ DIRECTIONS  
+  Method: grid(shift_direction:str, spacing:int, num_copies:int | None = None) -> Shape  # auto-paints  
+    shift_direction ∈ {'left','right'} ∪ DIRECTIONS ∪ None; num_copies=None ⇒ “fill board”.
+  Method: rotate(center_tile:Tile, angle:int) -> Shape                    # auto-paints  
+    angle must be multiple of 60.
+  Method: recolor(color_map:dict[str,str]) -> Shape                       # auto-paints
+
+  # ── Geometric queries ─────────────────────────────────────────────────
+  Method: get(criterion:str) -> Shape  
+    Param options: {'outside','inside','above','below','top','bottom',
+                    'corners','endpoints'} ∪ DIRECTIONS   # the method returns a new Shape object that has the criterion geometric relation to the original shape
+  Method: neighbors(criterion:str = 'all') -> Shape  
+    Param options: {'all','right','left','above','below','outside','inside','white'} ∪ DIRECTIONS  
+  Method: boundary(criterion:str = 'all') -> Shape        # criterion ∈ {'all','outer','inner'}  
+  Method: edge(direction:str) -> Shape                    # direction ∈ {'left','right','top','bottom'} ∪ DIRECTIONS  
+  Method: extreme(direction:str) -> Shape                 # direction ∈ DIRECTIONS
+  Method: is_empty() -> bool  
+  Method: overlaps(other:Shape) -> bool  
+  Method: center() -> Tile                                # center of mass (rounded)
+
+  # ── Utilities (static) ────────────────────────────────────────────────
+  Static: get_entire_board(game:Game | None = None) -> Shape  
+  Static: get_board_perimeter(game:Game | None = None) -> Shape  
+  Static: get_color(color:str | {'all','any'}, game:Game | None = None) -> Shape  
+  Static: get_column(column:int, game:Game | None = None) -> Shape  
+  Static: polygon(vertices:Shape | list[Tile] | Tile, *extra_vertices:Tile) -> Shape
+
+# -------------------------------------------------------------------------------------
+Class: Tile (inherits Shape)  
+  Method: __init__(column:int, row:int, game:Game | None = None)  
+    Notes: negative indices wrap from opposite edge.  
+  Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS  
+  Method: on_board() -> bool  
+  Property: color:str  
+  Property: column:int  
+  Property: row:int  
+  Property: offset:tuple[int,int]                        # (col,row) 1-based
+
+# -------------------------------------------------------------------------------------
+Class: Line (inherits Shape)                                      # Note creating a line from two tiles is only valid if the tiles lie on a straight hex direction
+  Method: __init__(start_tile:Tile, end_tile:Tile | None = None,  
+                   direction:str | None = None, length:int | None = None,  
+                   end_tiles:Shape | None = None,  
+                   include_start_tile:bool = True, include_end_tile:bool = True)  
+    Param options: direction ∈ DIRECTIONS; if end_tile supplied, direction/length ignored.  
+  Method: parallel(shift_direction:str, spacing:int) -> Line      # shift_direction ∈ {'left','right'} ∪ DIRECTIONS ∪ None
+  Method: draw(color:str) -> Line                                # inherited auto-paints
+
+# -------------------------------------------------------------------------------------
+Class: Circle (inherits Shape)  
+  Method: __init__(center_tile:Tile, radius:int = 1)  
+  Method: draw(color:str) -> Circle        # inherited auto-paints
+
+# -------------------------------------------------------------------------------------
+Class: Triangle (inherits Shape)  
+  Method: __init__(start_tile:Tile, point:str, start_tile_type:str, side_length:int = 2)  
+    Param options: point ∈ {'left','right'}; start_tile_type ∈ {'side','top','bottom'}.  
+  Method: draw(color:str) -> Triangle      # inherited auto-paints
+
+# --------------------------------------------------------------------------------------
+Snippet: g = Game()           # ← already created by the runner  
+Snippet: board_state = g.board_state   # ← must appear as last line
+# --------------------------------------------------------------------------------------
+##### CONTEXT (completed instructions so far)
+{HISTORY_BLOCK}
+
+##### CURRENT SCRIPT
+```python
+{CODE_SO_FAR}
+{NEXT_STEP}
+```
