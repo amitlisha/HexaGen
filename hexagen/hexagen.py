@@ -279,12 +279,12 @@ class _Hexagon:
     It is for internal use only.
     """
 
-    def complete_arguments(column, row, cube, game):
+    def complete_arguments(row, column, cube, game):
         """An hexagon can be defined be two different sets of coordinates:
-        offset (column, row) and cube (q, r, s).
+        offset (row, column) and cube (q, r, s).
         This method completes missing coordinates"""
-        if (column is not None) and (row is not None):
-            # _Hexagon is given as offset = [column, row]
+        if (row is not None) and (column is not None):
+            # _Hexagon is given as offset = [row, column]
             # compute cube coordinates. offset [1, 1] is cube [0, 0, 0]
             q = column - 1
             r = row - 1 - (q - (q % 2)) // 2
@@ -301,12 +301,12 @@ class _Hexagon:
         else:
             # tile is not on board, so it has no linear index
             lind = None
-        return lind, (column, row), (q, r, s)
+        return lind, (row, column), (q, r, s)
 
-    def __init__(self, column=None, row=None, cube=None, game=None):
+    def __init__(self, row=None, column=None, cube=None, game=None):
         self._game = game or _active_game()
         self._lind, self._offset, self._cube = _Hexagon.complete_arguments(
-            column, row, cube, self._game
+            row, column, cube, self._game
         )
         if self._lind is None:
             self._saved_color_id = 0
@@ -335,19 +335,19 @@ class _Hexagon:
         return COLORS[self._color_id]
 
     @property
-    def _column(self):
+    def _row(self):
         return self._offset[0]
 
     @property
-    def _row(self):
+    def _column(self):
         return self._offset[1]
 
     def _show(self):
         logger.debug(
-            "%s instance: column=%s, row=%s, lind=%s, color=%s",
+            "%s instance: row=%s, column=%s, lind=%s, color=%s",
             self.__class__.__name__,
-            self._column,
             self._row,
+            self._column,
             self._lind,
             self._color_id,
         )
@@ -359,7 +359,7 @@ class _Hexagon:
         if lind in range(g.width * g.height):
             row = lind // (g.width) + 1
             column = lind % g.width + 1
-            return _Hexagon(column=column, row=row, game=g)
+            return _Hexagon(row=row, column=column, game=g)
         logger.debug("lind %s not valid", lind)
 
     def _on_board(self):
@@ -559,7 +559,7 @@ class Shape:
 
     @property
     def tiles(self):
-        return [Tile(hexagon._column, hexagon._row) for hexagon in self._hexagons]
+        return [Tile(hexagon._row, hexagon._column) for hexagon in self._hexagons]
 
     @property
     def colors(self):
@@ -575,7 +575,7 @@ class Shape:
     def rows(self):
         """The list of rows of the tiles in the shape"""
 
-        return [hexagon.row for hexagon in self._hexagons]
+        return [hexagon._row for hexagon in self._hexagons]
 
     @property
     def _cubes(self):
@@ -886,7 +886,7 @@ class Shape:
         tiles = []
         for row in range(1, g.height + 1):
             for column in range(1, g.width + 1):
-                tiles.append(Tile(column, row))
+                tiles.append(Tile(row, column))
         return Shape(tiles, game=g)
 
     def get_board_perimeter(game=None):
@@ -927,7 +927,7 @@ class Shape:
         """Return a Shape object containing all the tiles in the given column"""
 
         g = game or _active_game()
-        return Shape([Tile(column, row) for row in range(1, g.height + 1)], game=g)
+        return Shape([Tile(row, column) for row in range(1, g.height + 1)], game=g)
 
     def get(self, criterion):
         """
@@ -1232,7 +1232,7 @@ class Shape:
         """
 
         hexagon_mean = _Hexagon(cube=self._center_of_mass()._round()._cube)
-        return Tile(*hexagon_mean._offset)
+        return Tile(hexagon_mean._offset[0], hexagon_mean._offset[1])
 
 
 class Tile(Shape):
@@ -1241,31 +1241,31 @@ class Tile(Shape):
 
     Attributes:
     -----------
-    column: int
-      The column on which the tile is located. starts at 1 and counted from left to right
     row: int
       The row on which this tile is located. starts from 1 and counted from top to bottom
+    column: int
+      The column on which the tile is located. starts at 1 and counted from left to right
     color: str
       The color of the tile
     """
 
-    def __init__(self, column, row, game=None):
+    def __init__(self, row, column, game=None):
         """
         Construct a new tile. The default color is ‘white’.
 
         Parameters:
         -----------
-        column: int
-          The column on which the tile is located. Starts at 1 and counted from left to right.
-          A negative value represents counting from right to left. E.g., the first column from the right is -1.
         row: int
           The row on which this tile is located. Starts from 1 and counted from top to bottom.
           A negative value represents counting from bottom to top. E.g., the first row from the bottom is -1.
+        column: int
+          The column on which the tile is located. Starts at 1 and counted from left to right.
+          A negative value represents counting from right to left. E.g., the first column from the right is -1.
         """
         self.game = game or _active_game()
         column = column % (self.game.width + 1)
         row = row % (self.game.height + 1)
-        self._hexagons = [_Hexagon(column=column, row=row, cube=None, game=self.game)]
+        self._hexagons = [_Hexagon(row=row, column=column, cube=None, game=self.game)]
 
     @property
     def _hexagon(self):
@@ -1293,10 +1293,10 @@ class Tile(Shape):
 
     def _show(self):
         logger.debug(
-            "%s instance: column=%s, row=%s, lind=%s, color=%s",
+            "%s instance: row=%s, column=%s, lind=%s, color=%s",
             self.__class__.__name__,
-            self.column,
             self.row,
+            self.column,
             self._lind,
             self.color,
         )
@@ -1392,7 +1392,7 @@ class Line(Shape):
 
             if direction_vec is None:
                 raise Exception(
-                    f"Cannot draw Line: tiles ({start_tile.column}, {start_tile.row}) and ({end_tile.column}, {end_tile.row}) are not colinear on any of the three hex-grid axes"
+                    f"Cannot draw Line: tiles ({start_tile.row}, {start_tile.column}) and ({end_tile.row}, {end_tile.column}) are not colinear on any of the three hex-grid axes"
                 )
 
             distance = v._norm()
@@ -1496,7 +1496,7 @@ class Line(Shape):
                     start_column = max([tile.column for tile in new_line_tiles])
                     start_row = max([tile.row for tile in new_line_tiles])
             return Line(
-                start_tile=Tile(start_column, start_row), direction=self.direction
+                start_tile=Tile(start_row, start_column), direction=self.direction
             )
 
         if self.direction == "up_right":
@@ -1528,7 +1528,7 @@ class Line(Shape):
                 else self_row - spacing - 1
             )
 
-        return Line(start_tile=Tile(start_column, start_row), direction=self.direction)
+        return Line(start_tile=Tile(start_row, start_column), direction=self.direction)
 
     def draw(self, color):
         # self.color = color
