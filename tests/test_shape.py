@@ -3,7 +3,7 @@ from tests.helpers import assert_shape_linds, assert_board_non_zeros
 
 
 def test_shape_init(game):
-    assert_shape_linds(Shape(tiles=[Tile(1, 1), Tile(2, 3)]), [0, 37])
+    assert_shape_linds(Shape(tiles=[Tile(1, 1), Tile(3, 2)]), [0, 37])
     assert_shape_linds(Shape(tiles=[0, 5], from_linds=True), [0, 5])
 
 
@@ -52,7 +52,7 @@ def test_copy_paste(game):
         [81, 82, 100],
     )
     assert_shape_linds(
-        Shape([60, 41, 42], from_linds=True).copy_paste(shift_direction='right', spacing=2, reference_shape=Tile(10, 5)),
+        Shape([60, 41, 42], from_linds=True).copy_paste(shift_direction='right', spacing=2, reference_shape=Tile(5, 10)),
         [85, 84, 67],
     )
 
@@ -60,17 +60,17 @@ def test_copy_paste(game):
 def test_reflect(game):
     assert_shape_linds(Shape([40, 41, 42], from_linds=True).reflect(column=10), [48, 49, 50])
     assert_shape_linds(
-        Shape([40, 41, 42], from_linds=True).reflect(axis_line=Line(Tile(7, 5), direction='down_left')),
+        Shape([40, 41, 42], from_linds=True).reflect(axis_line=Line(Tile(5, 7), direction='down_left')),
         [97, 98, 115],
     )
     assert_shape_linds(
-        Shape([40, 41, 42], from_linds=True).reflect(axis_direction='down_left', tile_on_axis=Tile(7, 5)),
+        Shape([40, 41, 42], from_linds=True).reflect(axis_direction='down_left', tile_on_axis=Tile(5, 7)),
         [97, 98, 115],
     )
 
 
 def test_rotate(game):
-    assert_shape_linds(Shape([40, 41, 42], from_linds=True).rotate(Tile(9, 5), 120), [152, 115, 134])
+    assert_shape_linds(Shape([40, 41, 42], from_linds=True).rotate(Tile(5, 9), 120), [152, 115, 134])
 
 
 def test_recolor():
@@ -184,7 +184,7 @@ def test_neighbors(game):
 
 
 def test_polygon(game):
-    tiles = [Tile(5, 5), Tile(8, 3), Tile(5, 7), Tile(8, 8), Tile(13, 6)]
+    tiles = [Tile(5, 5), Tile(3, 8), Tile(7, 5), Tile(8, 8), Tile(6, 13)]
     assert_shape_linds(
         Shape.polygon(tiles),
         [43, 59, 60, 62, 63, 76, 82, 83, 94, 101, 102, 112, 113, 117, 118, 132, 133, 134],
@@ -194,12 +194,12 @@ def test_polygon(game):
 def test_center(game):
     assert (
         Shape([
-            Tile(4, 3),
-            Tile(3, 5),
-            Tile(4, 5),
-            Tile(5, 5),
             Tile(3, 4),
+            Tile(5, 3),
             Tile(5, 4),
+            Tile(5, 5),
+            Tile(4, 3),
+            Tile(4, 5),
         ]).center().offset
         == (4, 4)
     )

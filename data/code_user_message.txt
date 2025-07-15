@@ -65,14 +65,14 @@ Class: Shape           # Base class for collections of tiles
 
 # -------------------------------------------------------------------------------------
 Class: Tile (inherits Shape)  
-  Method: __init__(column:int, row:int, game:Game | None = None)  
+  Method: __init__(row:int, column:int, game:Game | None = None)  
     Notes: negative indices wrap from opposite edge.  
   Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS - unlike Shape.neighbors which accepts more options
   Method: on_board() -> bool  
   Property: color:str  
   Property: column:int  
   Property: row:int  
-  Property: offset:tuple[int,int]                        # (col,row) 1-based
+  Property: offset:tuple[int,int]                        # (row,col) 1-based
 
 # -------------------------------------------------------------------------------------
 Class: Line (inherits Shape)                                      # Note creating a line from two tiles is only valid if the tiles lie on a straight hex direction
