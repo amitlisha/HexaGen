@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Dict, List, Tuple
 
-from runner_utils import f1_score
+
+def f1_score(precision: float, recall: float) -> float:
+    """Return harmonic F1 score given precision and recall."""
+    return (
+        2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
+    )
 
 
 def compute_board_metrics(

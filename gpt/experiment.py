@@ -5,6 +5,7 @@ import random
 import traceback
 from pathlib import Path
 from typing import Dict, List, Optional
+import textwrap
 
 from openai_wrapper import call_gpt
 from utils.reading_tasks import read_task
@@ -108,6 +109,7 @@ def run_step_code(
 ) -> tuple[Dict, bool, str, Optional[Path]]:
     """Run one code-completion step and return updated script and log."""
     attempt = 0
+    last_exc: Optional[str] = None
     prev_pred_board: List[int]
     try:
         ns_prev: Dict[str, object] = {}
@@ -125,6 +127,13 @@ def run_step_code(
             template=user_tmpl,
             code=code_with_todo,
         )
+
+        if last_exc:
+            prompt += (
+                "\n\n"
+                "   ### Previous execution error\n"
+                f"{textwrap.indent(last_exc.strip(), '    ')}"
+            )
 
         resp = call_gpt(
             prompt=prompt,
@@ -167,6 +176,7 @@ def run_step_code(
             save_plot(pred, gold_board, plot_with_gold_path)
             return log, True, new_script, plot_path
         except Exception:
+            last_exc = traceback.format_exc()
             log["traceback"] = traceback.format_exc()
             if cfg.retries and attempt >= cfg.retries:
                 log.update(
