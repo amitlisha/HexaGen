@@ -6,15 +6,21 @@ from typing import List, Tuple
 from runner_utils import DATA_DIR
 
 
-def build_prompts(mode: str) -> Tuple[str, str]:
+def build_prompts(mode: str, vision: bool = False) -> Tuple[str, str]:
     """Load system and user templates for the selected mode."""
     shared_sys_p = DATA_DIR / "shared_system_prompt.txt"
 
     if mode == "tiles":
-        sys_p = DATA_DIR / "tiles_system_prompt.txt"
+        if vision:
+            sys_p = DATA_DIR / "tiles_with_vision_system_prompt.txt"
+        else:
+            sys_p = DATA_DIR / "tiles_system_prompt.txt"
         user_p = DATA_DIR / "tiles_user_message.txt"
     else:
-        sys_p = DATA_DIR / "code_system_prompt.txt"
+        if vision:
+            sys_p = DATA_DIR / "code_with_vision_system_prompt.txt"
+        else:
+            sys_p = DATA_DIR / "code_system_prompt.txt"
         user_p = DATA_DIR / "code_user_message.txt"
 
     system_tmpl = f"{shared_sys_p.read_text()}\n\n{sys_p.read_text()}"

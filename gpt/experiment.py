@@ -369,7 +369,7 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     Execute ONE Hexagons task and return its stats dictionary.
     This is the original single-task logic extracted from main().
     """
-    sys_prompt, user_tmpl = build_prompts(cfg.mode)
+    sys_prompt, user_tmpl = build_prompts(cfg.mode, cfg.vision)
     instructions = task["steps"]
     gold_boards = task["gold_boards"]
 
