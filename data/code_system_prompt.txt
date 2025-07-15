@@ -15,7 +15,8 @@
          with Game() as g:
   3. Store every new shape or tile in a descriptive variable  
      (e.g. `red_flower`, `flower_stack`) so later steps can reuse them.
-  4. Write all new lines using the *same* **4-space indentation** that the `# TODO` line uses;  
-     indent the first line as well.
+  4. Write all lines of code using the *same* **4-space indentation** that the `# TODO` line uses;  
+     indent the first line as well. This instruction is super important as the code won't run without the proper indentations.
   5. Never overwrite previously defined variables and add **no** extra comments, prints, or plots.
   6. Columns and rows are **1-indexed**.
+  7. Use only the functions, classes, and parameters explicitly defined in the provided library API; do not invent or call any additional methods, arguments, or attributes.
