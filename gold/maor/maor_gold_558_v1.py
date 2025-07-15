@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Paint the second cell of the third column green and also the one below it.
     '''
-    tile1 = Tile(column=3, row=2)
+    tile1 = Tile(row=2, column=3)
     tile1.draw('green')
     tile2 = tile1.neighbor(direction='down')
     tile2.draw('green')
@@ -30,7 +30,7 @@ with Game() as g:
     3. Starting from the next to last cell in column three, paint it blue and the one
     above it green.
     '''
-    tile1 = Tile(column=3, row=-2)
+    tile1 = Tile(row=-2, column=3)
     tile1.draw('blue')
     tile2 = tile1.neighbor(direction='up')
     tile2.draw('green')
@@ -44,7 +44,7 @@ with Game() as g:
     '''
     5. Repeat steps 3 and 4 starting with the second cell of the 7th column.
     '''
-    tile1 = Tile(column=7, row=2)
+    tile1 = Tile(row=2, column=7)
     tile1.draw('green')
     tile2 = tile1.neighbor(direction='down')
     tile2.draw('blue')
@@ -57,7 +57,7 @@ with Game() as g:
     the positions of the blue and green.
     '''
     
-    tile1 = Tile(column=11, row=2)
+    tile1 = Tile(row=2, column=11)
     tile1.draw('blue')
     tile2 = tile1.neighbor(direction='down')
     tile2.draw('green')
@@ -69,7 +69,7 @@ with Game() as g:
     7. Starting with the second cell from the top of column 15, repeat steps 1 and 2
     but substitute blue for the green.
     '''
-    tile1 = Tile(column=15, row=2)
+    tile1 = Tile(row=2, column=15)
     tile1.draw('blue')
     tile2 = tile1.neighbor(direction='down')
     tile2.draw('blue')
@@ -80,7 +80,7 @@ with Game() as g:
     '''
     8. Repeat steps 1 and 2 beginning with the second cell from the bottom of column 7.
     '''
-    tile1 = Tile(column=7, row=-2)
+    tile1 = Tile(row=-2, column=7)
     tile1.draw('green')
     tile2 = tile1.neighbor(direction='up')
     tile2.draw('green')
@@ -91,7 +91,7 @@ with Game() as g:
     '''
     9. Repeat step 7 beginning with the second cell from the bottom of column 11.
     '''
-    tile1 = Tile(column=11, row=-2)
+    tile1 = Tile(row=-2, column=11)
     tile1.draw('blue')
     tile2 = tile1.neighbor(direction='up')
     tile2.draw('blue')
@@ -102,7 +102,7 @@ with Game() as g:
     '''
     10. Repeat step 8 starting with the second cell from the bottom of column 15.
     '''
-    tile1 = Tile(column=15, row=-2)
+    tile1 = Tile(row=-2, column=15)
     tile1.draw('green')
     tile2 = tile1.neighbor(direction='up')
     tile2.draw('green')

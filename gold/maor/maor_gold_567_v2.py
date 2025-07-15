@@ -19,24 +19,24 @@ with Game() as g:
     g.record_step(step_name='flower')
     
     for i in range(1,4):
-      tile = Tile(column=2, row=i)
+      tile = Tile(row=i, column=2)
       tile.draw('purple')
     
     '''
     2. Next, color the top three hexagons in the fourth column purple.
     '''
     for i in range(1,4):
-      tile = Tile(column=4, row=i)
+      tile = Tile(row=i, column=4)
       tile.draw('purple')
     
     
     '''
     3. Now, color the first and fourth hexagon in the third column purple.
     '''
-    tile= Tile(column=3, row=1)
+    tile= Tile(row=1, column=3)
     tile.draw('purple')
     
-    tile= Tile(column=3, row=4)
+    tile= Tile(row=4, column=3)
     tile.draw('purple')
     
     g.record_step(step_name='flower_end')

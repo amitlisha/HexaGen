@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Start by coloring the tile in the sixth column, fifth from the top red.
     '''
-    tile = Tile(6, 5)
+    tile = Tile(5, 6)
     tile.draw('red')
     
     '''

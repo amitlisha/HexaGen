@@ -17,7 +17,7 @@ with Game() as g:
     purple.
     '''
     g.record_step('1')
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('orange')
     
     for i in range(4):
@@ -30,7 +30,7 @@ with Game() as g:
     blue.
     '''
     g.record_step('2')
-    tile = Tile(column=tile.neighbor('down_right').column, row=-1)
+    tile = Tile(row=-1, column=tile.neighbor('down_right').column)
     tile.draw('green')
     
     for i in range(4):
@@ -41,7 +41,7 @@ with Game() as g:
     3. On the next column, paint the top tile green and the four tiles below it blue.
     '''
     g.record_step('3')
-    tile = Tile(column=tile.neighbor('up_right').column, row=1)
+    tile = Tile(row=1, column=tile.neighbor('up_right').column)
     tile.draw('green')
     
     for i in range(4):
@@ -53,7 +53,7 @@ with Game() as g:
     purple.
     '''
     g.record_step('4')
-    tile = Tile(column=tile.neighbor('up_right').column, row=-1)
+    tile = Tile(row=-1, column=tile.neighbor('up_right').column)
     tile.draw('orange')
     
     for i in range(4):
@@ -67,7 +67,7 @@ with Game() as g:
     pattern = g.get_record(['3'])
     r = pattern.edge('top').row
     for c in [5, 7, 11]:
-      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(c,r))
+      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(r, c))
     
     '''
     6. Paint the second, fourth, sixth, and tenth columns from the right as you painted
@@ -76,7 +76,7 @@ with Game() as g:
     pattern = g.get_record(['1'])
     r = pattern.edge('top').row
     for c in [-2, -4, -6, -10]:
-      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(c,r))
+      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(r, c))
     
     '''
     7. Paint the sixth, eighth, sixteenth, and last columns from the left as you
@@ -85,7 +85,7 @@ with Game() as g:
     pattern = g.get_record(['2'])
     r = pattern.edge('top').row
     for c in [6, 8, 16, -1]:
-      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(c,r))
+      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(r, c))
     
     '''
     8. Paint the fifth, seventh, and ninth columns from the right as you painted the
@@ -94,6 +94,6 @@ with Game() as g:
     pattern = g.get_record(['4'])
     r = pattern.edge('top').row
     for c in [-5, -7, -9]:
-      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(c,r))
+      pattern.copy_paste(source=pattern.edge('top'), destination=Tile(r, c))
     
     g.plot(gold_boards=gold_boards, multiple=0)

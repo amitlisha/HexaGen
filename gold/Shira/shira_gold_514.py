@@ -20,7 +20,7 @@ with Game() as g:
     down on the far left and ending with the topmost tile that is third from the
     left.
     '''
-    line1 = Line(start_tile=Tile(1, 3), end_tile=Tile(5, 1))
+    line1 = Line(start_tile=Tile(3, 1), end_tile=Tile(1, 5))
     line1.draw('red')
     '''
     3. Continuing diagonally, skip a diagonal row then make the next row down red from

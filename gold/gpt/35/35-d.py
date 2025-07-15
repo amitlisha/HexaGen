@@ -11,29 +11,29 @@ with Game() as g:
     
     
     # color all tiles orange around eighth vertical row from left, third tile from the top of that row
-    tile = Tile(5, 3)
+    tile = Tile(3, 5)
     shape = tile.neighbors()
     shape.draw('orange')
     
     # on 12th vertical row from left, 3rd tile down, color all tiles touching that tile, orange
-    tile = Tile(9, 3)
+    tile = Tile(3, 9)
     shape = tile.neighbors()
     shape.draw('orange')
     
     # on 8th vertical row 7th tile down, color all tiles touching that one orange, leaving it blank
-    tile = Tile(5, 7)
+    tile = Tile(7, 5)
     shape = tile.neighbors()
     shape.draw('orange')
     tile.draw('white')
     
     # on 12th row, vertically from left, 7th tile down, color all tiles touching it orange, leaving it blank
-    tile = Tile(9, 7)
+    tile = Tile(7, 9)
     shape = tile.neighbors()
     shape.draw('orange')
     tile.draw('white')
     
     # form a blue circle to fit in between the 4 orange circles drawn, of the same number of tiles, same size (six tiles, as in others)
-    tile = Tile(7, 5)
+    tile = Tile(5, 7)
     shape = tile.neighbors()
     shape = shape.neighbors()
     shape.draw('blue')

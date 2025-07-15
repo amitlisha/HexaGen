@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. On the bottom most row, paint the 8th tile green.
     '''
-    tile=Tile(column=8, row=-1)
+    tile=Tile(row=-1, column=8)
     tile.draw('green')
     
     '''

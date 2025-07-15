@@ -20,15 +20,15 @@ with Game() as g:
     g.record_step(step_name='1')
     
     for column in [2,4]:
-      line = Line(start_tile=Tile(column=column,row=1), length=3, direction='down')
+      line = Line(start_tile=Tile(row=1, column=column), length=3, direction='down')
       line.draw('purple')
     
     for row in [1,4]:
-      tile = Tile(column=3, row=row)
+      tile = Tile(row=row, column=3)
       tile.draw('purple')
     
     for row in [2,3]:
-      tile = Tile(column=3, row=row)
+      tile = Tile(row=row, column=3)
       tile.draw('green')
     
     g.record_step(step_name='1_end')
@@ -43,17 +43,17 @@ with Game() as g:
     
     for row in [7, 8, 9]:
       for column in [2,4]:
-        tile = Tile(column=column, row=row)
+        tile = Tile(row=row, column=column)
         tile.draw('orange')
     
     for row in [7,10]:
-      tile = Tile(column=3, row=row)
+      tile = Tile(row=row, column=3)
       tile.draw('orange')
     
-    tile = Tile(column=3, row=8)
+    tile = Tile(row=8, column=3)
     tile.draw('green')
     
-    tile = Tile(column=3, row=9)
+    tile = Tile(row=9, column=3)
     tile.draw('blue')
     
     g.record_step(step_name='2_end')
@@ -63,14 +63,14 @@ with Game() as g:
     column make the same shape as the one from Step 2.
     '''
     shape = g.get_record(step_names=['2'])
-    shape.copy_paste(source=shape[0], destination=Tile(6,1))
+    shape.copy_paste(source=shape[0], destination=Tile(1, 6))
     
     '''
     4. On the seventh tile of the sixth column from the left, make the same shape as
     the one from Step 1.
     '''
     shape = g.get_record(step_names=['1'])
-    shape.copy_paste(source=shape[0], destination=Tile(6,7))
+    shape.copy_paste(source=shape[0], destination=Tile(7, 6))
     
     '''
     5. Leave the ninth column blank, and paint the same zero shape in orange starting
@@ -78,12 +78,12 @@ with Game() as g:
     tile on the eleventh column blue and the third tile green.
     '''
     shape = g.get_record(step_names=['2'])
-    shape.copy_paste(source=shape[0], destination=Tile(10,1))
+    shape.copy_paste(source=shape[0], destination=Tile(1, 10))
     
-    tile = Tile(column=11, row=2)
+    tile = Tile(row=2, column=11)
     tile.draw('blue')
     
-    tile = Tile(column=11, row=3)
+    tile = Tile(row=3, column=11)
     tile.draw('green')
     '''
     6. Paint a purple zero shape like the ones from Step 1 and 4 starting on seventh
@@ -91,10 +91,10 @@ with Game() as g:
     blue.
     '''
     shape = g.get_record(step_names=['1'])
-    shape.copy_paste(source=shape[0], destination=Tile(10,7))
-    tile = Tile(11,8)
+    shape.copy_paste(source=shape[0], destination=Tile(7, 10))
+    tile = Tile(8, 11)
     tile.draw('blue')
-    tile = Tile(11,9)
+    tile = Tile(9, 11)
     tile.draw('blue')
     
     '''
@@ -103,10 +103,10 @@ with Game() as g:
     the zero blue.
     '''
     shape = g.get_record(step_names=['1'])
-    shape.copy_paste(source=shape[0], destination=Tile(14,1))
-    tile = Tile(15,2)
+    shape.copy_paste(source=shape[0], destination=Tile(1, 14))
+    tile = Tile(2, 15)
     tile.draw('blue')
-    tile = Tile(15,3)
+    tile = Tile(3, 15)
     tile.draw('blue')
     
     '''
@@ -114,10 +114,10 @@ with Game() as g:
     from the left. Paint the tiles inside the zero green.
     '''
     shape = g.get_record(step_names=['1'])
-    shape.copy_paste(source=shape[0], destination=Tile(14,7))
-    tile = Tile(15,8)
+    shape.copy_paste(source=shape[0], destination=Tile(7, 14))
+    tile = Tile(8, 15)
     tile.draw('green')
-    tile = Tile(15,9)
+    tile = Tile(9, 15)
     tile.draw('green')
     
     '''

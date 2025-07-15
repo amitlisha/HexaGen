@@ -17,7 +17,7 @@ with Game() as g:
     hex of each column orange and the next four hexes below them purple.
     '''
     for c in [1, 9, 13, 15, 17]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('orange')
       for i in range(4):
         tile = tile.neighbor('down')
@@ -28,7 +28,7 @@ with Game() as g:
     the next four cells below it blue.
     '''
     for c in [3, 5, 7, 11]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('green')
       for i in range(4):
         tile = tile.neighbor('down')
@@ -39,7 +39,7 @@ with Game() as g:
     bottom and color the bottom hex green and the next four above it blue
     '''
     for c in [2, 6, 8, 16, 18]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('green')
       for i in range(4):
         tile = tile.neighbor('up')
@@ -50,7 +50,7 @@ with Game() as g:
     orange and the next four hexes above it purple
     '''
     for c in [4, 10, 12, 14]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('orange')
       for i in range(4):
         tile = tile.neighbor('up')

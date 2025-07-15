@@ -10,13 +10,13 @@ with Game() as g:
     
     # make the first triangle
     for i in range(3):
-        tile = Tile(i, i + 1)
+        tile = Tile(i + 1, i)
         tile.draw("red")
     for i in range(2):
-        tile = Tile(i + 1, i + 3)
+        tile = Tile(i + 3, i + 1)
         tile.draw("red")
     for i in range(1):
-        tile = Tile(i + 2, i + 4)
+        tile = Tile(i + 4, i + 2)
         tile.draw("red")
     
     # record the first triangle
@@ -24,13 +24,13 @@ with Game() as g:
     
     # make the second triangle
     for i in range(3):
-        tile = Tile(i + 5, i + 1)
+        tile = Tile(i + 1, i + 5)
         tile.draw("red")
     for i in range(2):
-        tile = Tile(i + 6, i + 3)
+        tile = Tile(i + 3, i + 6)
         tile.draw("red")
     for i in range(1):
-        tile = Tile(i + 7, i + 4)
+        tile = Tile(i + 4, i + 7)
         tile.draw("red")
     
     # record the second triangle
@@ -38,13 +38,13 @@ with Game() as g:
     
     # make the third triangle
     for i in range(3):
-        tile = Tile(i + 9, i + 1)
+        tile = Tile(i + 1, i + 9)
         tile.draw("red")
     for i in range(2):
-        tile = Tile(i + 10, i + 3)
+        tile = Tile(i + 3, i + 10)
         tile.draw("red")
     for i in range(1):
-        tile = Tile(i + 11, i + 4)
+        tile = Tile(i + 4, i + 11)
         tile.draw("red")
     
     # record the third triangle
@@ -52,13 +52,13 @@ with Game() as g:
     
     # make the fourth triangle
     for i in range(3):
-        tile = Tile(i + 13, i + 1)
+        tile = Tile(i + 1, i + 13)
         tile.draw("red")
     for i in range(2):
-        tile = Tile(i + 14, i + 3)
+        tile = Tile(i + 3, i + 14)
         tile.draw("red")
     for i in range(1):
-        tile = Tile(i + 15, i + 4)
+        tile = Tile(i + 4, i + 15)
         tile.draw("red")
     
     # record the fourth triangle

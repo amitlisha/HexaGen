@@ -15,12 +15,12 @@ with Game() as g:
     '''
     1. Fill the top three hexes in the 3rd column from the left with red.
     '''
-    line = Line(start_tile=Tile(3,1), direction='down', length=3)
+    line = Line(start_tile=Tile(1, 3), direction='down', length=3)
     line.draw('red')
     '''
     2. Fill 3 hexes to the left with red to form a triangle pointing left.
     '''
-    triangle = Triangle(start_tile=Tile(1, 2), point='left', start_tile_type='side', side_length=2)
+    triangle = Triangle(start_tile=Tile(2, 1), point='left', start_tile_type='side', side_length=2)
     triangle.draw('red')
     
     '''

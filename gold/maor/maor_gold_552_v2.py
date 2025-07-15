@@ -45,7 +45,7 @@ with Game() as g:
     
       return Shape(tiles)
     
-    zero1 = zero_from_top(start_tile=Tile(2, 1))
+    zero1 = zero_from_top(start_tile=Tile(1, 2))
     zero1.draw('purple')
     zero1.neighbors(criterion='inside').draw('green')
     
@@ -111,7 +111,7 @@ with Game() as g:
     
       return Shape(tiles)
     
-    zero5 = zero_from_bottom(start_tile=Tile(2,-2))
+    zero5 = zero_from_bottom(start_tile=Tile(-2, 2))
     zero5.draw('orange')
     zero5.neighbors(criterion='inside').edge(direction='up').draw('green')
     zero5.neighbors(criterion='inside').edge(direction='down').draw('blue')

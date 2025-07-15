@@ -15,19 +15,19 @@ with Game() as g:
     '''
     1. With red, paint the cell at the 1st column on the left and 2nd row from top.
     '''
-    tile = Tile(column=1, row=2)
+    tile = Tile(row=2, column=1)
     tile.draw('red')
     
     '''
     2. With red, paint the top 2 cells of the 2nd column from left.
     '''
-    line1 = Line(start_tile=Tile(2,1), direction='down', length=2)
+    line1 = Line(start_tile=Tile(1, 2), direction='down', length=2)
     line1.draw('red')
     
     '''
     3. With red, paint the top 3 rows of the 3rd column from the left.
     '''
-    line2 = Line(start_tile=Tile(3,1), direction='down', length=3)
+    line2 = Line(start_tile=Tile(1, 3), direction='down', length=3)
     line2.draw('red')
     
     '''

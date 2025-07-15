@@ -17,11 +17,11 @@ with Game() as g:
     the sixth and seventh tiles down purple and paint the 2 bottommost tiles blue.
     '''
     for c in [1,3,13,15]:
-      line = Line(start_tile=Tile(column=c, row=3), end_tile=Tile(column=c, row=4))
+      line = Line(start_tile=Tile(row=3, column=c), end_tile=Tile(row=4, column=c))
       line.draw('orange')
-      line = Line(start_tile=Tile(column=c, row=6), end_tile=Tile(column=c, row=7))
+      line = Line(start_tile=Tile(row=6, column=c), end_tile=Tile(row=7, column=c))
       line.draw('purple')
-      line = Line(start_tile=Tile(column=c, row=-1), direction='up', length=2)
+      line = Line(start_tile=Tile(row=-1, column=c), direction='up', length=2)
       line.draw('blue')
     
     '''
@@ -29,41 +29,41 @@ with Game() as g:
     paint the third, fifth, and seventh tiles down purple, paint the sixth, eighth
     and tenth tiles down blue.
     '''
-    tile = Tile(column=2, row=2)
+    tile = Tile(row=2, column=2)
     tile.draw('orange')
-    tile = Tile(column=2, row=4)
+    tile = Tile(row=4, column=2)
     tile.draw('orange')
-    tile = Tile(column=2, row=9)
+    tile = Tile(row=9, column=2)
     tile.draw('orange')
-    tile = Tile(column=2, row=3)
+    tile = Tile(row=3, column=2)
     tile.draw('purple')
-    tile = Tile(column=2, row=5)
+    tile = Tile(row=5, column=2)
     tile.draw('purple')
-    tile = Tile(column=2, row=7)
+    tile = Tile(row=7, column=2)
     tile.draw('purple')
-    tile = Tile(column=2, row=6)
+    tile = Tile(row=6, column=2)
     tile.draw('blue')
-    tile = Tile(column=2, row=8)
+    tile = Tile(row=8, column=2)
     tile.draw('blue')
-    tile = Tile(column=2, row=10)
+    tile = Tile(row=10, column=2)
     tile.draw('blue')
-    tile = Tile(column=14, row=2)
+    tile = Tile(row=2, column=14)
     tile.draw('orange')
-    tile = Tile(column=14, row=4)
+    tile = Tile(row=4, column=14)
     tile.draw('orange')
-    tile = Tile(column=14, row=9)
+    tile = Tile(row=9, column=14)
     tile.draw('orange')
-    tile = Tile(column=14, row=3)
+    tile = Tile(row=3, column=14)
     tile.draw('purple')
-    tile = Tile(column=14, row=5)
+    tile = Tile(row=5, column=14)
     tile.draw('purple')
-    tile = Tile(column=14, row=7)
+    tile = Tile(row=7, column=14)
     tile.draw('purple')
-    tile = Tile(column=14, row=6)
+    tile = Tile(row=6, column=14)
     tile.draw('blue')
-    tile = Tile(column=14, row=8)
+    tile = Tile(row=8, column=14)
     tile.draw('blue')
-    tile = Tile(column=14, row=10)
+    tile = Tile(row=10, column=14)
     tile.draw('blue')
     
     '''
@@ -71,11 +71,11 @@ with Game() as g:
     and seventh tiles down orange, and paint the 2 bottommost tiles purple.
     '''
     for c in [5,7]:
-      line = Line(start_tile=Tile(column=c, row=3), end_tile=Tile(column=c, row=4))
+      line = Line(start_tile=Tile(row=3, column=c), end_tile=Tile(row=4, column=c))
       line.draw('blue')
-      line = Line(start_tile=Tile(column=c, row=6), end_tile=Tile(column=c, row=7))
+      line = Line(start_tile=Tile(row=6, column=c), end_tile=Tile(row=7, column=c))
       line.draw('orange')
-      line = Line(start_tile=Tile(column=c, row=-1), direction='up', length=2)
+      line = Line(start_tile=Tile(row=-1, column=c), direction='up', length=2)
       line.draw('purple')
     
     '''
@@ -83,23 +83,23 @@ with Game() as g:
     third, fifth, and seventh tiles down orange, paint the sixth, eighth and tenth
     tiles down purple.
     '''
-    tile = Tile(column=6, row=2)
+    tile = Tile(row=2, column=6)
     tile.draw('blue')
-    tile = Tile(column=6, row=4)
+    tile = Tile(row=4, column=6)
     tile.draw('blue')
-    tile = Tile(column=6, row=9)
+    tile = Tile(row=9, column=6)
     tile.draw('blue')
-    tile = Tile(column=6, row=3)
+    tile = Tile(row=3, column=6)
     tile.draw('orange')
-    tile = Tile(column=6, row=5)
+    tile = Tile(row=5, column=6)
     tile.draw('orange')
-    tile = Tile(column=6, row=7)
+    tile = Tile(row=7, column=6)
     tile.draw('orange')
-    tile = Tile(column=6, row=6)
+    tile = Tile(row=6, column=6)
     tile.draw('purple')
-    tile = Tile(column=6, row=8)
+    tile = Tile(row=8, column=6)
     tile.draw('purple')
-    tile = Tile(column=6, row=10)
+    tile = Tile(row=10, column=6)
     tile.draw('purple')
     
     '''
@@ -107,11 +107,11 @@ with Game() as g:
     sixth and seventh tiles down blue and paint the 2 bottommost tiles orange.
     '''
     for c in [9,11]:
-      line = Line(start_tile=Tile(column=c, row=3), end_tile=Tile(column=c, row=4))
+      line = Line(start_tile=Tile(row=3, column=c), end_tile=Tile(row=4, column=c))
       line.draw('purple')
-      line = Line(start_tile=Tile(column=c, row=6), end_tile=Tile(column=c, row=7))
+      line = Line(start_tile=Tile(row=6, column=c), end_tile=Tile(row=7, column=c))
       line.draw('blue')
-      line = Line(start_tile=Tile(column=c, row=-1), direction='up', length=2)
+      line = Line(start_tile=Tile(row=-1, column=c), direction='up', length=2)
       line.draw('orange')
     
     '''
@@ -119,23 +119,23 @@ with Game() as g:
     third, fifth, and seventh tiles down blue, paint the sixth, eighth and tenth
     tiles down orange.
     '''
-    tile = Tile(column=10, row=2)
+    tile = Tile(row=2, column=10)
     tile.draw('purple')
-    tile = Tile(column=10, row=4)
+    tile = Tile(row=4, column=10)
     tile.draw('purple')
-    tile = Tile(column=10, row=9)
+    tile = Tile(row=9, column=10)
     tile.draw('purple')
-    tile = Tile(column=10, row=3)
+    tile = Tile(row=3, column=10)
     tile.draw('blue')
-    tile = Tile(column=10, row=5)
+    tile = Tile(row=5, column=10)
     tile.draw('blue')
-    tile = Tile(column=10, row=7)
+    tile = Tile(row=7, column=10)
     tile.draw('blue')
-    tile = Tile(column=10, row=6)
+    tile = Tile(row=6, column=10)
     tile.draw('orange')
-    tile = Tile(column=10, row=8)
+    tile = Tile(row=8, column=10)
     tile.draw('orange')
-    tile = Tile(column=10, row=10)
+    tile = Tile(row=10, column=10)
     tile.draw('orange')
     
     g.plot(gold_boards=gold_boards, multiple=0)

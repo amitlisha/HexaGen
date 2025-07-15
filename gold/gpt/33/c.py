@@ -14,7 +14,7 @@ with Game() as g:
     blue = 'blue'
     
     # draw an orange circle at 8th row, 3rd tile from the top
-    tile = Tile(8, 3)
+    tile = Tile(3, 8)
     tile.draw(orange)
     neighbors = tile.neighbors()
     for n in neighbors:
@@ -22,14 +22,14 @@ with Game() as g:
             n.draw(orange)
     
     # draw an orange rectangle around the tile at 12th row, 3rd tile down
-    tile = Tile(12, 3)
+    tile = Tile(3, 12)
     neighbors = tile.neighbors()
     for n in neighbors:
         if n.on_board():
             n.draw(orange)
     
     # draw an orange circle around the tile at 8th row, 7th tile down
-    tile = Tile(8, 7)
+    tile = Tile(7, 8)
     tile.draw(orange)
     neighbors = tile.neighbors()
     for n in neighbors:
@@ -37,7 +37,7 @@ with Game() as g:
             n.draw(orange)
     
     # draw an orange rectangle around the tile at 12th row, 7th tile down
-    tile = Tile(12, 7)
+    tile = Tile(7, 12)
     neighbors = tile.neighbors()
     for n in neighbors:
         if n.on_board():
@@ -45,7 +45,7 @@ with Game() as g:
     
     # draw a blue circle to fit between the 4 orange circles
     # first, find the center tile of the four orange tiles
-    center_tile = Tile(10, 5)
+    center_tile = Tile(5, 10)
     
     # draw the blue circle centered at the center_tile
     circle = []
