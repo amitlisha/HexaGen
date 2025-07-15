@@ -5,3 +5,4 @@ hexagen.egg-info/
 *.ipynb
 results/
 launch.json
+CLAUDE.md

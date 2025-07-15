@@ -9,10 +9,11 @@ import ast
 
 from hexagen import Game
 
-ROOT_DIR   = Path(__file__).resolve().parent.parent
-DATA_DIR   = ROOT_DIR / "data"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = ROOT_DIR / "data"
 RESULTS_DIR = ROOT_DIR / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
+
 
 def timestamp() -> str:
     return time.strftime("%Y-%m-%dT%H-%M-%S", time.localtime())
@@ -34,12 +35,16 @@ def extract_code(raw: str) -> str:
     return (m.group(1) if m else raw).strip()
 
 
-def save_plot(board_state: List[int], gold_board: List[int] | List[List[int]], out: Path) -> None:
+def save_plot(
+    board_state: List[int], gold_board: List[int] | List[List[int]], out: Path
+) -> None:
     """Plot board vs. gold and save PNG."""
     with Game() as g:
         g.board_state = board_state.copy()
         if gold_board:
-            g.plot(gold_boards=gold_board, multiple=False, file_name=str(out), show=False)
+            g.plot(
+                gold_boards=gold_board, multiple=False, file_name=str(out), show=False
+            )
         else:
             g.plot(multiple=False, file_name=str(out), show=False)
 
@@ -63,11 +68,4 @@ def parse_tile_actions(raw: str) -> List[tuple[int, int, str]]:
         pass
 
     pattern = r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*['\"]?([a-zA-Z]+)['\"]?\s*\)"
-    return [(int(r), int(c), col.lower())
-            for r, c, col in re.findall(pattern, raw)]
-
-
-def f1_score(precision: float, recall: float) -> float:
-    """Return harmonic F1 score given precision and recall."""
-    return 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
-
+    return [(int(r), int(c), col.lower()) for r, c, col in re.findall(pattern, raw)]
