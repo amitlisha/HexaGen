@@ -67,7 +67,7 @@ Class: Shape           # Base class for collections of tiles
 Class: Tile (inherits Shape)  
   Method: __init__(column:int, row:int, game:Game | None = None)  
     Notes: negative indices wrap from opposite edge.  
-  Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS  
+  Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS - unlike Shape.neighbors which accepts more options
   Method: on_board() -> bool  
   Property: color:str  
   Property: column:int  
