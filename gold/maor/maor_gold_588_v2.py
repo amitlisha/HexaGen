@@ -18,12 +18,12 @@ with Game() as g:
     '''
     for r in range(2, 6):
       for c in [1,9, 13, 15, 17]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('purple')
     
     for r in range(6, 10):
       for c in [4, 10, 12, 14]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('purple')
     
     '''
@@ -32,12 +32,12 @@ with Game() as g:
     '''
     for r in range(2, 6):
       for c in [3, 5, 7, 11]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('blue')
     
     for r in range(6, 10):
       for c in [2, 6, 8, 16, 18]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('blue')
     
     '''
@@ -48,20 +48,20 @@ with Game() as g:
     '''
     for i in range(1, 20, 2):
       if i not in [3, 5, 7, 11]:
-        tile = Tile(column=i, row=1)
+        tile = Tile(row=1, column=i)
         tile.draw('orange')
     
     for i in [3, 5, 7, 11]:
-      tile = Tile(column=i, row=1)
+      tile = Tile(row=1, column=i)
       tile.draw('green')
     
     for i in range(2, 20, 2):
       if i not in [4, 10, 12, 14]:
-        tile = Tile(column=i, row=-1)
+        tile = Tile(row=-1, column=i)
         tile.draw('green')
     
     for i in [4, 10, 12, 14]:
-      tile = Tile(column=i, row=-1)
+      tile = Tile(row=-1, column=i)
       tile.draw('orange')
     
     g.plot(gold_boards=gold_boards, multiple=0)

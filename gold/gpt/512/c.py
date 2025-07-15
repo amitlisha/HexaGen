@@ -6,10 +6,10 @@ from constants.constants import *
 
 with Game() as g:
     # Define the tiles to be colored
-    green_top = [Tile(3, 1), Tile(3, 2)]
-    green_bottom = [Tile(7, HEIGHT), Tile(7, HEIGHT - 1)]
-    blue_top = [Tile(15, 1), Tile(15, 2)]
-    blue_bottom = [Tile(11, HEIGHT), Tile(11, HEIGHT - 1)]
+    green_top = [Tile(1, 3), Tile(2, 3)]
+    green_bottom = [Tile(HEIGHT, 7), Tile(HEIGHT - 1, 7)]
+    blue_top = [Tile(1, 15), Tile(2, 15)]
+    blue_bottom = [Tile(HEIGHT, 11), Tile(HEIGHT - 1, 11)]
     
     # Color in the tiles
     for tile in green_top:
@@ -45,12 +45,12 @@ with Game() as g:
       tile.draw('purple')
     
     # Color in the specified tiles
-    Tile(3, HEIGHT - 2).draw('green')
-    Tile(3, HEIGHT - 1).draw('blue')
-    Tile(7, 2).draw('green')
-    Tile(7, 3).draw('blue')
-    Tile(11, HEIGHT - 1).draw('blue')
-    Tile(11, HEIGHT - 2).draw('green')
+    Tile(HEIGHT - 2, 3).draw('green')
+    Tile(HEIGHT - 1, 3).draw('blue')
+    Tile(2, 7).draw('green')
+    Tile(3, 7).draw('blue')
+    Tile(HEIGHT - 1, 11).draw('blue')
+    Tile(HEIGHT - 2, 11).draw('green')
     
     # Define the tiles to be colored orange
     orange_tiles = []

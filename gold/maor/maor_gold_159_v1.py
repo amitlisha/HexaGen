@@ -18,13 +18,13 @@ with Game() as g:
     '''
     for c in [1,3,13,15]:
       for r in [3,4]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('orange')
       for r in [6,7]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('purple')
       for r in [-1,-2]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('blue')
     
     '''
@@ -34,13 +34,13 @@ with Game() as g:
     '''
     for c in [2,14]:
       for r in [2,4,9]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('orange')
       for r in [3,5,7]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('purple')
       for r in [6,8,10]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('blue')
     
     '''
@@ -49,13 +49,13 @@ with Game() as g:
     '''
     for c in [5,7]:
       for r in [3,4]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('blue')
       for r in [6,7]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('orange')
       for r in [-1,-2]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('purple')
     
     '''
@@ -64,13 +64,13 @@ with Game() as g:
     tiles down purple.
     '''
     for r in [2,4,9]:
-      tile = Tile(column=6, row=r)
+      tile = Tile(row=r, column=6)
       tile.draw('blue')
     for r in [3,5,7]:
-      tile = Tile(column=6, row=r)
+      tile = Tile(row=r, column=6)
       tile.draw('orange')
     for r in [6,8,10]:
-      tile = Tile(column=6, row=r)
+      tile = Tile(row=r, column=6)
       tile.draw('purple')
     
     '''
@@ -79,13 +79,13 @@ with Game() as g:
     '''
     for c in [9,11]:
       for r in [3,4]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('purple')
       for r in [6,7]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('blue')
       for r in [-1,-2]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('orange')
     
     '''
@@ -94,13 +94,13 @@ with Game() as g:
     tiles down orange.
     '''
     for r in [2,4,9]:
-      tile = Tile(column=10, row=r)
+      tile = Tile(row=r, column=10)
       tile.draw('purple')
     for r in [3,5,7]:
-      tile = Tile(column=10, row=r)
+      tile = Tile(row=r, column=10)
       tile.draw('blue')
     for r in [6,8,10]:
-      tile = Tile(column=10, row=r)
+      tile = Tile(row=r, column=10)
       tile.draw('orange')
     
     g.plot(gold_boards=gold_boards, multiple=0)

@@ -17,11 +17,11 @@ with Game() as g:
     purple in columns 4, 10, 12, and 14.
     '''
     for c in [1,9, 13, 15, 17]:
-      line = Line(start_tile=Tile(c, 2), end_tile=Tile(c, 5))
+      line = Line(start_tile=Tile(2, c), end_tile=Tile(5, c))
       line.draw('purple')
     
     for c in [4, 10, 12, 14]:
-      line = Line(start_tile=Tile(c, 6), end_tile=Tile(c, 9))
+      line = Line(start_tile=Tile(6, c), end_tile=Tile(9, c))
       line.draw('purple')
     
     '''
@@ -29,11 +29,11 @@ with Game() as g:
     columns 2, 6, 8, 16, and 18.
     '''
     for c in [3, 5, 7, 11]:
-      line = Line(start_tile=Tile(c, 2), end_tile=Tile(c, 5))
+      line = Line(start_tile=Tile(2, c), end_tile=Tile(5, c))
       line.draw('blue')
     
     for c in [2, 6, 8, 16, 18]:
-      line = Line(start_tile=Tile(c, 6), end_tile=Tile(c, 9))
+      line = Line(start_tile=Tile(6, c), end_tile=Tile(9, c))
       line.draw('blue')
     
     '''
@@ -43,14 +43,14 @@ with Game() as g:
     12, and 14, which you will color orange.
     '''
     for i in range(1, 20, 2):
-      tile = Tile(column=i, row=1)
+      tile = Tile(row=1, column=i)
       if i in [3, 5, 7, 11]:
         tile.draw('green')
       else:
         tile.draw('orange')
     
     for i in range(2, 20, 2):
-      tile = Tile(column=i, row=-1)
+      tile = Tile(row=-1, column=i)
       if i in [4, 10, 12, 14]:
         tile.draw('orange')
       else:

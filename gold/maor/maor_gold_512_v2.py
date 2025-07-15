@@ -15,27 +15,27 @@ with Game() as g:
     '''
     1. In the third column, colour in green tiles number two and three from the top.
     '''
-    tile1 = Tile(column=3, row=2)
+    tile1 = Tile(row=2, column=3)
     tile1.draw('green')
-    tile2 = Tile(column=3, row=3)
+    tile2 = Tile(row=3, column=3)
     tile2.draw('green')
     
     '''
     2. In the seventh column, colour in green tiles number two and three from the
     bottom.
     '''
-    tile1 = Tile(column=7, row=-2)
+    tile1 = Tile(row=-2, column=7)
     tile1.draw('green')
-    tile2 = Tile(column=7, row=-3)
+    tile2 = Tile(row=-3, column=7)
     tile2.draw('green')
     
     '''
     3. In the fifteenth column, colour in green tiles number two and three from the
     bottom.
     '''
-    tile1 = Tile(column=15, row=-2)
+    tile1 = Tile(row=-2, column=15)
     tile1.draw('green')
-    tile2 = Tile(column=15, row=-3)
+    tile2 = Tile(row=-3, column=15)
     tile2.draw('green')
     
     '''
@@ -46,18 +46,18 @@ with Game() as g:
     '''
     5. In the fifteenth column, colour in blue tiles number two and three from the top.
     '''
-    tile1 = Tile(column=15, row=2)
+    tile1 = Tile(row=2, column=15)
     tile1.draw('blue')
-    tile2 = Tile(column=15, row=3)
+    tile2 = Tile(row=3, column=15)
     tile2.draw('blue')
     
     '''
     6. In the eleventh column, colour in blue tiles number two and three from the
     bottom.
     '''
-    tile1 = Tile(column=11, row=-2)
+    tile1 = Tile(row=-2, column=11)
     tile1.draw('blue')
-    tile2 = Tile(column=11, row=-3)
+    tile2 = Tile(row=-3, column=11)
     tile2.draw('blue')
     
     '''
@@ -68,26 +68,26 @@ with Game() as g:
     '''
     8. In the third column, colour in green tile number three from the bottom.
     '''
-    tile1 = Tile(column=3, row=-3)
+    tile1 = Tile(row=-3, column=3)
     tile1.draw('green')
     
     '''
     9. In the third column, colour in blue tile number two from the bottom.
     '''
-    tile2 = Tile(column=3, row=-2)
+    tile2 = Tile(row=-2, column=3)
     tile2.draw('blue')
     
     duo1 = tile1 + tile2
     '''
     10. In the seventh column, colour in green tile number two from the top.
     '''
-    tile1 = Tile(column=7, row=2)
+    tile1 = Tile(row=2, column=7)
     tile1.draw('green')
     
     '''
     11. In the seventh column, colour in blue tile number 3 from the top.
     '''
-    tile2 = Tile(column=7, row=3)
+    tile2 = Tile(row=3, column=7)
     tile2.draw('blue')
     
     duo2 = tile1 + tile2
@@ -95,13 +95,13 @@ with Game() as g:
     '''
     12. In the eleventh column, colour in blue tile number two from the top.
     '''
-    tile1 = Tile(column=11, row=2)
+    tile1 = Tile(row=2, column=11)
     tile1.draw('blue')
     
     '''
     13. In the eleventh column, colour in green tile number 3 from the top.
     '''
-    tile2 = Tile(column=11, row=3)
+    tile2 = Tile(row=3, column=11)
     tile2.draw('green')
     
     duo3 = tile1 + tile2

@@ -22,7 +22,7 @@ with Game() as g:
     2. Skip the first 5 cells in that column and color the 6th cell red.
     '''
     r = 5
-    tile = Tile(column=c,row=r)
+    tile = Tile(row=r, column=c)
     tile.draw('red')
     
     '''

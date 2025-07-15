@@ -16,7 +16,7 @@ with Game() as g:
     1. Choose the color orange and fill in the topmost hexagon in column one from the
     left.
     '''
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('orange')
     
     '''
@@ -32,13 +32,13 @@ with Game() as g:
     '''
     shape = tile + line
     for c in[9,13,15,17]:
-      shape.copy_paste(source=tile, destination=Tile(column=c, row=tile.row))
+      shape.copy_paste(source=tile, destination=Tile(row=tile.row, column=c))
     
     '''
     4. Choose the color green and fill in the topmost hexagon in column three from the
     left.
     '''
-    tile = Tile(column=3, row=1)
+    tile = Tile(row=1, column=3)
     tile.draw('green')
     
     '''
@@ -54,13 +54,13 @@ with Game() as g:
     '''
     shape = tile + line
     for c in[5,7,11]:
-      shape.copy_paste(source=tile, destination=Tile(column=c, row=tile.row))
+      shape.copy_paste(source=tile, destination=Tile(row=tile.row, column=c))
     
     '''
     7. Choose the color green and fill in the most bottom hexagon in column two from
     the left.
     '''
-    tile = Tile(column=2, row=-1)
+    tile = Tile(row=-1, column=2)
     tile.draw('green')
     
     '''
@@ -76,13 +76,13 @@ with Game() as g:
     '''
     shape = tile + line
     for c in[6,8,16,18]:
-      shape.copy_paste(source=tile, destination=Tile(column=c, row=tile.row))
+      shape.copy_paste(source=tile, destination=Tile(row=tile.row, column=c))
     
     '''
     10. Choose the color orange and fill in the most bottom hexagon in column four from
     the left.
     '''
-    tile = Tile(column=4, row=-1)
+    tile = Tile(row=-1, column=4)
     tile.draw('orange')
     
     '''
@@ -98,6 +98,6 @@ with Game() as g:
     '''
     shape = tile + line
     for c in[10, 12, 14]:
-      shape.copy_paste(source=tile, destination=Tile(column=c, row=tile.row))
+      shape.copy_paste(source=tile, destination=Tile(row=tile.row, column=c))
     
     g.plot(gold_boards=gold_boards, multiple=0)

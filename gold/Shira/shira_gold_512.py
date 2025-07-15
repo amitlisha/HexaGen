@@ -13,20 +13,20 @@ with Game() as g:
     '''
     1. In the third column, colour in green tiles number two and three from the top.
     '''
-    Tile(3, 2).draw('green')
+    Tile(2, 3).draw('green')
     Tile(3, 3).draw('green')
     '''
     2. In the seventh column, colour in green tiles number two and three from the
     bottom.
     '''
-    Tile(7, -2).draw('green')
-    Tile(7, -3).draw('green')
+    Tile(-2, 7).draw('green')
+    Tile(-3, 7).draw('green')
     '''
     3. In the fifteenth column, colour in green tiles number two and three from the
     bottom.
     '''
-    Tile(15, -2).draw('green')
-    Tile(15, -3).draw('green')
+    Tile(-2, 15).draw('green')
+    Tile(-3, 15).draw('green')
     '''
     4. Colour in purple all the white tiles directly adjacent to green tiles.
     '''
@@ -35,14 +35,14 @@ with Game() as g:
     '''
     5. In the fifteenth column, colour in blue tiles number two and three from the top.
     '''
-    Tile(15, 2).draw('blue')
-    Tile(15, 3).draw('blue')
+    Tile(2, 15).draw('blue')
+    Tile(3, 15).draw('blue')
     '''
     6. In the eleventh column, colour in blue tiles number two and three from the
     bottom.
     '''
-    Tile(11, -2).draw('blue')
-    Tile(11, -3).draw('blue')
+    Tile(-2, 11).draw('blue')
+    Tile(-3, 11).draw('blue')
     '''
     7. Colour in purple all the white tiles directly adjacent to blue tiles.
     '''
@@ -51,28 +51,28 @@ with Game() as g:
     '''
     8. In the third column, colour in green tile number three from the bottom.
     '''
-    Tile(3, -2).draw('green')
-    Tile(3, -3).draw('green')
+    Tile(-2, 3).draw('green')
+    Tile(-3, 3).draw('green')
     '''
     9. In the third column, colour in blue tile number two from the bottom.
     '''
-    Tile(3, -2).draw('blue')
+    Tile(-2, 3).draw('blue')
     '''
     10. In the seventh column, colour in green tile number two from the top.
     '''
-    Tile(7, 2).draw('green')
+    Tile(2, 7).draw('green')
     '''
     11. In the seventh column, colour in blue tile number 3 from the top.
     '''
-    Tile(7, 3).draw('blue')
+    Tile(3, 7).draw('blue')
     '''
     12. In the eleventh column, colour in blue tile number two from the top.
     '''
-    Tile(11, 2).draw('blue')
+    Tile(2, 11).draw('blue')
     '''
     13. In the eleventh column, colour in green tile number 3 from the top.
     '''
-    Tile(11, 3).draw('green')
+    Tile(3, 11).draw('green')
     '''
     14. Colour orange the tiles adjacent to the blue/green duos.
     '''

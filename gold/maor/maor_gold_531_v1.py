@@ -17,7 +17,7 @@ with Game() as g:
     '''
     orange_cells = []
     for c in [1,9,13,15,17]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('orange')
       orange_cells.append(tile)
     
@@ -26,7 +26,7 @@ with Game() as g:
     '''
     green_cells = []
     for c in [3,5,7,11]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('green')
       green_cells.append(tile)
     
@@ -51,7 +51,7 @@ with Game() as g:
     '''
     green_cells = []
     for c in [2,6,8,16,18]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('green')
       green_cells.append(tile)
     
@@ -60,7 +60,7 @@ with Game() as g:
     '''
     orange_cells = []
     for c in [4,10,12,14]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('orange')
       orange_cells.append(tile)
     

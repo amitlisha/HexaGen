@@ -19,13 +19,13 @@ with Game() as g:
     diagonally from there, red. Repeat again this diagonal, white and red pattern
     Three times.
     '''
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('red')
     
-    line1 = Line(start_tile=Tile(column=1, row=2), length=3, direction='up_right')
+    line1 = Line(start_tile=Tile(row=2, column=1), length=3, direction='up_right')
     line1.draw('white')
     
-    line2 = Line(start_tile=Tile(column=1, row=3), length=5, direction='up_right')
+    line2 = Line(start_tile=Tile(row=3, column=1), length=5, direction='up_right')
     line2.draw('red')
     
     for i in range(3):
@@ -42,7 +42,7 @@ with Game() as g:
     fifth, seventh, etc.) color the vertical line(s) purple.
     '''
     for c in range(1,19,2):
-      start_tile = Tile(column=c, row=-1)
+      start_tile = Tile(row=-1, column=c)
       end_tile = Shape.get_column(c) * line2
       line = Line(start_tile=start_tile, end_tile=end_tile, include_end_tile=False)
       line.draw('purple')

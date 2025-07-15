@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Color the 5th tile from the top of the 9th column from the left PURPLE.
     '''
-    tile = Tile(column=9, row=5)
+    tile = Tile(row=5, column=9)
     tile.draw('purple')
     
     '''

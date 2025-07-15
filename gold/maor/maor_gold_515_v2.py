@@ -15,13 +15,13 @@ with Game() as g:
     '''
     1. Colour in red the very first tile.
     '''
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('red')
     
     '''
     2. Draw a red line from the third tile down, going diagonally up and right.
     '''
-    line = Line(start_tile=Tile(column=1, row=3), direction='up_right')
+    line = Line(start_tile=Tile(row=3, column=1), direction='up_right')
     line.draw('red')
     
     '''
@@ -35,7 +35,7 @@ with Game() as g:
     '''
     4. colour in purple the bottomleft tile.
     '''
-    tile = Tile(column=1, row=-1)
+    tile = Tile(row=-1, column=1)
     tile.draw('purple')
     
     '''

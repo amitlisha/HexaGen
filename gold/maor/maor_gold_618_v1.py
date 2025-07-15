@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. On the second column, fill out the top three hexagons in purple.
     '''
-    line = Line(start_tile=Tile(2,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 2), length=3, direction='down')
     line.draw('purple')
     
     '''
@@ -32,7 +32,7 @@ with Game() as g:
     3. On the third column, fill out the first hexagon in purple, then two green, then
     one purple.
     '''
-    tile = Tile(column=3, row=1)
+    tile = Tile(row=1, column=3)
     tile.draw('purple')
     
     line = Line(start_tile=tile, length=2, direction='down',include_start_tile=False)
@@ -62,7 +62,7 @@ with Game() as g:
     '''
     5. On the fourth column, fill out the top three hexagons in purple.
     '''
-    line = Line(start_tile=Tile(4,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 4), length=3, direction='down')
     line.draw('purple')
     
     '''
@@ -82,7 +82,7 @@ with Game() as g:
     '''
     8. On the sixth column, fill out the top three hexagons in orange.
     '''
-    line = Line(start_tile=Tile(6,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 6), length=3, direction='down')
     line.draw('orange')
     
     '''
@@ -99,7 +99,7 @@ with Game() as g:
     10. On the seventh column, fill out the first hexagon in orange, then green, then
     blue, then orange.
     '''
-    tile = Tile(column=7, row=1)
+    tile = Tile(row=1, column=7)
     tile.draw('orange')
     
     tile=tile.neighbor(direction='down')
@@ -132,7 +132,7 @@ with Game() as g:
     '''
     12. On the eigth column, fill out the first three hexagons in orange.
     '''
-    line = Line(start_tile=Tile(8,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 8), length=3, direction='down')
     line.draw('orange')
     
     '''
@@ -152,7 +152,7 @@ with Game() as g:
     '''
     15. On the 10th column, fill out the top three hexagons in orange.
     '''
-    line = Line(start_tile=Tile(10,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 10), length=3, direction='down')
     line.draw('orange')
     
     '''
@@ -169,7 +169,7 @@ with Game() as g:
     17. On the 11th column, fill out the first hexagon in orange, then blue, then green,
     then orange again.
     '''
-    tile=Tile(column=11, row=1)
+    tile=Tile(row=1, column=11)
     tile.draw('orange')
     
     tile=tile.neighbor(direction='down')
@@ -202,7 +202,7 @@ with Game() as g:
     '''
     19. On the 12th column, fill out the first three hexagons in orange.
     '''
-    line = Line(start_tile=Tile(12,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 12), length=3, direction='down')
     line.draw('orange')
     
     '''
@@ -222,7 +222,7 @@ with Game() as g:
     '''
     22. On the 14th column, fill out the top three hexagons in purple.
     '''
-    line = Line(start_tile=Tile(14,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 14), length=3, direction='down')
     line.draw('purple')
     
     '''
@@ -239,7 +239,7 @@ with Game() as g:
     24. On the 15th column, fill out the first hexagon in purple, then two blue, then
     purple again.
     '''
-    tile=Tile(column=15, row=1)
+    tile=Tile(row=1, column=15)
     tile.draw('purple')
     
     tile=tile.neighbor(direction='down')
@@ -272,7 +272,7 @@ with Game() as g:
     '''
     26. On the 16th column, fill out the top three hexagons in purple.
     '''
-    line = Line(start_tile=Tile(16,1), length=3, direction='down')
+    line = Line(start_tile=Tile(1, 16), length=3, direction='down')
     line.draw('purple')
     
     '''

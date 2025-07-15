@@ -17,7 +17,7 @@ with Game() as g:
     '''
     color = 'blue'
     
-    tile1 = Tile(-4, 1)
+    tile1 = Tile(1, -4)
     tile1.draw(color)
     
     '''
