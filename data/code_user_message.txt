@@ -8,6 +8,7 @@ Constant: WIDTH = 18
 Constant: HEIGHT = 10  
 Constant: COLORS = ['white','black','yellow','green','red','blue','purple','orange']
 
+# These are the hexagon board directions, most methods use these directions, some of them also extends the list to more directions.
 Constant: DIRECTIONS = ['up','down','up_right','down_left','up_left','down_right']
 
 # -------------------------------------------------------------------------------------
@@ -44,9 +45,9 @@ Class: Shape           # Base class for collections of tiles
   Method: recolor(color_map:dict[str,str]) -> Shape                       # auto-paints
 
   # ── Geometric queries ─────────────────────────────────────────────────
-  Method: get(criterion:str) -> Shape  
+  Method: get(criterion:str) -> Shape  # the method returns a new Shape object that has the criterion geometric relation to the original shape
     Param options: {'outside','inside','above','below','top','bottom',
-                    'corners','endpoints'} ∪ DIRECTIONS   # the method returns a new Shape object that has the criterion geometric relation to the original shape
+                    'corners','endpoints'} ∪ DIRECTIONS
   Method: neighbors(criterion:str = 'all') -> Shape  
     Param options: {'all','right','left','above','below','outside','inside','white'} ∪ DIRECTIONS  
   Method: boundary(criterion:str = 'all') -> Shape        # criterion ∈ {'all','outer','inner'}  
