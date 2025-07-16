@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
         help="Run every task listed in the chosen JSONL file",
     )
     p.add_argument("--model", default="gpt-4o")
-    p.add_argument("--temperature", type=float, default=1)
+    p.add_argument("--temperature", type=float, default=0)
     p.add_argument("--max-tokens", type=int, default=512)
     p.add_argument("--seed", type=int, default=42)
     p.add_argument(
