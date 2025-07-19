@@ -1025,6 +1025,8 @@ class Shape:
                     ends.append(hexagon)
             return Shape(ends, from_hexagons=True)
 
+        raise ValueError(f"Unrecognized criterion: {criterion}")
+
     def boundary(self, criterion="all"):
         """Return the boundary of the shape. These are tiles that are part of the shape and touch
         tiles that are not part of the shape.
