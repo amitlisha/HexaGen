@@ -1385,6 +1385,8 @@ class Line(Shape):
             end_tiles = Shape([], game=g)
         if length is None:
             length = max(g.height, g.width)
+        if length <= 0:
+            raise Exception(f"Cannot draw Line with non-positive length {length}")
         if end_tile is not None:
             ehexagon = end_tile._hexagon
             v = ehexagon - shexagon
