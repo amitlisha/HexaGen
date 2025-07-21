@@ -627,3 +627,19 @@ def test_get_invalid_criterion(game):
     S = Shape([0, 1], from_linds=True)
     with pytest.raises(ValueError):
         S.get("nonsense")
+
+
+def test_neighbors_outside_open_shape_raises(game):
+    line = Line(start_tile=Tile(1, 1), direction="down_right", length=3)
+
+    with pytest.raises(Exception):
+        line.neighbors(criterion="outside")
+    with pytest.raises(Exception):
+        line.neighbors(criterion="inside")
+
+
+def test_boundary_on_open_shape_raises(game):
+    line = Line(start_tile=Tile(1, 1), direction="down_right", length=3)
+
+    with pytest.raises(Exception):
+        line.boundary(criterion="inner")
