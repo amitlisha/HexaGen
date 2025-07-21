@@ -929,6 +929,139 @@ class Shape:
         g = game or _active_game()
         return Shape([Tile(row, column) for row in range(1, g.height + 1)], game=g)
 
+    def _get_directional_tiles(self, direction):
+        """Return tiles in a given direction relative to self."""
+        direction_cube = DIRECTIONS[direction]
+        direction_ind = direction_cube.index(0)
+        next_ind = (direction_ind + 1) % 3
+        next_grows = direction_cube[next_ind] == 1
+        shape_lines = [cube[direction_ind] for cube in self._cubes]
+        hexagons = []
+        entire_board_hexagons = Shape.get_entire_board(game=self.game)._hexagons
+        for val in np.unique(shape_lines):
+            hexagons_with_val = [
+                hexagon
+                for hexagon in self._hexagons
+                if hexagon._cube[direction_ind] == val
+            ]
+            if next_grows:
+                max_val = np.max([_._cube[next_ind] for _ in hexagons_with_val])
+                hexagons += [
+                    hex
+                    for hex in entire_board_hexagons
+                    if hex._cube[direction_ind] == val
+                    and hex._cube[next_ind] > max_val
+                ]
+            else:
+                min_val = np.min([_._cube[next_ind] for _ in hexagons_with_val])
+                hexagons += [
+                    hex
+                    for hex in entire_board_hexagons
+                    if hex._cube[direction_ind] == val
+                    and hex._cube[next_ind] < min_val
+                ]
+
+        return Shape(hexagons, from_hexagons=True)
+
+    def _get_outside_tiles(self):
+        """Return tiles outside self using flood-fill from board perimeter."""
+        S_ext = Shape.get_board_perimeter(game=self.game) - self
+        while True:
+            S_ext_neighbors_not_in_self = (
+                S_ext.neighbors("all") - self
+            ) * Shape.get_entire_board(game=self.game)
+            # stop if S_ext didn't grow in the last iteration
+            if S_ext_neighbors_not_in_self._size == 0:
+                break
+            else:
+                S_ext += S_ext_neighbors_not_in_self
+        return S_ext
+
+    def _get_inside_tiles(self):
+        """Return tiles inside self (complement of outside tiles)."""
+        return (Shape.get_entire_board(game=self.game) - self) - self._get_outside_tiles()
+
+    def _validate_criterion_shape_compatibility(self, criterion):
+        """Validate that criterion makes sense for this shape and warn if problematic."""
+        import warnings
+        
+        # Check for conceptually meaningless combinations
+        if self._size == 0:
+            warnings.warn(f"Applying criterion '{criterion}' to empty shape - result will be empty", 
+                         UserWarning, stacklevel=3)
+            return
+        
+        if self._size == 1:
+            if criterion in ['corners', 'endpoints']:
+                warnings.warn(f"Applying '{criterion}' to single tile - result will be empty", 
+                             UserWarning, stacklevel=3)
+            elif criterion in ['inside', 'outside']:
+                warnings.warn(f"Applying '{criterion}' to single tile - conceptually meaningless", 
+                             UserWarning, stacklevel=3)
+        
+        # Check for potentially problematic combinations
+        if criterion == 'inside' and self._size <= 3:
+            warnings.warn(f"Applying 'inside' to small shape (size {self._size}) - may have no interior", 
+                         UserWarning, stacklevel=3)
+        
+        if criterion in ['endpoints'] and self._is_likely_closed_shape():
+            warnings.warn(f"Applying 'endpoints' to likely closed shape - may not be meaningful", 
+                         UserWarning, stacklevel=3)
+
+    def _is_likely_closed_shape(self):
+        """Heuristic to detect if shape is likely closed (no obvious endpoints)."""
+        if self._size <= 2:
+            return False
+        
+        # Check if any boundary tile has only 1 neighbor in the boundary (indicating endpoint)
+        try:
+            boundary = self.boundary('outer')
+            for hex in boundary._hexagons:
+                neighbors_in_boundary = Shape(hex._neighbors(), from_hexagons=True) * boundary
+                if neighbors_in_boundary._size == 1:
+                    return False  # Found an endpoint, so not closed
+            return True  # No endpoints found, likely closed
+        except:
+            return False  # If boundary fails, assume not closed
+
+    def _get_extreme_tiles(self, criterion):
+        """Return extreme points like corners, endpoints, top, bottom tiles."""
+        if criterion == "top":
+            return self._max("up")
+        
+        if criterion == "bottom":
+            return self._max("down")
+            
+        if criterion == "corners":
+            ext = self.boundary("outer")
+            corners = []
+            for hexagon in ext._hexagons:
+                neighbors = (
+                    Shape(hexagon._neighbors(), from_hexagons=True) * ext
+                )._hexagons
+                if len(neighbors) == 2:
+                    v0 = hexagon - neighbors[0]
+                    v1 = hexagon - neighbors[1]
+                    # Check if vectors are NOT collinear (i.e., they form a corner)
+                    # In hex coordinates, collinear vectors pointing in opposite directions sum to (0,0,0)
+                    sum_vec = v0 + v1
+                    sum_magnitude = sum_vec._norm()
+                    # A corner exists if the vectors don't cancel out (not collinear/opposite)
+                    if sum_magnitude > 0.0001:
+                        corners.append(hexagon)
+            return Shape(corners, from_hexagons=True)
+            
+        if criterion == "endpoints":
+            ext = self.boundary("outer")
+            ends = []
+            for hexagon in ext._hexagons:
+                neighbors = (
+                    Shape(hexagon._neighbors(), from_hexagons=True) * ext
+                )._hexagons
+                if len(neighbors) == 1:
+                    ends.append(hexagon)
+            return Shape(ends, from_hexagons=True)
+
     def get(self, criterion):
         """
         Return a new shape according to some geometrical relation with self, described by ‘criterion’
@@ -941,89 +1074,29 @@ class Shape:
         """
 
         if criterion == "outside":
-            S_ext = Shape.get_board_perimeter(game=self.game) - self
-            while True:
-                S_ext_neighbors_not_in_self = (
-                    S_ext.neighbors("all") - self
-                ) * Shape.get_entire_board(game=self.game)
-                # stop if S_ext didn't grow in the last iteration
-                if S_ext_neighbors_not_in_self._size == 0:
-                    break
-                else:
-                    S_ext += S_ext_neighbors_not_in_self
-            return S_ext
+            return self._get_outside_tiles()
 
         if criterion == "inside":
-            return (Shape.get_entire_board(game=self.game) - self) - self.get("outside")
+            return self._get_inside_tiles()
 
         if criterion == "above":
-            criterion = "up"
+            return self._get_directional_tiles("up")
         if criterion == "below":
-            criterion = "down"
+            return self._get_directional_tiles("down")
         if criterion in DIRECTIONS:
-            direction = criterion
-            direction_cube = DIRECTIONS[direction]
-            direction_ind = direction_cube.index(0)
-            next_ind = (direction_ind + 1) % 3
-            next_grows = direction_cube[next_ind] == 1
-            shape_lines = [cube[direction_ind] for cube in self._cubes]
-            hexagons = []
-            entire_board_hexagons = Shape.get_entire_board(game=self.game)._hexagons
-            for val in np.unique(shape_lines):
-                hexagons_with_val = [
-                    hexagon
-                    for hexagon in self._hexagons
-                    if hexagon._cube[direction_ind] == val
-                ]
-                if next_grows:
-                    max_val = np.max([_._cube[next_ind] for _ in hexagons_with_val])
-                    hexagons += [
-                        hex
-                        for hex in entire_board_hexagons
-                        if hex._cube[direction_ind] == val
-                        and hex._cube[next_ind] > max_val
-                    ]
-                else:
-                    min_val = np.min([_._cube[next_ind] for _ in hexagons_with_val])
-                    hexagons += [
-                        hex
-                        for hex in entire_board_hexagons
-                        if hex._cube[direction_ind] == val
-                        and hex._cube[next_ind] < min_val
-                    ]
-
-            return Shape(hexagons, from_hexagons=True)
+            return self._get_directional_tiles(criterion)
 
         if criterion == "top":
-            return self._max("up")
+            return self._get_extreme_tiles("top")
 
         if criterion == "bottom":
-            return self._max("down")
+            return self._get_extreme_tiles("bottom")
 
         if criterion == "corners":
-            ext = self.boundary("outer")
-            corners = []
-            for hexagon in ext._hexagons:
-                neighbors = (
-                    Shape(hexagon._neighbors(), from_hexagons=True) * ext
-                )._hexagons
-                if len(neighbors) == 2:
-                    v0 = hexagon - neighbors[0]
-                    v1 = hexagon - neighbors[1]
-                    if (v0 + v1)._norm() > 0.0001:
-                        corners.append(hexagon)
-            return Shape(corners, from_hexagons=True)
+            return self._get_extreme_tiles("corners")
 
         if criterion == "endpoints":
-            ext = self.boundary("outer")
-            ends = []
-            for hexagon in ext._hexagons:
-                neighbors = (
-                    Shape(hexagon._neighbors(), from_hexagons=True) * ext
-                )._hexagons
-                if len(neighbors) == 1:
-                    ends.append(hexagon)
-            return Shape(ends, from_hexagons=True)
+            return self._get_extreme_tiles("endpoints")
 
         raise ValueError(f"Unrecognized criterion: {criterion}")
 
