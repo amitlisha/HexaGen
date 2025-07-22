@@ -8,6 +8,7 @@ Constant: WIDTH = 18
 Constant: HEIGHT = 10  
 Constant: COLORS = ['white','black','yellow','green','red','blue','purple','orange']
 
+# These are the hexagon board directions, most methods use these directions, some of them also extends the list to more directions.
 Constant: DIRECTIONS = ['up','down','up_right','down_left','up_left','down_right']
 
 # -------------------------------------------------------------------------------------
@@ -44,9 +45,9 @@ Class: Shape           # Base class for collections of tiles
   Method: recolor(color_map:dict[str,str]) -> Shape                       # auto-paints
 
   # ── Geometric queries ─────────────────────────────────────────────────
-  Method: get(criterion:str) -> Shape  
+  Method: get(criterion:str) -> Shape  # the method returns a new Shape object that has the criterion geometric relation to the original shape
     Param options: {'outside','inside','above','below','top','bottom',
-                    'corners','endpoints'} ∪ DIRECTIONS   # the method returns a new Shape object that has the criterion geometric relation to the original shape
+                    'corners','endpoints'} ∪ DIRECTIONS
   Method: neighbors(criterion:str = 'all') -> Shape  
     Param options: {'all','right','left','above','below','outside','inside','white'} ∪ DIRECTIONS  
   Method: boundary(criterion:str = 'all') -> Shape        # criterion ∈ {'all','outer','inner'}  
@@ -65,14 +66,14 @@ Class: Shape           # Base class for collections of tiles
 
 # -------------------------------------------------------------------------------------
 Class: Tile (inherits Shape)  
-  Method: __init__(column:int, row:int, game:Game | None = None)  
+  Method: __init__(row:int, column:int, game:Game | None = None)  
     Notes: negative indices wrap from opposite edge.  
-  Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS  
+  Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS - unlike Shape.neighbors which accepts more options
   Method: on_board() -> bool  
   Property: color:str  
   Property: column:int  
   Property: row:int  
-  Property: offset:tuple[int,int]                        # (col,row) 1-based
+  Property: offset:tuple[int,int]                        # (row,col) 1-based
 
 # -------------------------------------------------------------------------------------
 Class: Line (inherits Shape)                                      # Note creating a line from two tiles is only valid if the tiles lie on a straight hex direction

@@ -9,21 +9,21 @@ gold_boards = list(read_task(task_index)['gold_boards'])
 with Game() as g:
     
     # Paint the cell at the 1st column on the left and 2nd row from top in red
-    Tile(1, 2).draw('red')
+    Tile(2, 1).draw('red')
     
     # Paint the top 2 cells of the 2nd column from left in red
     for i in range(1, 3):
-        Tile(2, i).draw('red')
+        Tile(i, 2).draw('red')
     
     # Paint the top 3 rows of the 3rd column from the left in red
     for i in range(1, 4):
-        Tile(3, i).draw('red')
+        Tile(i, 3).draw('red')
     
     # Define a function to draw the triangle pattern
     def draw_triangle(column, row, size, color):
         for i in range(size):
             for j in range(i+1):
-                Tile(column + j, row + i).draw(color)
+                Tile(row + i, column + j).draw(color)
     
     # Draw the first triangle
     draw_triangle(5, 1, 4, 'red')

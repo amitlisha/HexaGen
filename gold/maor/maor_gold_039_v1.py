@@ -16,7 +16,7 @@ with Game() as g:
     1. on fifth row down from top, and 10th row from left, leave that tile blank but
     color all tiles that touch it, red. This forms a red circle.
     '''
-    tile = Tile(10, 5)
+    tile = Tile(5, 10)
     neighbors = tile.neighbors()
     neighbors.draw('red')
     
@@ -26,9 +26,9 @@ with Game() as g:
     leftmost wall of the new green six sided flower, alternate this pattern all
     around the central red.
     '''
-    Tile(11, 3).neighbors().draw('green')
-    Tile(12, -4).neighbors().draw('green')
-    Tile(7, 6).neighbors().draw('green')
+    Tile(3, 11).neighbors().draw('green')
+    Tile(-4, 12).neighbors().draw('green')
+    Tile(6, 7).neighbors().draw('green')
     
     '''
     3. Place a blue six sided circle that touches both the green and red, to the right
@@ -36,8 +36,8 @@ with Game() as g:
     and three total blue completely surrounding the original red circle with
     similarly designed circles, all with a white tile in the center.
     '''
-    Tile(13, 5).neighbors().draw('blue')
-    Tile(9, -3).neighbors().draw('blue')
-    Tile(8, 3).neighbors().draw('blue')
+    Tile(5, 13).neighbors().draw('blue')
+    Tile(-3, 9).neighbors().draw('blue')
+    Tile(3, 8).neighbors().draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

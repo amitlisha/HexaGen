@@ -16,7 +16,7 @@ with Game() as g:
     1. Paint the cell located at the 8th column from the left and 4th row from the
     bottom with blue.
     '''
-    tile1=Tile(column=8, row=-4)
+    tile1=Tile(row=-4, column=8)
     tile1.draw('blue')
     
     '''
@@ -29,7 +29,7 @@ with Game() as g:
     3. Paint the cell located at the 1st column on left and the 4th row from top with
     green.
     '''
-    tile2=Tile(column=1, row=4)
+    tile2=Tile(row=4, column=1)
     tile2.draw('green')
     
     '''
@@ -43,7 +43,7 @@ with Game() as g:
     5. Paint the cell located at the 1st column on right and the 2nd row from top with
     green.
     '''
-    tile3=Tile(column=-1, row=2)
+    tile3=Tile(row=2, column=-1)
     tile3.draw('green')
     
     '''

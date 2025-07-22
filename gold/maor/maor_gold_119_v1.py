@@ -15,12 +15,12 @@ with Game() as g:
     '''
     1. Paint the whole 7th column green.
     '''
-    line = Line(start_tile=Tile(7,1), direction='down')
+    line = Line(start_tile=Tile(1, 7), direction='down')
     line.draw('green')
     '''
     2. Now, switch to blue and paint the topmost tile on the 8th column.
     '''
-    tile = Tile(8,1)
+    tile = Tile(1, 8)
     tile.draw('blue')
     '''
     3. While still in the same column, paint every other tile using the same color.
@@ -28,7 +28,7 @@ with Game() as g:
     from constants import HEIGHT
 
     for i in range (3, HEIGHT+1, 2):
-        Tile(8, i).draw('blue')
+        Tile(i, 8).draw('blue')
     
     '''
     4. After each blue tile, paint every other one downright till the end.
@@ -38,7 +38,7 @@ with Game() as g:
     counter = 0
     for i in range (10, WIDTH+1, 2):
         for j in range (2 + counter, HEIGHT+1, 2):
-            Tile(i, j).draw('blue')
+            Tile(j, i).draw('blue')
         counter += 1
 
     g.plot(gold_boards=gold_boards, multiple=0)

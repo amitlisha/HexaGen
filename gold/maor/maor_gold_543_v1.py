@@ -18,7 +18,7 @@ with Game() as g:
     '''
     colors = ['orange','green','green','green','orange','green','orange','orange','orange']
     for color, column in zip(colors, range(1,19,2)):
-      tile=Tile(column=column, row=1)
+      tile=Tile(row=1, column=column)
       tile.draw(color)
     
     '''
@@ -27,7 +27,7 @@ with Game() as g:
     '''
     colors = ['green','orange','green','green','orange','orange','orange','green','green']
     for color, column in zip(colors, range(2,20,2)):
-      tile=Tile(column=column, row=-1)
+      tile=Tile(row=-1, column=column)
       tile.draw(color)
     
     '''

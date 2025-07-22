@@ -16,7 +16,7 @@ with Game() as g:
     1. Starting with the cell in the upper leftmost corner, create a line of 4 cells
     extending from the lower right edge orange.
     '''
-    line1 = Line(start_tile=Tile(1,1), direction='down_right', length=4)
+    line1 = Line(start_tile=Tile(1, 1), direction='down_right', length=4)
     line1.draw('orange')
     
     '''

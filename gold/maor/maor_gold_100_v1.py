@@ -16,7 +16,7 @@ with Game() as g:
     1. Paint the fourth hexagon in the seventh column orange and paint all of the
     hexagons surrounding it red.
     '''
-    tile1 = Tile(column=7, row=4)
+    tile1 = Tile(row=4, column=7)
     tile1.draw('orange')
     tile1.neighbors().draw('red')
     
@@ -25,9 +25,9 @@ with Game() as g:
     alternating between red and yellow to end with a the first hexagon in column
     thirteen being yellow.
     '''
-    for tile in [Tile(9,3), Tile(11,2), Tile(13,1)]:
+    for tile in [Tile(3, 9), Tile(2, 11), Tile(1, 13)]:
       tile.draw('yellow')
-    for tile in [Tile(10,2), Tile(12,1)]:
+    for tile in [Tile(2, 10), Tile(1, 12)]:
       tile.draw('red')
     
     '''
@@ -35,9 +35,9 @@ with Game() as g:
     from hexagon five in column nine and ending in the second to last hexagon in the
     last column.
     '''
-    for tile in [Tile(9,5), Tile(11,6), Tile(13,7), Tile(15,8), Tile(17,9)]:
+    for tile in [Tile(5, 9), Tile(6, 11), Tile(7, 13), Tile(8, 15), Tile(9, 17)]:
       tile.draw('yellow')
-    for tile in [Tile(10,5), Tile(12,6), Tile(14,7), Tile(16,8), Tile(18,9)]:
+    for tile in [Tile(5, 10), Tile(6, 12), Tile(7, 14), Tile(8, 16), Tile(9, 18)]:
       tile.draw('red')
     
     '''
@@ -46,28 +46,28 @@ with Game() as g:
     with both hexagon three and five in column five to make three more diagonal
     lines.
     '''
-    for tile in [Tile(7,6), Tile(7,8), Tile(7,10)]:
+    for tile in [Tile(6, 7), Tile(8, 7), Tile(10, 7)]:
       tile.draw('yellow')
-    for tile in [Tile(7,7), Tile(7,9)]:
+    for tile in [Tile(7, 7), Tile(9, 7)]:
       tile.draw('red')
     
-    for tile in [Tile(5, 3), Tile(3, 2), Tile(1, 1)]:
+    for tile in [Tile(3, 5), Tile(2, 3), Tile(1, 1)]:
       tile.draw('yellow')
-    for tile in [Tile(4, 2), Tile(2, 1)]:
+    for tile in [Tile(2, 4), Tile(1, 2)]:
       tile.draw('red')
     
-    for tile in [Tile(5, 5), Tile(3, 6), Tile(1, 7)]:
+    for tile in [Tile(5, 5), Tile(6, 3), Tile(7, 1)]:
       tile.draw('yellow')
-    for tile in [Tile(4, 5), Tile(2, 6)]:
+    for tile in [Tile(5, 4), Tile(6, 2)]:
       tile.draw('red')
     
     '''
     5. Paint the first hexagon in the seventh column red and the second hexagon in the
     same column yellow.
     '''
-    tile = Tile(7,1)
+    tile = Tile(1, 7)
     tile.draw('red')
-    tile = Tile(7,2)
+    tile = Tile(2, 7)
     tile.draw('yellow')
     
     g.plot(gold_boards=gold_boards, multiple=0)

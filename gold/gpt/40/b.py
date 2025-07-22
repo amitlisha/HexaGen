@@ -13,7 +13,7 @@ with Game() as g:
     
     # create a new tile object for the center tile in the 8th column from the left
     # and draw it in blue
-    center_tile = Tile(8, 3)
+    center_tile = Tile(3, 8)
     center_tile.draw(blue)
     
     # create new tile objects for the 6 surrounding tiles and draw them in blue
@@ -23,7 +23,7 @@ with Game() as g:
     
     # create a new tile object for the center tile in the 8th column from the right
     # and draw it in white
-    center_tile = Tile(-8, 3)
+    center_tile = Tile(3, -8)
     center_tile.draw('white')
     
     # create new tile objects for the 6 surrounding tiles and draw them in green
@@ -33,7 +33,7 @@ with Game() as g:
     
     # create a new tile object for the tile in the 6th column from the right and 5th
     # row down and draw it in white
-    tile = Tile(-6, -5)
+    tile = Tile(-5, -6)
     tile.draw('white')
     
     # create new tile objects for the 6 surrounding tiles and draw them in blue
@@ -43,7 +43,7 @@ with Game() as g:
     
     # create a new tile object for the tile in the 7th column from the right and 4th
     # row from the bottom and draw it in white
-    tile = Tile(-7, 4)
+    tile = Tile(4, -7)
     tile.draw('white')
     
     # create new tile objects for the 6 surrounding tiles and draw them in green
@@ -53,7 +53,7 @@ with Game() as g:
     
     # create a new tile object for the tile in the 9th column from the left and 3rd
     # row from the bottom and draw it in white
-    tile = Tile(9, -3)
+    tile = Tile(-3, 9)
     tile.draw('white')
     
     # create new tile objects for the 6 surrounding tiles and draw them in blue
@@ -63,7 +63,7 @@ with Game() as g:
     
     # create a new tile object for the tile in the 7th column from the left and 5th
     # row from the bottom and draw it in white
-    tile = Tile(7, -5)
+    tile = Tile(-5, 7)
     tile.draw('white')
     
     # create new tile objects for the 6 surrounding tiles and draw them in green
@@ -73,7 +73,7 @@ with Game() as g:
     
     # create a new tile object for the tile in the 10th column from the left and 5th
     # row from the bottom and draw it in red
-    tile = Tile(10, -5)
+    tile = Tile(-5, 10)
     tile.draw(red)
     
     # create new tile objects for the 6 surrounding tiles and draw them in red

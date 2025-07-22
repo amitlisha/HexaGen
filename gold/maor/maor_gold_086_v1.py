@@ -16,13 +16,13 @@ with Game() as g:
     1. Begin at third column from right side. Starting from bottom, make hexagons 1, 2,
     7, and 8 yellow. Make 4 and 5 green.
     '''
-    tile1 = Tile(-3, -1)
-    tile2 = Tile(-3, -2)
-    tile3 = Tile(-3, -7)
-    tile4 = Tile(-3, -8)
+    tile1 = Tile(-1, -3)
+    tile2 = Tile(-2, -3)
+    tile3 = Tile(-7, -3)
+    tile4 = Tile(-8, -3)
     
-    tile5 = Tile(-3, -4)
-    tile6 = Tile(-3, -5)
+    tile5 = Tile(-4, -3)
+    tile6 = Tile(-5, -3)
     
     tile1.draw('yellow')
     tile2.draw('yellow')
@@ -36,13 +36,13 @@ with Game() as g:
     2. Keep the colors and spacing the same, but reverse the color scheme in column 7
     from the left side.
     '''
-    tile1 = Tile(7, -1)
-    tile2 = Tile(7, -2)
-    tile3 = Tile(7, -7)
-    tile4 = Tile(7, -8)
+    tile1 = Tile(-1, 7)
+    tile2 = Tile(-2, 7)
+    tile3 = Tile(-7, 7)
+    tile4 = Tile(-8, 7)
     
-    tile5 = Tile(7, -4)
-    tile6 = Tile(7, -5)
+    tile5 = Tile(-4, 7)
+    tile6 = Tile(-5, 7)
     
     tile1.draw('green')
     tile2.draw('green')
@@ -58,14 +58,14 @@ with Game() as g:
     '''
     g.record_step('1')
     
-    tile7 = Tile(5, -1)
-    tile8 = Tile(4, -1)
+    tile7 = Tile(-1, 5)
+    tile8 = Tile(-1, 4)
     
     tile7.draw('yellow')
     tile8.draw('yellow')
     
-    tile9 = Tile(2, -1)
-    tile10 = Tile(1, -1)
+    tile9 = Tile(-1, 2)
+    tile10 = Tile(-1, 1)
     
     tile9.draw('green')
     tile10.draw('green')
@@ -84,14 +84,14 @@ with Game() as g:
     5. Go back to first column on left side. make fourth hexagon from bottom of columns
     1 and 2 yellow, then the 4th and 5th hexagons in same row green.
     '''
-    tile11 = Tile(1,-4)
-    tile12 = Tile(2,-4)
+    tile11 = Tile(-4, 1)
+    tile12 = Tile(-4, 2)
     
     tile11.draw('yellow')
     tile12.draw('yellow')
     
-    tile13 = Tile(4,-4)
-    tile14 = Tile(5,-4)
+    tile13 = Tile(-4, 4)
+    tile14 = Tile(-4, 5)
     
     tile13.draw('green')
     tile14.draw('green')

@@ -17,49 +17,49 @@ with Game() as g:
     left, the third tile down is your center. It is blank, and the 6 tiles around it
     are blue.
     '''
-    circle1 = Circle(Tile(8, 3))
+    circle1 = Circle(Tile(3, 8))
     circle1.draw('blue')
     
     '''
     2. In the 8th column from the right, the third tile down is blank and the 6
     surrounding tiles will be green.
     '''
-    circle2 = Circle(Tile(-8, 3))
+    circle2 = Circle(Tile(3, -8))
     circle2.draw('green')
     
     '''
     3. In the 6th column from the right, the 5th tile down is blank, and the 6 tiles
     surrounding it will be blue.
     '''
-    circle3 = Circle(Tile(-6, 5))
+    circle3 = Circle(Tile(5, -6))
     circle3.draw('blue')
     
     '''
     4. In the 7th column from the right, the 4th tile from the bottom is blank, and the
     6 tiles surrounding it will be green.
     '''
-    circle4 = Circle(Tile(-7, -4))
+    circle4 = Circle(Tile(-4, -7))
     circle4.draw('green')
     
     '''
     5. In the 9th column from the left, the third tile from the bottom is blank, and
     the 6 surrounding tiles will be blue.
     '''
-    circle5 = Circle(Tile(9, -3))
+    circle5 = Circle(Tile(-3, 9))
     circle5.draw('blue')
     
     '''
     6. In the 7th column from the left the 5th tile from the bottom is blank, and the 6
     surrounding tiles are green.
     '''
-    circle6 = Circle(Tile(7, -5))
+    circle6 = Circle(Tile(-5, 7))
     circle6.draw('green')
     
     '''
     7. In the 10th column from the left, the 5th tile down is blank, and the 6
     surrounding tiles are red.
     '''
-    circle7 = Circle(Tile(10, 5))
+    circle7 = Circle(Tile(5, 10))
     circle7.draw('red')
     
     g.plot(gold_boards=gold_boards, multiple=0)

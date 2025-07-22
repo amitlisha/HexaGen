@@ -20,7 +20,7 @@ with Game() as g:
     '''
     2. Color the fifth hex from the top in this column pink
     '''
-    tile = Tile(column, 5)
+    tile = Tile(5, column)
     tile.draw('purple')
     
     '''

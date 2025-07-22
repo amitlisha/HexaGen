@@ -16,7 +16,7 @@ with Game() as g:
     1. On the eighth row from the left, vertically, and the fifth tile down on that row, 
     leave it blank but fill in all tiles that touch that with red.
     '''
-    tile1 = Tile(8, 5)
+    tile1 = Tile(5, 8)
     neighbors = tile1.neighbors()
     neighbors.draw('red')
     

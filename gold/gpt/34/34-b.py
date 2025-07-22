@@ -10,7 +10,7 @@ gold_boards = list(read_task(task_index)['gold_boards'])
 with Game() as g:
     
     # Create a blue flower of six tiles surrounding the fifth tile in the tenth column
-    center_tile = Tile(10, 5)
+    center_tile = Tile(5, 10)
     blue_flower_tiles = [center_tile]
     for direction in ['up_right', 'down_right', 'down', 'down_left', 'up_left', 'up']:
         blue_flower_tiles.append(center_tile.neighbor(direction))

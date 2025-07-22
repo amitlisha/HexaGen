@@ -11,7 +11,7 @@ with Game() as g:
     
     # 1. Make a blue flower of six tiles surrounding the fifth tile in the tenth column.
     # Create a central tile
-    central_tile = Tile(10, 5)
+    central_tile = Tile(5, 10)
     # Draw the central tile in blue
     central_tile.draw('blue')
     # Create a list of neighbor tiles

@@ -6,13 +6,29 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 import ast
+import traceback
+import linecache
+import multiprocessing as mp
+import traceback
+from typing import Optional, Tuple, List
 
 from hexagen import Game
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT_DIR / "data"
+USER_FILE = "user_snippet.py"
 RESULTS_DIR = ROOT_DIR / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
+
+
+def _timeout_worker(code: str, q):
+    """Executes `code` and returns ('ok', board_state) or ('err', traceback)."""
+    try:
+        ns = {}
+        exec_snippet(code, ns)
+        q.put(("ok", ns.get("board_state")))
+    except Exception as exc:
+        q.put(("err", format_user_tb(exc)))
 
 
 def timestamp() -> str:
@@ -69,3 +85,53 @@ def parse_tile_actions(raw: str) -> List[tuple[int, int, str]]:
 
     pattern = r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*['\"]?([a-zA-Z]+)['\"]?\s*\)"
     return [(int(r), int(c), col.lower()) for r, c, col in re.findall(pattern, raw)]
+
+
+def format_user_tb(exc: BaseException, user_file: str = USER_FILE) -> str:
+    """Return only the traceback frames that belong to the compiled user snippet."""
+    tb = exc.__traceback__
+    # Skip frames until we reach the snippet we compiled ourselves
+    while tb and tb.tb_frame.f_code.co_filename != user_file:
+        tb = tb.tb_next
+    return "".join(traceback.format_exception(type(exc), exc, tb))
+
+
+def exec_snippet(src: str, globals_ns: dict, filename: str = "user_snippet.py"):
+    """Execute `src` so that tracebacks include the actual source lines."""
+    linecache.cache[filename] = (
+        len(src),  # length of source
+        None,  # mtime (None = unknown / don’t check file)
+        src.splitlines(True),  # list of lines *with* \n
+        filename,
+    )
+    exec(compile(src, filename, "exec"), globals_ns)
+
+
+import multiprocessing as mp
+
+
+def run_with_timeout(
+    src: str,
+    timeout_sec: int = 10,
+):
+    ctx = mp.get_context("spawn")
+    q = ctx.Queue()
+    p = ctx.Process(target=_timeout_worker, args=(src, q), daemon=True)
+    p.start()
+    p.join(timeout_sec)
+
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        return None, "TIMEOUT"
+
+    status, payload = q.get()
+    return (payload, None) if status == "ok" else (None, payload)
+
+
+def save_script(
+    out_dir: Path, run_ts: str, step: int, attempt: int, code: str, kind: str = "step"
+) -> Path:
+    path = out_dir / f"{run_ts}_{kind}_{step:02}_{attempt:02}.py"
+    path.write_text(code, encoding="utf-8")
+    return path

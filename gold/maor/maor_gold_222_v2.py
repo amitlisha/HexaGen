@@ -16,12 +16,12 @@ with Game() as g:
     1. in the 6th column from the left, paint the 3rd and 4th tiles down yellow, the
     7th tile red, and the 8th tile orange
     '''
-    line = Line(start_tile=Tile(6,3), end_tile=Tile(6,4))
+    line = Line(start_tile=Tile(3, 6), end_tile=Tile(4, 6))
     line.draw('yellow')
     
-    tile = Tile(column=6, row=7)
+    tile = Tile(row=7, column=6)
     tile.draw('red')
-    tile = Tile(column=6, row=8)
+    tile = Tile(row=8, column=6)
     tile.draw('orange')
     
     
@@ -31,15 +31,15 @@ with Game() as g:
     '''
     column = 7
     for row in [3,5]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('yellow')
     
     for row in [4,8]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('orange')
     
     for row in [7,9]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('red')
     
     '''
@@ -47,14 +47,14 @@ with Game() as g:
     8th tiles red, and the 7th tile orange
     '''
     column = 8
-    line = Line(start_tile=Tile(column,3), end_tile=Tile(column,5))
+    line = Line(start_tile=Tile(3, column), end_tile=Tile(5, column))
     line.draw('yellow')
     
     for row in [6,8]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('red')
     
-    tile = Tile(column=column, row=7)
+    tile = Tile(row=7, column=column)
     tile.draw('orange')
     
     '''
@@ -63,21 +63,21 @@ with Game() as g:
     '''
     column=9
     
-    tile = Tile(column=column, row=2)
+    tile = Tile(row=2, column=column)
     tile.draw('purple')
     
     for row in [4,5,6]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('yellow')
     
     for row in [7,8]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('red')
     
     '''
     5. in the 10th column, paint the 2nd through 8th tiles purple
     '''
-    line=Line(start_tile=Tile(column=10, row=2), end_tile=Tile(column=10,row=8))
+    line=Line(start_tile=Tile(row=2, column=10), end_tile=Tile(row=8, column=10))
     line.draw('purple')
     
     '''
@@ -86,15 +86,15 @@ with Game() as g:
     '''
     column=11
     
-    tile = Tile(column=column, row=2)
+    tile = Tile(row=2, column=column)
     tile.draw('purple')
     
     for row in [4,5,6]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('yellow')
     
     for row in [7,8]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('red')
     
     '''
@@ -102,14 +102,14 @@ with Game() as g:
     8th tiles red, and the 7th tile orange
     '''
     column = 12
-    line = Line(start_tile=Tile(column,3), end_tile=Tile(column,5))
+    line = Line(start_tile=Tile(3, column), end_tile=Tile(5, column))
     line.draw('yellow')
     
     for row in [6,8]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('red')
     
-    tile = Tile(column=column, row=7)
+    tile = Tile(row=7, column=column)
     tile.draw('orange')
     
     '''
@@ -118,27 +118,27 @@ with Game() as g:
     '''
     column = 13
     for row in [3,5]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('yellow')
     
     for row in [4,8]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('orange')
     
     for row in [7,9]:
-      tile = Tile(column=column, row=row)
+      tile = Tile(row=row, column=column)
       tile.draw('red')
     
     '''
     9. in the 14th column, paint the 3rd and 4th tiles down yellow, the 7th tile red,
     and the 8th tile orange
     '''
-    line = Line(start_tile=Tile(14,3), end_tile=Tile(14,4))
+    line = Line(start_tile=Tile(3, 14), end_tile=Tile(4, 14))
     line.draw('yellow')
     
-    tile = Tile(column=14, row=7)
+    tile = Tile(row=7, column=14)
     tile.draw('red')
-    tile = Tile(column=14, row=8)
+    tile = Tile(row=8, column=14)
     tile.draw('orange')
     
     g.plot(gold_boards=gold_boards, multiple=0)

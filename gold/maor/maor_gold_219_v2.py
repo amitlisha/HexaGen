@@ -16,7 +16,7 @@ with Game() as g:
     1. From the left, count nine columns over and three hexagons down. Color blue the
     next five hexagons down.
     '''
-    tile = Tile(column=9, row=3)
+    tile = Tile(row=3, column=9)
     blue_line = Line(start_tile=tile.neighbor(direction='down'), length=5, direction='down')
     blue_line.draw('blue')
     

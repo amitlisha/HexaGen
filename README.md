@@ -15,7 +15,7 @@ For instance, the instruction:
 
 Can be expressed by the following code: 
 ```python
-center = Tile(column=7, row=5)
+center = Tile(row=5, column=7)
 center.draw(color='yellow')
 center.neighbors().draw(color='red')
 ```

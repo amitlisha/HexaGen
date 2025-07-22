@@ -6,7 +6,7 @@ from constants.constants import *
 
 with Game() as g:
     
-    center_tile = Tile(column=-8, row=3)
+    center_tile = Tile(row=3, column=-8)
     
     # Draw the tiles for the first flower
     for direction in DIRECTIONS:
@@ -14,7 +14,7 @@ with Game() as g:
     center_tile.draw('white')
     
     # Define the center tile of the second flower
-    center_tile = Tile(column=8, row=3)
+    center_tile = Tile(row=3, column=8)
     
     # Draw the tiles for the second flower
     for direction in DIRECTIONS:
@@ -22,7 +22,7 @@ with Game() as g:
     center_tile.draw('white')
     
     # Define the center tile of the third flower
-    center_tile = Tile(column=-6, row=5)
+    center_tile = Tile(row=5, column=-6)
     
     # Draw the tiles for the third flower
     for direction in DIRECTIONS:
@@ -30,7 +30,7 @@ with Game() as g:
     center_tile.draw('white')
     
     # Define the center tile of the fourth flower
-    center_tile = Tile(column=-7, row=-4)
+    center_tile = Tile(row=-4, column=-7)
     
     # Draw the tiles for the fourth flower
     for direction in DIRECTIONS:
@@ -38,7 +38,7 @@ with Game() as g:
     center_tile.draw('white')
     
     # Define the center tile of the fifth flower
-    center_tile = Tile(column=-9, row=-3)
+    center_tile = Tile(row=-3, column=-9)
     
     # Draw the tiles for the fifth flower
     for direction in DIRECTIONS:
@@ -46,7 +46,7 @@ with Game() as g:
     center_tile.draw('white')
     
     # Define the center tile of the sixth flower
-    center_tile = Tile(column=-7, row=-5)
+    center_tile = Tile(row=-5, column=-7)
     
     # Draw the tiles for the sixth flower
     for direction in DIRECTIONS:
@@ -54,7 +54,7 @@ with Game() as g:
     center_tile.draw('white')
     
     # Define the center tile of the seventh flower
-    center_tile = Tile(column=-10, row=5)
+    center_tile = Tile(row=5, column=-10)
     
     # Draw the tiles for the seventh flower
     for direction in DIRECTIONS:

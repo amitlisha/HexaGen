@@ -16,7 +16,7 @@ with Game() as g:
     1. Make a triangle from 9 red tiles, longest side is on the third row from the
     left, starting at the top downwards, the long side will have 3 tiles.
     '''
-    start_tile = Tile(1, 2)
+    start_tile = Tile(2, 1)
     triangle = Triangle(start_tile=start_tile, point='left', start_tile_type='side', side_length=3)
     triangle.draw('red')
     

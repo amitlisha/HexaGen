@@ -18,7 +18,7 @@ with Game() as g:
     '''
     for c in [1, 2, 12, 13]:
       for r in [4, 10]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('green')
     
     '''
@@ -28,21 +28,21 @@ with Game() as g:
     
     for c in [4, 5, 9, 10]:
       for r in [4, 10]:
-        tile = Tile(column=c, row=r)
+        tile = Tile(row=r, column=c)
         tile.draw('yellow')
     
     '''
     3. Use green to shade the 7th spots in the 4th, 5th, 9th, and 10th columns.
     '''
     for c in [4, 5, 9, 10]:
-      tile = Tile(column=c, row=7)
+      tile = Tile(row=7, column=c)
       tile.draw('green')
     
     '''
     4. Use yellow to shade the 7th spots in the 1st, 2nd, 12th, and 13th columns.
     '''
     for c in [1, 2, 12, 13]:
-      tile = Tile(column=c, row=7)
+      tile = Tile(row=7, column=c)
       tile.draw('yellow')
     
     '''
@@ -50,11 +50,11 @@ with Game() as g:
     in the 7th column.
     '''
     for r in [3, 4, 9, 10]:
-      tile = Tile(column=7, row=r)
+      tile = Tile(row=r, column=7)
       tile.draw('green')
     
     for r in [6, 7]:
-      tile = Tile(column=7, row=r)
+      tile = Tile(row=r, column=7)
       tile.draw('yellow')
     
     '''
@@ -62,11 +62,11 @@ with Game() as g:
     in the 16th column.
     '''
     for r in [3, 4, 9, 10]:
-      tile = Tile(column=16, row=r)
+      tile = Tile(row=r, column=16)
       tile.draw('yellow')
     
     for r in [6, 7]:
-      tile = Tile(column=16, row=r)
+      tile = Tile(row=r, column=16)
       tile.draw('green')
     
     g.plot(gold_boards=gold_boards, multiple=0)

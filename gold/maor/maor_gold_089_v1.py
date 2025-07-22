@@ -15,18 +15,18 @@ with Game() as g:
     '''
     1. On the bottom most row, paint the 8th tile green.
     '''
-    tile=Tile(column=8, row=-1)
+    tile=Tile(row=-1, column=8)
     tile.draw('green')
     
     '''
     2. Using the same color paint the next two tiles above it, and finish the vertical
     column of four tiles with the blue one.
     '''
-    tile=Tile(column=8, row=-2)
+    tile=Tile(row=-2, column=8)
     tile.draw('green')
-    tile=Tile(column=8, row=-3)
+    tile=Tile(row=-3, column=8)
     tile.draw('green')
-    tile=Tile(column=8, row=-4)
+    tile=Tile(row=-4, column=8)
     tile.draw('blue')
     
     '''

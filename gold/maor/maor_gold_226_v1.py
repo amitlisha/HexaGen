@@ -16,9 +16,9 @@ with Game() as g:
     1. Colour the hexagon in coloum one row two green. create a diagonal green line
     from this hexagon to column 18 row 10.
     '''
-    tile = Tile(column=1,row=2)
+    tile = Tile(row=2, column=1)
     tile.draw('green')
-    line = Line(start_tile=tile, end_tile=Tile(column=18,row=10))
+    line = Line(start_tile=tile, end_tile=Tile(row=10, column=18))
     line.draw('green')
     
     '''
@@ -29,7 +29,7 @@ with Game() as g:
     number of hexagons extended by one. ending with one hexagon extended in row
     column 17 row nine.
     '''
-    tile = Tile(column=3,row=2)
+    tile = Tile(row=2, column=3)
     
     for length in range(1,5,1):
       line = Line(start_tile=tile, direction='up_right', length=length)
@@ -46,7 +46,7 @@ with Game() as g:
     line extending the radiating line downwards. beginnning in column two row three
     and ending in column 16 row ten.
     '''
-    tile = Tile(column=2,row=3)
+    tile = Tile(row=3, column=2)
     
     for length in range(1,5,1):
       line = Line(start_tile=tile, direction='down', length=length)

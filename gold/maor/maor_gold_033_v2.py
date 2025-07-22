@@ -16,28 +16,28 @@ with Game() as g:
     1. Color all tiles orange around eighth vertical row from left, third tile from the
     top of that row, resulting in an orange circle there.
     '''
-    c1 = Circle(center_tile=Tile(8, 3), radius=1)
+    c1 = Circle(center_tile=Tile(3, 8), radius=1)
     c1.draw('orange')
     
     '''
     2. On 12th vertical row from left, 3rd tile down, color all tiles touching that
     tile, orange.
     '''
-    c2 = Circle(center_tile=Tile(12, 3), radius=1)
+    c2 = Circle(center_tile=Tile(3, 12), radius=1)
     c2.draw('orange')
     
     '''
     3. On 8th vertical row 7th tile down, color all tiles touching that one orange,
     leaving it blank (as in other steps).
     '''
-    c3 = Circle(center_tile=Tile(8, 7), radius=1)
+    c3 = Circle(center_tile=Tile(7, 8), radius=1)
     c3.draw('orange')
     
     '''
     4. on 12th row, vertically from left, 7th tile down, color all tiles touching it
     orange, leaving it blank.
     '''
-    c4 = Circle(center_tile=Tile(12, 7), radius=1)
+    c4 = Circle(center_tile=Tile(7, 12), radius=1)
     c4.draw('orange')
     
     '''

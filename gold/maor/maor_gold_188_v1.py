@@ -16,7 +16,7 @@ with Game() as g:
     1. start a diagonal line from the bottom left hexagon to the top right hexagon by
     painting the bottom left tile blue.
     '''
-    tile = Tile(column=1, row=-1)
+    tile = Tile(row=-1, column=1)
     tile.draw('blue')
     
     '''
@@ -64,7 +64,7 @@ with Game() as g:
     3. Create a second diagonal line by painting the fourth tile up from the bottom in
     the first column purple.
     '''
-    tile = Tile(column=1, row=-4)
+    tile = Tile(row=-4, column=1)
     tile.draw('purple')
     
     '''
@@ -102,85 +102,85 @@ with Game() as g:
     '''
     5. in the 2nd column, paint the 4th tile up red
     '''
-    tile = Tile(column=2, row=-4)
+    tile = Tile(row=-4, column=2)
     tile.draw('red')
     
     '''
     6. in the 3rd column, paint the 3rd tile up red
     '''
-    tile = Tile(column=3, row=-3)
+    tile = Tile(row=-3, column=3)
     tile.draw('red')
     
     '''
     7. in the 4th column, paint the 5th tile up yellow
     '''
-    tile = Tile(column=4, row=-5)
+    tile = Tile(row=-5, column=4)
     tile.draw('yellow')
     
     '''
     8. in the 5th column, paint the 4th tile up yellow
     '''
-    tile = Tile(column=5, row=-4)
+    tile = Tile(row=-4, column=5)
     tile.draw('yellow')
     
     '''
     9. in the sixth column, paint the 6th column up red
     '''
-    tile = Tile(column=6, row=-6)
+    tile = Tile(row=-6, column=6)
     tile.draw('red')
     
     '''
     10. in the 7th column, paint the 5th tile up red
     '''
-    tile = Tile(column=7, row=-5)
+    tile = Tile(row=-5, column=7)
     tile.draw('red')
     
     '''
     11. in the 8th column, paint the 7th tile up yellow
     '''
-    tile = Tile(column=8, row=-7)
+    tile = Tile(row=-7, column=8)
     tile.draw('yellow')
     
     '''
     12. in the 9th column, paint the 6th tile up yellow
     '''
-    tile = Tile(column=9, row=-6)
+    tile = Tile(row=-6, column=9)
     tile.draw('yellow')
     
     '''
     13. in the 10th column, paint the 3rd tile down yellow
     '''
-    tile = Tile(column=10, row=3)
+    tile = Tile(row=3, column=10)
     tile.draw('yellow')
     
     '''
     14. in the 11th column, paint the 4th tile down yellow
     '''
-    tile = Tile(column=11, row=4)
+    tile = Tile(row=4, column=11)
     tile.draw('yellow')
     
     '''
     15. in the 12th column, paint the 2nd tile down red
     '''
-    tile = Tile(column=12, row=2)
+    tile = Tile(row=2, column=12)
     tile.draw('red')
     
     '''
     16. in the 13th column, paint the 3rd tile down red
     '''
-    tile = Tile(column=13, row=3)
+    tile = Tile(row=3, column=13)
     tile.draw('red')
     
     '''
     17. in the 14 column, paint the first tile red
     '''
-    tile = Tile(column=14, row=1)
+    tile = Tile(row=1, column=14)
     tile.draw('red')
     
     '''
     18. in the 15th column, paint the 2nd tile down red
     '''
-    tile = Tile(column=15, row=2)
+    tile = Tile(row=2, column=15)
     tile.draw('red')
     
     g.plot(gold_boards=gold_boards, multiple=0)

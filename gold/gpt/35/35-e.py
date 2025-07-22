@@ -17,7 +17,7 @@ with Game() as g:
         shape.draw(color)
     
     # Create the game board
-    board = [[Tile(col, row) for col in range(1, WIDTH + 1)] for row in range(1, HEIGHT + 1)]
+    board = [[Tile(row, col) for col in range(1, WIDTH + 1)] for row in range(1, HEIGHT + 1)]
     
     # Step 1
     row = 8

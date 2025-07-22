@@ -11,19 +11,19 @@ with Game() as g:
     
     # draw the first red triangle
     for i in range(3):
-        Tile(i+6, i+1).draw('red')
+        Tile(i+1, i+6).draw('red')
     
     for i in range(2):
-        Tile(i+7, i+2).draw('red')
+        Tile(i+2, i+7).draw('red')
     
-    Tile(8, 3).draw('red')
+    Tile(3, 8).draw('red')
     
     # create the red triangle shape and add white row
-    red_triangle = Shape([Tile(i+6, i+1) for i in range(3)] +
-                         [Tile(i+7, i+2) for i in range(2)] +
-                         [Tile(8, 3)])
+    red_triangle = Shape([Tile(i+1, i+6) for i in range(3)] +
+                         [Tile(i+2, i+7) for i in range(2)] +
+                         [Tile(3, 8)])
     
-    white_row = Shape([Tile(i+6, 4) for i in range(3)])
+    white_row = Shape([Tile(4, i+6) for i in range(3)])
     
     # create 4 red triangles with white row in between
     for i in range(4):

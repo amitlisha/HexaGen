@@ -8,7 +8,7 @@ with Game() as g:
     
     # Step 1: Draw a red circle
     g.record_step('step1')
-    blank_tile = Tile(10, 5) # the tile at (10, 5) is blank
+    blank_tile = Tile(5, 10) # the tile at (10, 5) is blank
     blank_tile.draw('white') # leave it blank
     for direction in DIRECTIONS:
         neighbor = blank_tile.neighbor(direction)
@@ -17,7 +17,7 @@ with Game() as g:
     
     # Step 2: Draw a green circle
     g.record_step('step2')
-    red_top = Tile(10, 3) # the topmost red tile
+    red_top = Tile(3, 10) # the topmost red tile
     for i in range(6): # six-sided flower
         if i % 2 == 0: # every other tile is green
             color = 'green'
@@ -33,8 +33,8 @@ with Game() as g:
     
     # Step 3: Draw a blue circle
     g.record_step('step3')
-    red = Tile(10, 5) # the red tile
-    green_right = Tile(13, 5) # the rightmost green tile
+    red = Tile(5, 10) # the red tile
+    green_right = Tile(5, 13) # the rightmost green tile
     for i in range(6):
         if i % 2 == 0: # every other tile is green
             color = 'green'

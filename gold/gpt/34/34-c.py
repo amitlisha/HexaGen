@@ -9,7 +9,7 @@ gold_boards = list(read_task(task_index)['gold_boards'])
 
 with Game() as g:
     
-    start_tile = Tile(10, 5)
+    start_tile = Tile(5, 10)
     
     # Make a blue flower of six tiles surrounding the starting tile
     blue_flower = [start_tile]

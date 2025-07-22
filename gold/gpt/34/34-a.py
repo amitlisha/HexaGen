@@ -14,7 +14,7 @@ with Game() as g:
     orange = COLORS.index('orange')
     
     # Draw the blue flower of six tiles surrounding the fifth tile in the tenth column
-    center_tile = Tile(10, 5)
+    center_tile = Tile(5, 10)
     flower_tiles = []
     for direction in DIRECTIONS:
         neighbor = center_tile.neighbor(direction)

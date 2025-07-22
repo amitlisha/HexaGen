@@ -15,6 +15,6 @@ with Game() as g:
     points are on the 8th column five tiles down, and on the 10th column, four and
     six tiles down.
     '''
-    Shape.polygon([Tile(8, 5), Tile(10, 4), Tile(10, 6)]).draw('green')
+    Shape.polygon([Tile(5, 8), Tile(4, 10), Tile(6, 10)]).draw('green')
     
     g.plot(gold_boards=gold_boards)

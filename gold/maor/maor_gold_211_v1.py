@@ -18,7 +18,7 @@ with Game() as g:
     surrounding this blank tile will be purple. This makes a flower.
     '''
     g.record_step(step_name='1')
-    tile1 = Tile(column=2, row=2)
+    tile1 = Tile(row=2, column=2)
     tile1.neighbors().draw('purple')
     
     '''
@@ -26,16 +26,16 @@ with Game() as g:
     2nd and 3rd tile from the top are orange. In the 6th column the topmost 3 are
     colored orange. This makes a Triangle.
     '''
-    tile2 = Tile(column=4, row=2)
+    tile2 = Tile(row=2, column=4)
     tile2.draw('orange')
     
-    tile3 = Tile(column=5, row=2)
+    tile3 = Tile(row=2, column=5)
     tile3.draw('orange')
     
-    tile4 = Tile(column=5, row=3)
+    tile4 = Tile(row=3, column=5)
     tile4.draw('orange')
     
-    line = Line(start_tile=Tile(column=6, row=1), direction='down', length=3)
+    line = Line(start_tile=Tile(row=1, column=6), direction='down', length=3)
     line.draw('orange')
     
     '''
@@ -51,7 +51,7 @@ with Game() as g:
     the starting point for the 2nd row of flowers and triangles. It is identical to
     the one above it.
     '''
-    pattern2 = pattern1.copy_paste(source=tile1, destination=Tile(column=2, row=5))
+    pattern2 = pattern1.copy_paste(source=tile1, destination=Tile(row=5, column=2))
     pattern2.grid(shift_direction='right', spacing=0)
     
     '''
@@ -59,7 +59,7 @@ with Game() as g:
     is the starting point for the 3rd row of flowers and triangles. It is identical
     to the one above it.
     '''
-    pattern3 = pattern1.copy_paste(source=tile1, destination=Tile(column=2, row=-3))
+    pattern3 = pattern1.copy_paste(source=tile1, destination=Tile(row=-3, column=2))
     pattern3.grid(shift_direction='right', spacing=0)
     
     g.plot(gold_boards=gold_boards, multiple=0)

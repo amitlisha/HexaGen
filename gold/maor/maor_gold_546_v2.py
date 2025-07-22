@@ -19,7 +19,7 @@ with Game() as g:
     '''
     column = 1
     for color in ['orange','green','green','green','orange','green','orange','orange','orange']:
-      tile = Tile(column=column, row=1)
+      tile = Tile(row=1, column=column)
       tile.draw(color)
       column += 2
     
@@ -47,7 +47,7 @@ with Game() as g:
     '''
     column = -1
     for color in ['green', 'green', 'orange', 'orange', 'orange', 'green', 'green', 'orange', 'green']:
-      tile = Tile(column=column, row=-1)
+      tile = Tile(row=-1, column=column)
       tile.draw(color)
       column -= 2
     

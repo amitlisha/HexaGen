@@ -19,7 +19,7 @@ with Game() as g:
     finish the line.
     '''
     colors = ['blue'] * 2 + ['orange'] * 2 + ['blue'] + ['orange'] * 2 + ['blue'] * 3 + ['orange'] * 2 + ['blue'] + ['orange'] * 2 + ['blue'] + ['orange'] * 2
-    tile = Tile(1,-1)
+    tile = Tile(-1, 1)
     for c in colors:
       tile.draw(c)
       tile = tile.neighbor(direction='up_right')
@@ -29,7 +29,7 @@ with Game() as g:
     color the third cell purple to begin constructing a line parallel to the one in
     step 1.
     '''
-    tile = Tile(1,-4)
+    tile = Tile(-4, 1)
     tile.draw('purple')
     
     '''
@@ -46,7 +46,7 @@ with Game() as g:
     4. Beginning from the first cell in step 2, color the next 2 cells to its bottom
     right red to connect to the other line creating the rung of a ladder.
     '''
-    start_tile = Tile(1,-4)
+    start_tile = Tile(-4, 1)
     tile = start_tile
     for i in range(2):
       tile = tile.neighbor('down_right')

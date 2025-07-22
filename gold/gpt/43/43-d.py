@@ -9,16 +9,16 @@ gold_boards = list(read_task(task_index)['gold_boards'])
 with Game() as g:
     
     # Paint the cell at the 1st column on the left and 2nd row from top
-    tile1 = Tile(1, 2)
+    tile1 = Tile(2, 1)
     tile1.draw('red')
     
     # Paint the top 2 cells of the 2nd column from left
-    tile2 = Tile(2, 1)
+    tile2 = Tile(1, 2)
     tile2.draw('red')
     tile2.neighbor('down').draw('red')
     
     # Paint the top 3 rows of the 3rd column from left
-    tile3 = Tile(3, 1)
+    tile3 = Tile(1, 3)
     tile3.draw('red')
     tile3.neighbor('down').draw('red')
     tile3.neighbor('down').neighbor('down').draw('red')

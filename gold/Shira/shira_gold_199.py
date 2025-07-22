@@ -17,14 +17,14 @@ with Game() as g:
     2. Note the three tiles immediately below/to the right of the tile you just filled.
     Leave these unfilled, but color all tiles below/to the right of these RED.
     '''
-    line1 = Line(start_tile=Tile(1,3), direction='up_right').draw('red')
+    line1 = Line(start_tile=Tile(3, 1), direction='up_right').draw('red')
     '''
     3. Repeat step 2 three more times. You should have five solid red diagonal stripes
     (including the corner tile) in the top left half of the grid.
     '''
-    line2 = Line(start_tile=Tile(1,5), direction='up_right').draw('red')
-    line3 = Line(start_tile=Tile(1,7), direction='up_right').draw('red')
-    line4 = Line(start_tile=Tile(1,9), direction='up_right').draw('red')
+    line2 = Line(start_tile=Tile(5, 1), direction='up_right').draw('red')
+    line3 = Line(start_tile=Tile(7, 1), direction='up_right').draw('red')
+    line4 = Line(start_tile=Tile(9, 1), direction='up_right').draw('red')
     '''
     4. In the bottom row of tiles, starting from the leftmost edge, color every other
     tile PURPLE.
@@ -32,11 +32,11 @@ with Game() as g:
     from constants import WIDTH
 
     for i in range(1, WIDTH, 2):
-        Tile(i, -1).draw('purple')
+        Tile(-1, i).draw('purple')
     '''
     5. Extend the purple tiles up into solid purple columns, up to where they meet the
     largest red stripe.
     '''
     for i in range(1, WIDTH, 2):
-        Line(start_tile=Tile(i, -1), direction='up', end_tiles=line4).draw('purple')
+        Line(start_tile=Tile(-1, i), direction='up', end_tiles=line4).draw('purple')
     g.plot(gold_boards=gold_boards)

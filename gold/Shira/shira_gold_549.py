@@ -14,7 +14,7 @@ with Game() as g:
     1. Start from the top left corner of the board and move over one column to the
     right. Fill in the top tile in this column purple.
     '''
-    tile1 = Tile(2, 1)
+    tile1 = Tile(1, 2)
     tile1.draw('purple')
     '''
     2. Make the next 2 tiles down purple also
@@ -46,7 +46,7 @@ with Game() as g:
     6. Then go over to the left one column and fill the top tile purple
     '''
     column = tile7.column - 1
-    tile8 = Tile(column, 1)
+    tile8 = Tile(1, column)
     tile8.draw('purple')
     '''
     7. The shape should have 2 blank tiles in the middle - color these green.
@@ -95,7 +95,7 @@ with Game() as g:
     14. Move to the bottom left corner of the board and go one column over to the right
     and one tile up. Make this tile orange.
     '''
-    tile9 = Tile(2, -2)
+    tile9 = Tile(-2, 2)
     tile9.draw('orange')
     '''
     15. Recreate the frame of the same shape as above in orange using this newest orange

@@ -18,7 +18,7 @@ with Game() as g:
     '''
     g.record_step(step_name='1')
     
-    tile = Tile(column=2, row=1)
+    tile = Tile(row=1, column=2)
     tile.draw('purple')
     
     '''
@@ -106,7 +106,7 @@ with Game() as g:
     and one tile up. Make this tile orange.
     '''
     
-    tile = Tile(column=2,row=-2)
+    tile = Tile(row=-2, column=2)
     tile.draw('orange')
     
     '''

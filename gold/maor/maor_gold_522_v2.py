@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Paint the leftmost and topmost cell orange
     '''
-    tile = Tile(column=1,row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('orange')
     
     '''
@@ -62,9 +62,9 @@ with Game() as g:
     '''
     8. Paint the cell on the very bottom right and the one to its left green.
     '''
-    tile = Tile(column=-1, row=-1)
+    tile = Tile(row=-1, column=-1)
     tile.draw('green')
-    tile = Tile(column=-3, row=-1)
+    tile = Tile(row=-1, column=-3)
     tile.draw('green')
     
     '''

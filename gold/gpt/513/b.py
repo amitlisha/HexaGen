@@ -13,49 +13,49 @@ with Game() as g:
     DIRECTIONS = ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']
     
     # Step 1
-    Tile(3, 2).draw('green')
+    Tile(2, 3).draw('green')
     Tile(3, 3).draw('green')
-    Tile(3, 1).neighbors().draw('purple')
-    Tile(3, 4).neighbors().draw('purple')
+    Tile(1, 3).neighbors().draw('purple')
+    Tile(4, 3).neighbors().draw('purple')
     
     # Step 2
-    Tile(-4, -3).draw('green')
-    Tile(-4, -2).draw('green')
+    Tile(-3, -4).draw('green')
+    Tile(-2, -4).draw('green')
     Tile(-4, -4).neighbors().draw('purple')
-    Tile(-4, -1).neighbors().draw('purple')
-    Tile(2, -3).draw('green')
-    Tile(2, -2).draw('green')
-    Tile(2, -4).neighbors().draw('purple')
-    Tile(2, -1).neighbors().draw('purple')
-    Tile(7, 2).draw('green')
-    Tile(7, 3).draw('green')
-    Tile(7, 1).neighbors().draw('purple')
-    Tile(7, 4).neighbors().draw('purple')
+    Tile(-1, -4).neighbors().draw('purple')
+    Tile(-3, 2).draw('green')
+    Tile(-2, 2).draw('green')
+    Tile(-4, 2).neighbors().draw('purple')
+    Tile(-1, 2).neighbors().draw('purple')
+    Tile(2, 7).draw('green')
+    Tile(3, 7).draw('green')
+    Tile(1, 7).neighbors().draw('purple')
+    Tile(4, 7).neighbors().draw('purple')
     
     # Step 3
-    Shape([Tile(-4, -3), Tile(-4, -2), Tile(-3, -3), Tile(-3, -2)]).neighbors().draw('purple')
-    Shape([Tile(7, 2), Tile(7, 3), Tile(8, 2), Tile(8, 3)]).neighbors().draw('purple')
-    Tile(-4, -3).draw('blue')
-    Tile(-4, -2).draw('blue')
-    Tile(8, -3).draw('blue')
-    Tile(8, -2).draw('blue')
+    Shape([Tile(-3, -4), Tile(-2, -4), Tile(-3, -3), Tile(-2, -3)]).neighbors().draw('purple')
+    Shape([Tile(2, 7), Tile(3, 7), Tile(2, 8), Tile(3, 8)]).neighbors().draw('purple')
+    Tile(-3, -4).draw('blue')
+    Tile(-2, -4).draw('blue')
+    Tile(-3, 8).draw('blue')
+    Tile(-2, 8).draw('blue')
     
     # Step 4
-    Tile(3, -1).draw('green')
-    Tile(3, -2).draw('blue')
+    Tile(-1, 3).draw('green')
+    Tile(-2, 3).draw('blue')
     
     # Step 5
-    Tile(7, 2).draw('green')
-    Tile(7, 1).draw('blue')
+    Tile(2, 7).draw('green')
+    Tile(1, 7).draw('blue')
     
     # Step 6
-    Tile(8, -2).draw('green')
-    Tile(8, -3).draw('blue')
+    Tile(-2, 8).draw('green')
+    Tile(-3, 8).draw('blue')
     
     # Step 7
-    Shape([Tile(3, 2), Tile(3, 1), Tile(3, 3), Tile(2, 2), Tile(2, 1), Tile(2, 3)]).neighbors().draw('orange')
-    Shape([Tile(-4, -3), Tile(-4, -4), Tile(-4, -2), Tile(-3, -3), Tile(-3, -4), Tile(-3, -2)]).neighbors().draw('orange')
-    Shape([Tile(7, 2), Tile(7, 1), Tile(7, 3), Tile(8, 2), Tile(8, 1), Tile(8, 3)]).neighbors().draw('orange')
+    Shape([Tile(2, 3), Tile(1, 3), Tile(3, 3), Tile(2, 2), Tile(1, 2), Tile(3, 2)]).neighbors().draw('orange')
+    Shape([Tile(-3, -4), Tile(-4, -4), Tile(-2, -4), Tile(-3, -3), Tile(-4, -3), Tile(-2, -3)]).neighbors().draw('orange')
+    Shape([Tile(2, 7), Tile(1, 7), Tile(3, 7), Tile(2, 8), Tile(1, 8), Tile(3, 8)]).neighbors().draw('orange')
     
     import os
     image = os.path.dirname(__file__).split('\\')[-1]

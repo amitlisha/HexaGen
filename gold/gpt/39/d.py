@@ -7,14 +7,14 @@ from constants.constants import *
 with Game() as g:
     
     # create the red circle
-    tile = Tile(10, 5)  # create a new Tile instance at column 10, row 5
+    tile = Tile(5, 10)  # create a new Tile instance at column 10, row 5
     tile.draw('red')    # color the tile red
     neighbors = tile.neighbors()  # get all the neighbors of the tile
     for neighbor in neighbors:
         neighbor.draw('red')  # color all the neighbors red
     
     # create the green six-sided flower
-    red_top = Tile(10, 3)   # create a new Tile instance at column 10, row 3 (top of the red circle)
+    red_top = Tile(3, 10)   # create a new Tile instance at column 10, row 3 (top of the red circle)
     green_left = red_top.neighbor('up_left')   # get the neighbor tile in the up_left direction
     green_left.draw('green')   # color the green_left tile green
     green_neighbors = green_left.neighbors()  # get all the neighbors of the green_left tile

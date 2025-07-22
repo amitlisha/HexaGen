@@ -15,36 +15,36 @@ with Game() as g:
     '''
     1. Use blue to fill the 2nd spot of the 12th and last columns.
     '''
-    tile1 = Tile(column=12, row=2)
+    tile1 = Tile(row=2, column=12)
     tile1.draw('blue')
-    tile2 = Tile(column=-1, row=2)
+    tile2 = Tile(row=2, column=-1)
     tile2.draw('blue')
     
     '''
     2. Fill in the 2nd and 3rd spots on the 13th and 17th columns.
     '''
-    tile3 = Tile(column=13, row=2)
+    tile3 = Tile(row=2, column=13)
     tile3.draw('blue')
-    tile4 = Tile(column=17, row=2)
+    tile4 = Tile(row=2, column=17)
     tile4.draw('blue')
     
-    tile5 = Tile(column=13, row=3)
+    tile5 = Tile(row=3, column=13)
     tile5.draw('blue')
-    tile6 = Tile(column=17, row=3)
+    tile6 = Tile(row=3, column=17)
     tile6.draw('blue')
     
     '''
     3. Fill in the top 3 spots on the 14th and 16th columns.
     '''
-    line1 = Line(start_tile=Tile(column=14,row=3), direction='up')
+    line1 = Line(start_tile=Tile(row=3, column=14), direction='up')
     line1.draw('blue')
-    line2 = Line(start_tile=Tile(column=16,row=3), direction='up')
+    line2 = Line(start_tile=Tile(row=3, column=16), direction='up')
     line2.draw('blue')
     
     '''
     4. Fill in the top 4 spots on the 15th column.
     '''
-    line3 = Line(start_tile=Tile(column=15,row=4), direction='up')
+    line3 = Line(start_tile=Tile(row=4, column=15), direction='up')
     line3.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

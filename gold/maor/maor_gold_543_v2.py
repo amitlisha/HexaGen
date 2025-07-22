@@ -16,69 +16,69 @@ with Game() as g:
     1. The very top row starting from the left is orange, green, green, green, orange,
     green, orange, orange, orange.
     '''
-    tile=Tile(column=1, row=1)
+    tile=Tile(row=1, column=1)
     tile.draw('orange')
     
-    tile=Tile(column=3, row=1)
+    tile=Tile(row=1, column=3)
     tile.draw('green')
     
-    tile=Tile(column=5, row=1)
+    tile=Tile(row=1, column=5)
     tile.draw('green')
     
-    tile=Tile(column=7, row=1)
+    tile=Tile(row=1, column=7)
     tile.draw('green')
     
-    tile=Tile(column=9, row=1)
+    tile=Tile(row=1, column=9)
     tile.draw('orange')
     
-    tile=Tile(column=11, row=1)
+    tile=Tile(row=1, column=11)
     tile.draw('green')
     
-    tile=Tile(column=13, row=1)
+    tile=Tile(row=1, column=13)
     tile.draw('orange')
     
-    tile=Tile(column=15, row=1)
+    tile=Tile(row=1, column=15)
     tile.draw('orange')
     
-    tile=Tile(column=17, row=1)
+    tile=Tile(row=1, column=17)
     tile.draw('orange')
     
     '''
     2. The very bottom row is green, orange, green, green, orange, orange, orange,
     green, green, in that order.
     '''
-    tile=Tile(column=2, row=-1)
+    tile=Tile(row=-1, column=2)
     tile.draw('green')
     
-    tile=Tile(column=4, row=-1)
+    tile=Tile(row=-1, column=4)
     tile.draw('orange')
     
-    tile=Tile(column=6, row=-1)
+    tile=Tile(row=-1, column=6)
     tile.draw('green')
     
-    tile=Tile(column=8, row=-1)
+    tile=Tile(row=-1, column=8)
     tile.draw('green')
     
-    tile=Tile(column=10, row=-1)
+    tile=Tile(row=-1, column=10)
     tile.draw('orange')
     
-    tile=Tile(column=12, row=-1)
+    tile=Tile(row=-1, column=12)
     tile.draw('orange')
     
-    tile=Tile(column=14, row=-1)
+    tile=Tile(row=-1, column=14)
     tile.draw('orange')
     
-    tile=Tile(column=16, row=-1)
+    tile=Tile(row=-1, column=16)
     tile.draw('green')
     
-    tile=Tile(column=18, row=-1)
+    tile=Tile(row=-1, column=18)
     tile.draw('green')
     
     '''
     3. At the top left you should have orange. The four tiles under it are purple.  Do
     this to all 5 orange tiles on the top row.
     '''
-    top_left = start_tile=Tile(1,1)
+    top_left = start_tile=Tile(1, 1)
     line = Line(top_left, length=4,include_start_tile=False, direction='down')
     line.draw('purple')
     

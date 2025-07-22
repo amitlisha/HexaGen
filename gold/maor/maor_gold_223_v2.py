@@ -16,7 +16,7 @@ with Game() as g:
     1. Start in the center on the 10th column, and make the 2nd - 8th spots purple.
     '''
     column = 10
-    line=Line(start_tile=Tile(column=column, row=2), end_tile=Tile(column=column,row=8))
+    line=Line(start_tile=Tile(row=2, column=column), end_tile=Tile(row=8, column=column))
     line.draw('purple')
     
     '''
@@ -25,26 +25,26 @@ with Game() as g:
     '''
     columns = [9,11]
     for c in columns:
-      tile = Tile(column=c, row=2).draw('purple')
+      tile = Tile(row=2, column=c).draw('purple')
     
     '''
     3. The 4th - 6th spots should be yellow.
     '''
     for c in columns:
-      tile = Tile(column=c, row=4)
+      tile = Tile(row=4, column=c)
       tile.draw('yellow')
-      tile = Tile(column=c, row=5)
+      tile = Tile(row=5, column=c)
       tile.draw('yellow')
-      tile = Tile(column=c, row=6)
+      tile = Tile(row=6, column=c)
       tile.draw('yellow')
     
     '''
     4. The 7th and 8th spots should be red.
     '''
     for c in columns:
-      tile = Tile(column=c, row=7)
+      tile = Tile(row=7, column=c)
       tile.draw('red')
-      tile = Tile(column=c, row=8)
+      tile = Tile(row=8, column=c)
       tile.draw('red')
     
     '''
@@ -52,22 +52,22 @@ with Game() as g:
     '''
     columns = [12, 8]
     for c in columns:
-      tile = Tile(column=c, row=3)
+      tile = Tile(row=3, column=c)
       tile.draw('yellow')
-      tile = Tile(column=c, row=4)
+      tile = Tile(row=4, column=c)
       tile.draw('yellow')
-      tile = Tile(column=c, row=5)
+      tile = Tile(row=5, column=c)
       tile.draw('yellow')
     
     '''
     6. The next three spots should be red, orange, and red.
     '''
     for c in columns:
-      tile=Tile(column=c, row=6)
+      tile=Tile(row=6, column=c)
       tile.draw('red')
-      tile=Tile(column=c, row=7)
+      tile=Tile(row=7, column=c)
       tile.draw('orange')
-      tile=Tile(column=c, row=8)
+      tile=Tile(row=8, column=c)
       tile.draw('red')
     
     '''
@@ -75,22 +75,22 @@ with Game() as g:
     '''
     columns = [13, 7]
     for c in columns:
-      tile=Tile(column=c, row=3)
+      tile=Tile(row=3, column=c)
       tile.draw('yellow')
-      tile=Tile(column=c, row=4)
+      tile=Tile(row=4, column=c)
       tile.draw('orange')
-      tile=Tile(column=c, row=5)
+      tile=Tile(row=5, column=c)
       tile.draw('yellow')
     
     '''
     8. The 7th - 9th spots should be red, orange, red.
     '''
     for c in columns:
-      tile=Tile(column=c, row=7)
+      tile=Tile(row=7, column=c)
       tile.draw('red')
-      tile=Tile(column=c, row=8)
+      tile=Tile(row=8, column=c)
       tile.draw('orange')
-      tile=Tile(column=c, row=9)
+      tile=Tile(row=9, column=c)
       tile.draw('red')
     
     '''
@@ -98,23 +98,23 @@ with Game() as g:
     '''
     columns = [14, 6]
     for c in columns:
-      tile=Tile(column=c, row=3)
+      tile=Tile(row=3, column=c)
       tile.draw('yellow')
-      tile=Tile(column=c, row=4)
+      tile=Tile(row=4, column=c)
       tile.draw('yellow')
     
     '''
     10. Make the 7th spot red.
     '''
     for c in columns:
-      tile=Tile(column=c, row=7)
+      tile=Tile(row=7, column=c)
       tile.draw('red')
     
     '''
     11. Make the 8th spot orange.
     '''
     for c in columns:
-      tile=Tile(column=c, row=8)
+      tile=Tile(row=8, column=c)
       tile.draw('orange')
     
     g.plot(gold_boards=gold_boards, multiple=0)

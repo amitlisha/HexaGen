@@ -16,7 +16,7 @@ with Game() as g:
     1. Make a green line starting at the second tile of the first column and extending
     to the bottom right tile.
     '''
-    line=Line(start_tile=Tile(column=1,row=2), direction='down_right')
+    line=Line(start_tile=Tile(row=2, column=1), direction='down_right')
     line.draw('green')
     
     '''

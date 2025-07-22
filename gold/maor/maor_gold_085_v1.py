@@ -16,7 +16,7 @@ with Game() as g:
     1. In the 1st column from the left, color the bottom-most tile GREEN. Color the
     tile down and to the right of this tile GREEN as well.
     '''
-    tile1 = Tile(1,-1)
+    tile1 = Tile(-1, 1)
     tile1.draw('green')
     
     tile1.neighbor('down_right').draw('green')
@@ -25,7 +25,7 @@ with Game() as g:
     2. In the 4th column from the left, color the bottom-most tile YELLOW. Color the
     tile up and to the right of this tile YELLOW as well.
     '''
-    tile2 = Tile(4,-1)
+    tile2 = Tile(-1, 4)
     tile2.draw('yellow')
     
     tile2.neighbor('up_right').draw('yellow')
@@ -33,7 +33,7 @@ with Game() as g:
     '''
     3. In the 7th column from the left, color the two bottom-most tiles GREEN.
     '''
-    line1 = Line(start_tile=Tile(7,-1), direction='up', length=2)
+    line1 = Line(start_tile=Tile(-1, 7), direction='up', length=2)
     line1.draw('green')
     
     '''
@@ -48,17 +48,17 @@ with Game() as g:
     from the left should be filled in.
     '''
     
-    tile1 = Tile(1,-1 - 3)
+    tile1 = Tile(-1 - 3, 1)
     tile1.draw('yellow')
     
     tile1.neighbor('down_right').draw('yellow')
     
-    tile2 = Tile(4,-1 - 3)
+    tile2 = Tile(-1 - 3, 4)
     tile2.draw('green')
     
     tile2.neighbor('up_right').draw('green')
     
-    line1 = Line(start_tile=Tile(7,-1 - 3), direction='up', length=2)
+    line1 = Line(start_tile=Tile(-1 - 3, 7), direction='up', length=2)
     line1.draw('yellow')
     
     '''
@@ -68,17 +68,17 @@ with Game() as g:
     in.
     '''
     
-    tile1 = Tile(1,-1 - 6)
+    tile1 = Tile(-1 - 6, 1)
     tile1.draw('green')
     
     tile1.neighbor('down_right').draw('green')
     
-    tile2 = Tile(4,-1 - 6)
+    tile2 = Tile(-1 - 6, 4)
     tile2.draw('yellow')
     
     tile2.neighbor('up_right').draw('yellow')
     
-    line1 = Line(start_tile=Tile(7,-1 - 6), direction='up', length=2)
+    line1 = Line(start_tile=Tile(-1 - 6, 7), direction='up', length=2)
     line1.draw('green')
     
     '''
@@ -98,13 +98,13 @@ with Game() as g:
     meet the bottom edge of the grid.
     '''
     
-    line3 = Line(start_tile=Tile(-3, -1), length=2, direction='up')
+    line3 = Line(start_tile=Tile(-1, -3), length=2, direction='up')
     line3.draw('yellow')
     
-    line4 = Line(start_tile=Tile(-3, -4), length=2, direction='up')
+    line4 = Line(start_tile=Tile(-4, -3), length=2, direction='up')
     line4.draw('green')
     
-    line5 = Line(start_tile=Tile(-3, -7), length=2, direction='up')
+    line5 = Line(start_tile=Tile(-7, -3), length=2, direction='up')
     line5.draw('yellow')
     
     g.plot(gold_boards=gold_boards, multiple=0)

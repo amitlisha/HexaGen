@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Use green to fill in the second spot on the 1st column.
     '''
-    tile = Tile(column=1, row=2)
+    tile = Tile(row=2, column=1)
     tile.draw('green')
     
     '''
@@ -23,7 +23,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [2,3]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -31,7 +31,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [2,3]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -39,7 +39,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in range(3,6):
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -47,7 +47,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [3,4]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -55,7 +55,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [2] + list(range(4,8)):
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -63,7 +63,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [4,5]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -71,7 +71,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [3] + list(range(5,10)):
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -79,7 +79,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [3,5,6]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -87,10 +87,10 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     
-    tile = Tile(column=c, row=4)
+    tile = Tile(row=4, column=c)
     tile.draw('green')
     
-    line = Line(start_tile=Tile(column=c, row=6), direction='down')
+    line = Line(start_tile=Tile(row=6, column=c), direction='down')
     line.draw('green')
     
     '''
@@ -98,7 +98,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [4,6,7]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -107,7 +107,7 @@ with Game() as g:
     
     c = tile.neighbor('up_right').column
     for r in [3,5] + list(range(7,11)):
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -115,7 +115,7 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in [5,7,8]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -124,7 +124,7 @@ with Game() as g:
     
     c = tile.neighbor('up_right').column
     for r in [4,6]+list(range(8,11)):
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -133,7 +133,7 @@ with Game() as g:
     
     c = tile.neighbor('up_right').column
     for r in [6,8,9]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -142,7 +142,7 @@ with Game() as g:
     
     c = tile.neighbor('up_right').column
     for r in [7,9,10]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -150,14 +150,14 @@ with Game() as g:
     '''
     c = tile.neighbor('up_right').column
     for r in range(-1,-3,-1):
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
     18. On the last column fill in only the last spot.
     '''
     c = tile.neighbor('up_right').column
-    tile = Tile(column=c, row=-1)
+    tile = Tile(row=-1, column=c)
     tile.draw('green')
     
     g.plot(gold_boards=gold_boards, multiple=0)

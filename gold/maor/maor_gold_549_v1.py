@@ -16,15 +16,15 @@ with Game() as g:
     1. Start from the top left corner of the board and move over one column to the
     right. Fill in the top tile in this column purple.
     '''
-    tile = Tile(column=2,row=1)
+    tile = Tile(row=1, column=2)
     tile.draw('purple')
     
     '''
     2. Make the next 2 tiles down purple also
     '''
-    tile = Tile(column=2,row=2)
+    tile = Tile(row=2, column=2)
     tile.draw('purple')
-    tile = Tile(column=2,row=3)
+    tile = Tile(row=3, column=2)
     tile.draw('purple')
     
     '''
@@ -108,7 +108,7 @@ with Game() as g:
     '''
     g.record_step(step_name='1')
     
-    tile = Tile(column=2,row=-2)
+    tile = Tile(row=-2, column=2)
     tile.draw('orange')
     
     '''
@@ -116,12 +116,12 @@ with Game() as g:
     tile as the bottom left-most tile.
     '''
     
-    tile = Tile(column=2,row=-2)
+    tile = Tile(row=-2, column=2)
     tile.draw('orange')
     
-    tile = Tile(column=2,row=-3)
+    tile = Tile(row=-3, column=2)
     tile.draw('orange')
-    tile = Tile(column=2,row=-4)
+    tile = Tile(row=-4, column=2)
     tile.draw('orange')
     
     tile = tile.neighbor(direction='up_right')

@@ -18,7 +18,7 @@ with Game() as g:
     purple circles directly and abutting the first one, total of 3 circles made in
     left side of the grid.
     '''
-    tile = Tile(column=2, row=2)
+    tile = Tile(row=2, column=2)
     circle = tile.neighbors()
     circle.draw('purple')
     
@@ -35,7 +35,7 @@ with Game() as g:
     making two more triangles abutting the bottom of the first triangle to the top
     of the second, etc.
     '''
-    triangle = Shape([Tile(6,1), Tile(6,2), Tile(6,3), Tile(5,2), Tile(5,3), Tile(4,2)])
+    triangle = Shape([Tile(1, 6), Tile(2, 6), Tile(3, 6), Tile(2, 5), Tile(3, 5), Tile(2, 4)])
     triangle.draw('orange')
     
     triangle = triangle.copy_paste(source=tile.neighbor('up'), destination=tile.neighbor('down').neighbor('down'))

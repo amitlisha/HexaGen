@@ -16,7 +16,7 @@ with Game() as g:
     1. Paint a diagonal row of green hexagons starting with the second hexagon in
     column one and ending with the last hexagon in the column furthest to the right.
     '''
-    line = Line(start_tile=Tile(column=1,row=2), end_tile=Tile(column=-1,row=-1))
+    line = Line(start_tile=Tile(row=2, column=1), end_tile=Tile(row=-1, column=-1))
     line.draw('green')
     
     '''
@@ -31,7 +31,7 @@ with Game() as g:
     
     for i in range(1,5,1):
       for j in range(row, row+i):
-        tile = Tile(column=column, row=j)
+        tile = Tile(row=j, column=column)
         tile.draw('green')
     
       column +=2
@@ -39,7 +39,7 @@ with Game() as g:
     
     for i in range(5,1,-1):
       for j in range(row, row+i):
-        tile = Tile(column=column, row=j)
+        tile = Tile(row=j, column=column)
         tile.draw('green')
     
       column +=2
@@ -51,7 +51,7 @@ with Game() as g:
     and the second hexagon in column six all green.
     '''
     for c, r in [(3,2), (5,3), (6,2)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -60,7 +60,7 @@ with Game() as g:
     seventh in column sixteen, and the ninth in column seventeen.
     '''
     for c, r in [(9,3), (12,3), (14,4), (15,6), (16,7), (17,9)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       tile.draw('green')
     
     '''
@@ -68,7 +68,7 @@ with Game() as g:
     hexagons to make diagonal lines.
     '''
     for c, r in [(9,3), (12,3), (14,4), (15,6), (16,7), (17,9)]:
-      tile = Tile(column=c, row=r)
+      tile = Tile(row=r, column=c)
       end_tile = Line(start_tile=tile, direction='down_left') * line
       Line(start_tile=tile, end_tile=end_tile, include_end_tile=False, include_start_tile=False).draw('green')
     

@@ -18,7 +18,7 @@ with Game() as g:
     connected line of tiles green, descending to the bottom tile of the rightmost
     column.
     '''
-    line=Line(start_tile=Tile(column=1,row=2), end_tile=Tile(-1,-1))
+    line=Line(start_tile=Tile(row=2, column=1), end_tile=Tile(-1, -1))
     line.draw('green')
     
     '''
@@ -27,7 +27,7 @@ with Game() as g:
     of the green line, working from upper left toward lower right, ending with green
     in the space between the second and third tiles from the right at the bottom.
     '''
-    tile = Tile(2,3)
+    tile = Tile(3, 2)
     while tile.column <= WIDTH and tile.row <= HEIGHT:
       tile.draw('green')
       tile = tile.neighbor('down_right')
@@ -40,7 +40,7 @@ with Game() as g:
     or the colored tiles, place a green tile directly below each green tile and a
     blue tile directly below each blue tile, as far as the grid will allow.
     '''
-    tile = Tile(4,5)
+    tile = Tile(5, 4)
     while tile.column <= WIDTH and tile.row <= HEIGHT:
       tile.draw('green')
       tile = tile.neighbor('down_right')
@@ -51,14 +51,14 @@ with Game() as g:
     4. Repeat the action of step 3 two more times, starting with the sixth and eighth
     columns from the left.
     '''
-    tile = Tile(6,7)
+    tile = Tile(7, 6)
     while tile.column <= WIDTH and tile.row <= HEIGHT:
       tile.draw('green')
       tile = tile.neighbor('down_right')
       tile.draw('blue')
       tile = tile.neighbor('down_right')
     
-    tile = Tile(8,9)
+    tile = Tile(9, 8)
     while tile.column <= WIDTH and tile.row <= HEIGHT:
       tile.draw('green')
       tile = tile.neighbor('down_right')

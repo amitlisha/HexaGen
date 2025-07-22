@@ -15,172 +15,172 @@ with Game() as g:
     '''
     1. In column #7 starting at topmost tile fill all tiles downward purple.
     '''
-    line1 = Line(start_tile=Tile(7,1), direction='down')
+    line1 = Line(start_tile=Tile(1, 7), direction='down')
     line1.draw('purple')
     
     '''
     2. In column #8, paint topmost tile then third, fifth, seventh and ninth tiles from
     the top blue.
     '''
-    tile = Tile(column=8, row=1)
+    tile = Tile(row=1, column=8)
     tile.draw('blue')
     
-    tile = Tile(column=tile.column, row=3)
+    tile = Tile(row=3, column=tile.column)
     tile.draw('blue')
     
-    tile = Tile(column=tile.column, row=5)
+    tile = Tile(row=5, column=tile.column)
     tile.draw('blue')
     
-    tile = Tile(column=tile.column, row=7)
+    tile = Tile(row=7, column=tile.column)
     tile.draw('blue')
     
-    tile = Tile(column=tile.column, row=9)
+    tile = Tile(row=9, column=tile.column)
     tile.draw('blue')
     
     '''
     3. In column # 9 paint second, fourth, sixth, eighth and tenth tiles from the top
     blue.
     '''
-    tile = Tile(column=9, row=2)
+    tile = Tile(row=2, column=9)
     tile.draw('blue')
     
-    tile = Tile(column=9, row=4)
+    tile = Tile(row=4, column=9)
     tile.draw('blue')
     
-    tile = Tile(column=9, row=6)
+    tile = Tile(row=6, column=9)
     tile.draw('blue')
     
-    tile = Tile(column=9, row=8)
+    tile = Tile(row=8, column=9)
     tile.draw('blue')
     
-    tile = Tile(column=9, row=10)
+    tile = Tile(row=10, column=9)
     tile.draw('blue')
     
     '''
     4. In column # 10 paint second, fourth, sixth, eighth and tenth tiles from the top
     blue.
     '''
-    tile = Tile(column=10, row=2)
+    tile = Tile(row=2, column=10)
     tile.draw('blue')
     
-    tile = Tile(column=10, row=4)
+    tile = Tile(row=4, column=10)
     tile.draw('blue')
     
-    tile = Tile(column=10, row=6)
+    tile = Tile(row=6, column=10)
     tile.draw('blue')
     
-    tile = Tile(column=10, row=8)
+    tile = Tile(row=8, column=10)
     tile.draw('blue')
     
-    tile = Tile(column=10, row=10)
+    tile = Tile(row=10, column=10)
     tile.draw('blue')
     
     '''
     5. In column # 11 paint third, fifth, seventh and ninth tiles from the top blue.
     '''
-    tile = Tile(column=11, row=3)
+    tile = Tile(row=3, column=11)
     tile.draw('blue')
     
-    tile = Tile(column=11, row=5)
+    tile = Tile(row=5, column=11)
     tile.draw('blue')
     
-    tile = Tile(column=11, row=7)
+    tile = Tile(row=7, column=11)
     tile.draw('blue')
     
-    tile = Tile(column=11, row=9)
+    tile = Tile(row=9, column=11)
     tile.draw('blue')
     
     '''
     6. In column # 12 paint third, fifth, seventh and ninth tiles from the top blue.
     '''
-    tile = Tile(column=12, row=3)
+    tile = Tile(row=3, column=12)
     tile.draw('blue')
     
-    tile = Tile(column=12, row=5)
+    tile = Tile(row=5, column=12)
     tile.draw('blue')
     
-    tile = Tile(column=12, row=7)
+    tile = Tile(row=7, column=12)
     tile.draw('blue')
     
-    tile = Tile(column=12, row=9)
+    tile = Tile(row=9, column=12)
     tile.draw('blue')
     
     '''
     7. In column # 13 paint fourth, sixth, eight and tenth tiles from the top blue.
     '''
-    tile = Tile(column=13, row=4)
+    tile = Tile(row=4, column=13)
     tile.draw('blue')
     
-    tile = Tile(column=13, row=6)
+    tile = Tile(row=6, column=13)
     tile.draw('blue')
     
-    tile = Tile(column=13, row=8)
+    tile = Tile(row=8, column=13)
     tile.draw('blue')
     
-    tile = Tile(column=13, row=10)
+    tile = Tile(row=10, column=13)
     tile.draw('blue')
     
     '''
     8. In column # 14 paint fourth, sixth, eight and tenth tiles from the top blue.
     '''
-    tile = Tile(column=14, row=4)
+    tile = Tile(row=4, column=14)
     tile.draw('blue')
     
-    tile = Tile(column=14, row=6)
+    tile = Tile(row=6, column=14)
     tile.draw('blue')
     
-    tile = Tile(column=14, row=8)
+    tile = Tile(row=8, column=14)
     tile.draw('blue')
     
-    tile = Tile(column=14, row=10)
+    tile = Tile(row=10, column=14)
     tile.draw('blue')
     
     '''
     9. In column # 15 paint fifth, seventh and ninth tiles from the top blue.
     '''
-    tile = Tile(column=15, row=5)
+    tile = Tile(row=5, column=15)
     tile.draw('blue')
     
-    tile = Tile(column=15, row=7)
+    tile = Tile(row=7, column=15)
     tile.draw('blue')
     
-    tile = Tile(column=15, row=9)
+    tile = Tile(row=9, column=15)
     tile.draw('blue')
     
     '''
     10. In column # 16 paint fifth, seventh and ninth tiles from the top blue.
     '''
-    tile = Tile(column=16, row=5)
+    tile = Tile(row=5, column=16)
     tile.draw('blue')
     
-    tile = Tile(column=16, row=7)
+    tile = Tile(row=7, column=16)
     tile.draw('blue')
     
-    tile = Tile(column=16, row=9)
+    tile = Tile(row=9, column=16)
     tile.draw('blue')
     
     '''
     11. In column # 17 paint sixth, eight and tenth tiles from the top blue.
     '''
-    tile = Tile(column=17, row=6)
+    tile = Tile(row=6, column=17)
     tile.draw('blue')
     
-    tile = Tile(column=17, row=8)
+    tile = Tile(row=8, column=17)
     tile.draw('blue')
     
-    tile = Tile(column=17, row=10)
+    tile = Tile(row=10, column=17)
     tile.draw('blue')
     
     '''
     12. In column # 18 paint sixth, eight and tenth tiles from the top blue.
     '''
-    tile = Tile(column=18, row=6)
+    tile = Tile(row=6, column=18)
     tile.draw('blue')
     
-    tile = Tile(column=18, row=8)
+    tile = Tile(row=8, column=18)
     tile.draw('blue')
     
-    tile = Tile(column=18, row=10)
+    tile = Tile(row=10, column=18)
     tile.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

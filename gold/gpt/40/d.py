@@ -15,7 +15,7 @@ with Game() as g:
     shape1_tiles = []
     
     # Add center tile
-    center_tile = Tile(8, 3)
+    center_tile = Tile(3, 8)
     shape1_tiles.append(center_tile)
     center_tile.draw(blue)
     
@@ -35,7 +35,7 @@ with Game() as g:
     shape2_tiles = []
     
     # Add blank tile
-    blank_tile = Tile(-8, 3)
+    blank_tile = Tile(3, -8)
     shape2_tiles.append(blank_tile)
     
     # Add surrounding green tiles
@@ -54,7 +54,7 @@ with Game() as g:
     shape3_tiles = []
     
     # Add blank tile
-    blank_tile = Tile(-6, -5)
+    blank_tile = Tile(-5, -6)
     shape3_tiles.append(blank_tile)
     
     # Add surrounding blue tiles
@@ -73,7 +73,7 @@ with Game() as g:
     shape4_tiles = []
     
     # Add blank tile
-    blank_tile = Tile(-7, -4)
+    blank_tile = Tile(-4, -7)
     shape4_tiles.append(blank_tile)
     
     # Add surrounding green tiles
@@ -92,7 +92,7 @@ with Game() as g:
     shape5_tiles = []
     
     # Add blank tile
-    blank_tile = Tile(9, -3)
+    blank_tile = Tile(-3, 9)
     shape5_tiles.append(blank_tile)
     
     # Add surrounding blue tiles
@@ -111,7 +111,7 @@ with Game() as g:
     shape6_tiles = []
     
     # Add blank tile
-    blank_tile = Tile(7, -5)
+    blank_tile = Tile(-5, 7)
     shape6_tiles.append(blank_tile)
     
     # Add surrounding green tiles

@@ -18,7 +18,7 @@ with Game() as g:
     purple circles directly and abutting the first one, total of 3 circles made in
     left side of the grid.
     '''
-    tile = Tile(2,2)
+    tile = Tile(2, 2)
     pattern = tile.neighbors()
     pattern.draw('purple')
     
@@ -32,11 +32,11 @@ with Game() as g:
     making two more triangles abutting the bottom of the first triangle to the top
     of the second, etc.
     '''
-    line1 = Line(start_tile=Tile(6,1), length=3, direction='down')
+    line1 = Line(start_tile=Tile(1, 6), length=3, direction='down')
     line1.draw('orange')
-    line2 = Line(start_tile=Tile(5,2), length=2, direction='down')
+    line2 = Line(start_tile=Tile(2, 5), length=2, direction='down')
     line2.draw('orange')
-    tile = Tile(4,2)
+    tile = Tile(2, 4)
     tile.draw('orange')
     
     triangle = line1 + line2 + tile

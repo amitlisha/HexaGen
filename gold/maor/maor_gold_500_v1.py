@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Draw a single purple tile in column 9, five tiles down.
     '''
-    tile = Tile(9, 5)
+    tile = Tile(5, 9)
     tile.draw('purple')
     
     '''

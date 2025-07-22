@@ -7,7 +7,7 @@ from constants.constants import *
 with Game() as g:
     
     # Step 1: Color all tiles that touch the center tile red
-    center_tile = Tile(column=10, row=5)
+    center_tile = Tile(row=5, column=10)
     center_tile.draw('white')
     red_tiles = Shape(center_tile.neighbors())
     for tile in red_tiles.tiles:

@@ -16,7 +16,7 @@ with Game() as g:
     1. Make a purple circle with a center at the second tile of the second column.
     Leave the center blank.
     '''
-    circle = Circle(center_tile=Tile(2,2))
+    circle = Circle(center_tile=Tile(2, 2))
     circle.draw('purple')
     
     '''

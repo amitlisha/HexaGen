@@ -17,7 +17,7 @@ with Game() as g:
     left.
     '''
     g.record_step(step_name='1')
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('orange')
     
     '''
@@ -35,14 +35,14 @@ with Game() as g:
     '''
     shape = g.get_record(step_names=['1'])
     for c in [9,13,15,17]:
-      shape.copy_paste(source=shape[0], destination=Tile(column=c, row=shape[0].row))
+      shape.copy_paste(source=shape[0], destination=Tile(row=shape[0].row, column=c))
     
     '''
     4. Choose the color green and fill in the topmost hexagon in column three from the
     left.
     '''
     g.record_step(step_name='2')
-    tile = Tile(column=3, row=1)
+    tile = Tile(row=1, column=3)
     tile.draw('green')
     
     '''
@@ -60,14 +60,14 @@ with Game() as g:
     '''
     shape = g.get_record(step_names=['2'])
     for c in [5,7,11]:
-      shape.copy_paste(source=shape[0], destination=Tile(column=c, row=shape[0].row))
+      shape.copy_paste(source=shape[0], destination=Tile(row=shape[0].row, column=c))
     
     '''
     7. Choose the color green and fill in the most bottom hexagon in column two from
     the left.
     '''
     g.record_step(step_name='3')
-    tile = Tile(column=2, row=-1)
+    tile = Tile(row=-1, column=2)
     tile.draw('green')
     
     '''
@@ -85,14 +85,14 @@ with Game() as g:
     '''
     shape = g.get_record(step_names=['3'])
     for c in [6,8,16,18]:
-      shape.copy_paste(source=shape[0], destination=Tile(column=c, row=shape[0].row))
+      shape.copy_paste(source=shape[0], destination=Tile(row=shape[0].row, column=c))
     
     '''
     10. Choose the color orange and fill in the most bottom hexagon in column four from
     the left.
     '''
     g.record_step(step_name='4')
-    tile = Tile(column=4, row=-1)
+    tile = Tile(row=-1, column=4)
     tile.draw('orange')
     
     '''
@@ -111,6 +111,6 @@ with Game() as g:
     '''
     shape = g.get_record(step_names=['4'])
     for c in[10, 12, 14]:
-      shape.copy_paste(source=shape[0], destination=Tile(column=c, row=shape[0].row))
+      shape.copy_paste(source=shape[0], destination=Tile(row=shape[0].row, column=c))
     
     g.plot(gold_boards=gold_boards, multiple=0)

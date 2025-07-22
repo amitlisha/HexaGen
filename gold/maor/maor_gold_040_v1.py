@@ -17,49 +17,49 @@ with Game() as g:
     left, the third tile down is your center. It is blank, and the 6 tiles around it
     are blue.
     '''
-    tile1 = Tile(8, 3)
+    tile1 = Tile(3, 8)
     tile1.neighbors().draw('blue')
     
     '''
     2. In the 8th column from the right, the third tile down is blank and the 6
     surrounding tiles will be green.
     '''
-    tile2 = Tile(-8, 3)
+    tile2 = Tile(3, -8)
     tile2.neighbors().draw('green')
     
     '''
     3. In the 6th column from the right, the 5th tile down is blank, and the 6 tiles
     surrounding it will be blue.
     '''
-    tile3 = Tile(-6, 5)
+    tile3 = Tile(5, -6)
     tile3.neighbors().draw('blue')
     
     '''
     4. In the 7th column from the right, the 4th tile from the bottom is blank, and the
     6 tiles surrounding it will be green.
     '''
-    tile4 = Tile(-7, -4)
+    tile4 = Tile(-4, -7)
     tile4.neighbors().draw('green')
     
     '''
     5. In the 9th column from the left, the third tile from the bottom is blank, and
     the 6 surrounding tiles will be blue.
     '''
-    tile5 = Tile(9, -3)
+    tile5 = Tile(-3, 9)
     tile5.neighbors().draw('blue')
     
     '''
     6. In the 7th column from the left the 5th tile from the bottom is blank, and the 6
     surrounding tiles are green.
     '''
-    tile4 = Tile(7, -5)
+    tile4 = Tile(-5, 7)
     tile4.neighbors().draw('green')
     
     '''
     7. In the 10th column from the left, the 5th tile down is blank, and the 6
     surrounding tiles are red.
     '''
-    tile4 = Tile(10, 5)
+    tile4 = Tile(5, 10)
     tile4.neighbors().draw('red')
     
     g.plot(gold_boards=gold_boards, multiple=0)

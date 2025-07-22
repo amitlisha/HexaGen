@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Paint the leftmost tile at the top orange
     '''
-    tile = Tile(column=1,row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('orange')
     
     '''
@@ -27,7 +27,7 @@ with Game() as g:
     '''
     3. Move to the next column, and paint the tile at the bottom green.
     '''
-    tile = Tile(column=2,row=-1)
+    tile = Tile(row=-1, column=2)
     tile.draw('green')
     
     '''
@@ -39,7 +39,7 @@ with Game() as g:
     '''
     5. Move to the next column, and paint the tile at the top green.
     '''
-    tile = Tile(column=3,row=1)
+    tile = Tile(row=1, column=3)
     tile.draw('green')
     
     '''
@@ -51,7 +51,7 @@ with Game() as g:
     '''
     7. Move to the next column, and paint the tile at the bottom orange.
     '''
-    tile = Tile(column=4,row=-1)
+    tile = Tile(row=-1, column=4)
     tile.draw('orange')
     
     '''
@@ -63,7 +63,7 @@ with Game() as g:
     '''
     9. Move to the next column, and paint the tile at the top green.
     '''
-    tile = Tile(column=5,row=1)
+    tile = Tile(row=1, column=5)
     tile.draw('green')
     
     '''
@@ -75,7 +75,7 @@ with Game() as g:
     '''
     11. Move to the next column, and paint the tile at the bottom green.
     '''
-    tile = Tile(column=6,row=-1)
+    tile = Tile(row=-1, column=6)
     tile.draw('green')
     
     '''
@@ -87,7 +87,7 @@ with Game() as g:
     '''
     13. Move to the next column, and paint the tile at the top green.
     '''
-    tile = Tile(column=7,row=1)
+    tile = Tile(row=1, column=7)
     tile.draw('green')
     
     '''
@@ -99,7 +99,7 @@ with Game() as g:
     '''
     15. Move to the next column, and paint the tile at the bottom green.
     '''
-    tile = Tile(column=8,row=-1)
+    tile = Tile(row=-1, column=8)
     tile.draw('green')
     
     '''
@@ -111,7 +111,7 @@ with Game() as g:
     '''
     17. Move to the next column, and paint the tile at the top orange.
     '''
-    tile = Tile(column=9,row=1)
+    tile = Tile(row=1, column=9)
     tile.draw('orange')
     
     '''
@@ -123,7 +123,7 @@ with Game() as g:
     '''
     19. Move to the next column, and paint the tile at the bottom orange.
     '''
-    tile = Tile(column=10,row=-1)
+    tile = Tile(row=-1, column=10)
     tile.draw('orange')
     
     '''
@@ -135,7 +135,7 @@ with Game() as g:
     '''
     21. Move to the next column, and paint the tile at the top green.
     '''
-    tile = Tile(column=11,row=1)
+    tile = Tile(row=1, column=11)
     tile.draw('green')
     
     '''
@@ -147,7 +147,7 @@ with Game() as g:
     '''
     23. Move to the next column, and paint the tile at the bottom orange.
     '''
-    tile = Tile(column=12,row=-1)
+    tile = Tile(row=-1, column=12)
     tile.draw('orange')
     
     '''
@@ -159,7 +159,7 @@ with Game() as g:
     '''
     25. Move to the next column, and paint the tile at the top orange.
     '''
-    tile = Tile(column=13,row=1)
+    tile = Tile(row=1, column=13)
     tile.draw('orange')
     
     '''
@@ -171,7 +171,7 @@ with Game() as g:
     '''
     27. Move to the next column, and paint the tile at the bottom orange.
     '''
-    tile = Tile(column=14,row=-1)
+    tile = Tile(row=-1, column=14)
     tile.draw('orange')
     
     '''
@@ -183,7 +183,7 @@ with Game() as g:
     '''
     29. Move to the next column, and paint the tile at the top orange.
     '''
-    tile = Tile(column=15,row=1)
+    tile = Tile(row=1, column=15)
     tile.draw('orange')
     
     '''
@@ -195,7 +195,7 @@ with Game() as g:
     '''
     31. Move to the next column, and paint the tile at the bottom green.
     '''
-    tile = Tile(column=16,row=-1)
+    tile = Tile(row=-1, column=16)
     tile.draw('green')
     
     '''
@@ -207,7 +207,7 @@ with Game() as g:
     '''
     33. Move to the next column, and paint the tile at the top orange.
     '''
-    tile = Tile(column=17,row=1)
+    tile = Tile(row=1, column=17)
     tile.draw('orange')
     
     '''
@@ -219,7 +219,7 @@ with Game() as g:
     '''
     35. Move to the final column, and paint the tile at the bottom green.
     '''
-    tile = Tile(column=18,row=-1)
+    tile = Tile(row=-1, column=18)
     tile.draw('green')
     
     '''

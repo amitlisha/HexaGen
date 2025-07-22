@@ -7,7 +7,7 @@ from constants.constants import *
 with Game() as g:
     
     # 1. Starting from the bottom left count over 5 cells that stick down and up 5. Paint this cell purple.
-    purple_tile = Tile(-5, 5)
+    purple_tile = Tile(5, -5)
     purple_tile.draw('purple')
     
     # 2. Color all cells touching the purple cell red.

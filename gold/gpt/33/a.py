@@ -9,22 +9,22 @@ with Game() as g:
     # create Tile objects for each location and color them appropriately
     g.record_step('step1')
     for i in range(7, 10):
-        tile = Tile(8, i)
+        tile = Tile(i, 8)
         tile.draw('orange')
     
     g.record_step('step2')
     for i in range(2, 6):
-        tile = Tile(12, i)
+        tile = Tile(i, 12)
         tile.draw('orange')
     
     g.record_step('step3')
-    tile = Tile(8, 7)
+    tile = Tile(7, 8)
     tile.draw('orange')
     neighbors = tile.neighbors()
     neighbors.draw('white')
     
     g.record_step('step4')
-    tile = Tile(12, 7)
+    tile = Tile(7, 12)
     tile.draw('orange')
     neighbors = tile.neighbors()
     neighbors.draw('white')
@@ -33,11 +33,11 @@ with Game() as g:
     g.record_step('step5')
     blue_tiles = []
     for i in range(4):
-        tile = Tile(10 + i, 4 + i)
+        tile = Tile(4 + i, 10 + i)
         tile.draw('blue')
         blue_tiles.append(tile)
     for i in range(4):
-        tile = Tile(14 - i, 4 + i)
+        tile = Tile(4 + i, 14 - i)
         tile.draw('blue')
         blue_tiles.append(tile)
     blue_circle = Shape(blue_tiles)

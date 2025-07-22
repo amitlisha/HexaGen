@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. With red, start at the top left tile and color it in.
     '''
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('red')
     
     '''
@@ -23,7 +23,7 @@ with Game() as g:
     down on the far left and ending with the topmost tile that is third from the
     left.
     '''
-    line = Line(start_tile=Tile(column=1, row=3), direction='up_right')
+    line = Line(start_tile=Tile(row=3, column=1), direction='up_right')
     line.draw('red')
     
     '''
@@ -31,7 +31,7 @@ with Game() as g:
     the leftmost to the topmost tile. Then continue for two more rows.
     '''
     for r in range(5,10,2):
-      line = Line(start_tile=Tile(column=1, row=r), direction='up_right')
+      line = Line(start_tile=Tile(row=r, column=1), direction='up_right')
       line.draw('red')
     
     '''

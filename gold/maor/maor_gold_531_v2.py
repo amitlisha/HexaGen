@@ -17,7 +17,7 @@ with Game() as g:
     '''
     g.record_step(step_name='1')
     for c in [1,9,13,15,17]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('orange')
     g.record_step(step_name='1_end')
     
@@ -26,7 +26,7 @@ with Game() as g:
     '''
     g.record_step(step_name='2')
     for c in [3,5,7,11]:
-      tile = Tile(column=c, row=1)
+      tile = Tile(row=1, column=c)
       tile.draw('green')
     g.record_step(step_name='2_end')
     
@@ -55,7 +55,7 @@ with Game() as g:
     '''
     g.record_step(step_name='3')
     for c in [2,6,8,16,18]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('green')
     g.record_step(step_name='3_end')
     
@@ -64,7 +64,7 @@ with Game() as g:
     '''
     g.record_step(step_name='4')
     for c in [4,10,12,14]:
-      tile = Tile(column=c, row=-1)
+      tile = Tile(row=-1, column=c)
       tile.draw('orange')
     g.record_step(step_name='4_end')
     

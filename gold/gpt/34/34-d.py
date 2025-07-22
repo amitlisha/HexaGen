@@ -9,7 +9,7 @@ gold_boards = list(read_task(task_index)['gold_boards'])
 
 with Game() as g:
     
-    center_tile = Tile(10, 5)
+    center_tile = Tile(5, 10)
     
     # get all neighbors of the center tile and group them into a shape
     neighbors = center_tile.neighbors()

@@ -18,11 +18,11 @@ with Game() as g:
     red_tile = Tile(1, 1)
     red_tile.draw('red')
 
-    line = Line(start_tile = Tile(1, 3), direction = 'up_right')
+    line = Line(start_tile = Tile(3, 1), direction = 'up_right')
     line.draw('red')
 
     for i in range(5, 10, 2):
-        line = Line(start_tile = Tile(1, i), direction = 'up_right')
+        line = Line(start_tile = Tile(i, 1), direction = 'up_right')
         line.draw('red')
     '''
     2. Color purple every other row, below the longest hexagonal red line made in step
@@ -32,7 +32,7 @@ with Game() as g:
     '''
     from constants import WIDTH
 
-    line = Line(start_tile=Tile(1, 9), direction='up_right')
+    line = Line(start_tile=Tile(9, 1), direction='up_right')
     
     for tile in line.tiles:
         if tile.column in range(1, WIDTH, 2):

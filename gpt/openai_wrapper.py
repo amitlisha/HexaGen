@@ -1,4 +1,5 @@
 """OpenAI chat helper with retry, vision support & consistent return shape."""
+
 from __future__ import annotations
 
 import base64
@@ -17,16 +18,22 @@ def _file_to_data_url(p: str | Path) -> str:
     p = str(p)
     mime = mimetypes.guess_type(p)[0] or "image/png"
     data = Path(p).read_bytes()
-    b64  = base64.b64encode(data).decode()
+    b64 = base64.b64encode(data).decode()
     return f"data:{mime};base64,{b64}"
 
 
 @retry(wait=wait_exponential_jitter(1, 30), stop=stop_after_attempt(6), reraise=True)
-def call_gpt(prompt: str, *, model: str = "gpt-4o", temperature: float = 0.2,
-             max_tokens: int = 512, seed: Optional[int] = None,
-             system_prompt: Optional[str] = None,
-             images: Optional[List[str | Path]] = None) -> Dict[str, Any]:
-    """Send a chat completion request.  
+def call_gpt(
+    prompt: str,
+    *,
+    model: str = "gpt-4o",
+    temperature: float = 0.2,
+    max_tokens: int = 512,
+    seed: Optional[int] = None,
+    system_prompt: Optional[str] = None,
+    images: Optional[List[str | Path]] = None,
+) -> Dict[str, Any]:
+    """Send a chat completion request.
     If *images* is supplied, they are attached to the user message."""
     # Build messages ---------------------------------------------
     messages: List[Dict[str, Any]] = []
@@ -52,7 +59,7 @@ def call_gpt(prompt: str, *, model: str = "gpt-4o", temperature: float = 0.2,
     )
     choice = resp.choices[0]
     return {
-        "text" : choice.message.content.strip(),
+        "text": choice.message.content.strip(),
         "usage": resp.usage.model_dump(exclude_none=True),
-        "raw"  : resp.model_dump(exclude_none=True),
+        "raw": resp.model_dump(exclude_none=True),
     }

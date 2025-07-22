@@ -15,13 +15,13 @@ with Game() as g:
     '''
     1. Colour in red the very first tile.
     '''
-    tile = Tile(column=1, row=1)
+    tile = Tile(row=1, column=1)
     tile.draw('red')
     
     '''
     2. Draw a red line from the third tile down, going diagonally up and right.
     '''
-    line = Line(start_tile=Tile(column=1, row=3), direction='up_right')
+    line = Line(start_tile=Tile(row=3, column=1), direction='up_right')
     line.draw('red')
     
     '''
@@ -34,7 +34,7 @@ with Game() as g:
     '''
     4. colour in purple the bottomleft tile.
     '''
-    tile = Tile(column=1, row=-1)
+    tile = Tile(row=-1, column=1)
     tile.draw('purple')
     
     '''
@@ -43,7 +43,7 @@ with Game() as g:
     '''
     for c in range(3, 19, 2):
       start_tile = (Shape.get_column(c) * Shape.get_color('red')).edge(direction='down').neighbor('down')
-      purple_line = Line(start_tile=start_tile, end_tile=Tile(c, -1))
+      purple_line = Line(start_tile=start_tile, end_tile=Tile(-1, c))
       purple_line.draw('purple')
     
     g.plot(gold_boards=gold_boards, multiple=0)

@@ -10,12 +10,12 @@ gold_boards = list(read_task(task_index)['gold_boards'])
 with Game() as g:
     
     # Step 1: Color all tiles orange around eighth vertical row from left, third tile from the top of that row, resulting in an orange circle there.
-    tile1 = Tile(7, 3)
+    tile1 = Tile(3, 7)
     shape1 = tile1.neighbors().copy_paste('down_right', 3).draw('orange')
     g.record_step('step1')
     
     # Step 2: On 12th vertical row from left, 3rd tile down, color all tiles touching that tile, orange.
-    tile2 = Tile(12, 3)
+    tile2 = Tile(3, 12)
     shape2 = tile2.neighbors().draw('orange')
     g.record_step('step2')
     
@@ -26,13 +26,13 @@ with Game() as g:
     g.record_step('step3')
     
     # Step 4: On 12th row, vertically from left, 7th tile down, color all tiles touching it orange, leaving it blank.
-    tile4 = Tile(12, 7)
+    tile4 = Tile(7, 12)
     shape4 = tile4.neighbors().draw('orange')
     tile4.draw('white')
     g.record_step('step4')
     
     # Step 5: Form a blue circle to fit in between the 4 orange circles drawn, of the same number of tiles, same size (six tiles, as in others).
-    tile5 = Tile(9, 5)
+    tile5 = Tile(5, 9)
     shape5 = tile5.neighbors().copy_paste('down_right', 3).draw('blue')
     g.record_step('step5')
     

@@ -18,8 +18,8 @@ with Game() as g:
     column from the left, and then two purple squares in between at the top and the
     bottom.
     '''
-    line1 = Line(start_tile=Tile(column=2, row=1), length=3, direction='down')
-    line2 = Line(start_tile=Tile(column=4, row=1), length=3, direction='down')
+    line1 = Line(start_tile=Tile(row=1, column=2), length=3, direction='down')
+    line2 = Line(start_tile=Tile(row=1, column=4), length=3, direction='down')
     tile1 = (line1.neighbors() * line2.neighbors()).edge(direction='top')
     tile2 = (line1.neighbors() * line2.neighbors()).edge(direction='down')
     

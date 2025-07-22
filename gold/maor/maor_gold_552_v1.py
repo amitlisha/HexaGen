@@ -16,7 +16,7 @@ with Game() as g:
     1. Starting at the top in the second row of hex boxes, create a zero shape "0" of 8
     purple hex boxes with two green hex boxes in the center.
     '''
-    vertices = [Tile(2, 1), Tile(3, 1), Tile(4, 1), Tile(2, 3), Tile(3, 4), Tile(4, 3)]
+    vertices = [Tile(1, 2), Tile(1, 3), Tile(1, 4), Tile(3, 2), Tile(4, 3), Tile(3, 4)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('purple')
     shape.neighbors(criterion='inside').draw('green')
@@ -26,7 +26,7 @@ with Game() as g:
     a zero shape "0" of 8 orange hex boxes with one green hex box on top of one blue
     hex box in the center.
     '''
-    vertices = [Tile(6, 1), Tile(7, 1), Tile(8, 1), Tile(6, 3), Tile(7, 4), Tile(8, 3)]
+    vertices = [Tile(1, 6), Tile(1, 7), Tile(1, 8), Tile(3, 6), Tile(4, 7), Tile(3, 8)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('orange')
     shape.neighbors(criterion='inside').extreme(direction='up').draw('green')
@@ -37,7 +37,7 @@ with Game() as g:
     a zero shape "0" of 8 orange hex boxes with one blue hex box on top of one green
     hex box in the center.
     '''
-    vertices = [Tile(10, 1), Tile(11, 1), Tile(12, 1), Tile(10, 3), Tile(11, 4), Tile(12, 3)]
+    vertices = [Tile(1, 10), Tile(1, 11), Tile(1, 12), Tile(3, 10), Tile(4, 11), Tile(3, 12)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('orange')
     shape.neighbors(criterion='inside').extreme(direction='up').draw('blue')
@@ -47,7 +47,7 @@ with Game() as g:
     4. skipping a single row, Starting at the top in the next row of hex boxes, create
     a zero shape "0" of 8 purple hex boxes with two blue hex boxes in the center.
     '''
-    vertices = [Tile(-5, 1), Tile(-4, 1), Tile(-3, 1), Tile(-5, 3), Tile(-4, 4), Tile(-3, 3)]
+    vertices = [Tile(1, -5), Tile(1, -4), Tile(1, -3), Tile(3, -5), Tile(4, -4), Tile(3, -3)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('purple')
     shape.neighbors(criterion='inside').draw('blue')
@@ -57,7 +57,7 @@ with Game() as g:
     of 8 orange hex boxes with one green hex box on top of one blue hex box in the
     center.
     '''
-    vertices = [Tile(2, 7), Tile(3, 7), Tile(4, 7), Tile(2, 9), Tile(3, 10), Tile(4, 9)]
+    vertices = [Tile(7, 2), Tile(7, 3), Tile(7, 4), Tile(9, 2), Tile(10, 3), Tile(9, 4)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('orange')
     shape.neighbors(criterion='inside').extreme(direction='up').draw('green')
@@ -68,7 +68,7 @@ with Game() as g:
     create a zero shape "0" of 8 purple hex boxes with two green hex boxes in the
     center.
     '''
-    vertices = [Tile(6, 7), Tile(7, 7), Tile(8, 7), Tile(6, 9), Tile(7, 10), Tile(8, 9)]
+    vertices = [Tile(7, 6), Tile(7, 7), Tile(7, 8), Tile(9, 6), Tile(10, 7), Tile(9, 8)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('purple')
     shape.neighbors(criterion='inside').draw('green')
@@ -78,7 +78,7 @@ with Game() as g:
     create a zero shape "0" of 8 purple hex boxes with two blue hex boxes in the
     center.
     '''
-    vertices = [Tile(10, 7), Tile(11, 7), Tile(12, 7), Tile(10, 9), Tile(11, 10), Tile(12, 9)]
+    vertices = [Tile(7, 10), Tile(7, 11), Tile(7, 12), Tile(9, 10), Tile(10, 11), Tile(9, 12)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('purple')
     shape.neighbors(criterion='inside').draw('blue')
@@ -88,7 +88,7 @@ with Game() as g:
     create a zero shape "0" of 8 purple hex boxes with two green hex boxes in the
     center.
     '''
-    vertices = [Tile(14, 7), Tile(15, 7), Tile(16, 7), Tile(14, 9), Tile(15, 10), Tile(16, 9)]
+    vertices = [Tile(7, 14), Tile(7, 15), Tile(7, 16), Tile(9, 14), Tile(10, 15), Tile(9, 16)]
     shape = Shape.polygon(vertices=vertices)
     shape.draw('purple')
     shape.neighbors(criterion='inside').draw('green')

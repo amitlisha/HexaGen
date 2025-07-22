@@ -20,13 +20,13 @@ with Game() as g:
     '''
     2. Starting from the bottom paint three tiles green in a vertical line.
     '''
-    line1 = Line(start_tile=Tile(column=column, row=-3), direction='down')
+    line1 = Line(start_tile=Tile(row=-3, column=column), direction='down')
     line1.draw('green')
     
     '''
     3. Paint the next tile above blue.
     '''
-    tile = Tile(column=column, row=-4)
+    tile = Tile(row=-4, column=column)
     tile.draw('blue')
     
     '''

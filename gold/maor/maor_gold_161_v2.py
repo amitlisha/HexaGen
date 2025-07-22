@@ -18,19 +18,19 @@ with Game() as g:
     '''
     purple_tiles = []
     
-    tile = Tile(column=2, row=3)
+    tile = Tile(row=3, column=2)
     tile.draw('purple')
     purple_tiles.append(tile)
     
-    tile = Tile(column=6, row=6)
+    tile = Tile(row=6, column=6)
     tile.draw('purple')
     purple_tiles.append(tile)
     
-    tile = Tile(column=10, row=9)
+    tile = Tile(row=9, column=10)
     tile.draw('purple')
     purple_tiles.append(tile)
     
-    tile = Tile(column=14, row=3)
+    tile = Tile(row=3, column=14)
     tile.draw('purple')
     purple_tiles.append(tile)
     
@@ -40,19 +40,19 @@ with Game() as g:
     '''
     blue_tiles = []
     
-    tile = Tile(column=2, row=6)
+    tile = Tile(row=6, column=2)
     tile.draw('blue')
     blue_tiles.append(tile)
     
-    tile = Tile(column=6, row=9)
+    tile = Tile(row=9, column=6)
     tile.draw('blue')
     blue_tiles.append(tile)
     
-    tile = Tile(column=10, row=3)
+    tile = Tile(row=3, column=10)
     tile.draw('blue')
     blue_tiles.append(tile)
     
-    tile = Tile(column=14, row=6)
+    tile = Tile(row=6, column=14)
     tile.draw('blue')
     blue_tiles.append(tile)
     
@@ -62,19 +62,19 @@ with Game() as g:
     '''
     orange_tiles = []
     
-    tile = Tile(column=2, row=9)
+    tile = Tile(row=9, column=2)
     tile.draw('orange')
     orange_tiles.append(tile)
     
-    tile = Tile(column=6, row=3)
+    tile = Tile(row=3, column=6)
     tile.draw('orange')
     orange_tiles.append(tile)
     
-    tile = Tile(column=10, row=6)
+    tile = Tile(row=6, column=10)
     tile.draw('orange')
     orange_tiles.append(tile)
     
-    tile = Tile(column=14, row=9)
+    tile = Tile(row=9, column=14)
     tile.draw('orange')
     orange_tiles.append(tile)
     

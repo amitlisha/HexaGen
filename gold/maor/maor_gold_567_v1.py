@@ -16,21 +16,21 @@ with Game() as g:
     1. You are going to make a drawing with eight flower-like shapes arranged in rows
     of four. Start by coloring the top three hexagons in the second column purple.
     '''
-    line1 = Line(start_tile=Tile(column=2, row=1), direction='down', length=3)
+    line1 = Line(start_tile=Tile(row=1, column=2), direction='down', length=3)
     line1.draw('purple')
     
     '''
     2. Next, color the top three hexagons in the fourth column purple.
     '''
-    line2 = Line(start_tile=Tile(column=4, row=1), direction='down', length=3)
+    line2 = Line(start_tile=Tile(row=1, column=4), direction='down', length=3)
     line2.draw('purple')
     
     '''
     3. Now, color the first and fourth hexagon in the third column purple.
     '''
-    tile3= Tile(column=3, row=1)
+    tile3= Tile(row=1, column=3)
     tile3.draw('purple')
-    tile4= Tile(column=3, row=4)
+    tile4= Tile(row=4, column=3)
     tile4.draw('purple')
     
     '''
