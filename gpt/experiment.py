@@ -22,6 +22,7 @@ from runner_utils import (
     exec_snippet,
     run_with_timeout,
     save_script,
+    fix_missing_tail_indent,
 )
 from constants.constants import WIDTH, HEIGHT
 from prompts import build_prompts, make_user_prompt, make_tile_prompt
@@ -165,7 +166,7 @@ def run_step_code(
         )
 
         append = extract_code(resp["text"])
-        new_script = f"{code.rstrip()}\n    {append}"
+        new_script = fix_missing_tail_indent(f"{code.rstrip()}\n    {append}")
 
         if "board_state = g.board_state" not in new_script:
             new_script += "\nboard_state = g.board_state"

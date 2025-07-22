@@ -10,7 +10,8 @@ import traceback
 import linecache
 import multiprocessing as mp
 import traceback
-from typing import Optional, Tuple, List
+from typing import Tuple, List
+import re
 
 from hexagen import Game
 
@@ -65,17 +66,17 @@ def save_plot(
             g.plot(multiple=False, file_name=str(out), show=False)
 
 
-def parse_tile_actions(raw: str) -> List[tuple[int, int, str]]:
-    """Parse `(row,column,color)` tuples from raw model output."""
+def parse_tile_actions(raw: str) -> List[Tuple[int, int, str]]:
+    """Parse `(row,column,color)` Tuples from raw model output."""
     raw = raw.strip()
     try:
         data = ast.literal_eval(raw)
-        if isinstance(data, tuple):
+        if isinstance(data, Tuple):
             data = [data]
         if isinstance(data, list):
             out = []
             for item in data:
-                if isinstance(item, (list, tuple)) and len(item) == 3:
+                if isinstance(item, (list, Tuple)) and len(item) == 3:
                     r, c, col = item
                     out.append((int(r), int(c), str(col).lower()))
             if out:
@@ -135,3 +136,51 @@ def save_script(
     path = out_dir / f"{run_ts}_{kind}_{step:02}_{attempt:02}.py"
     path.write_text(code, encoding="utf-8")
     return path
+
+
+def fix_missing_tail_indent(
+    src: str, anchor_pattern=r"^\s*with\s+Game\(\)\s+as\s+g\s*:\s*$", indent_unit="    "
+) -> str:
+    lines = src.splitlines()
+    if not lines:
+        return src
+
+    anchor_idx = None
+    for i, line in enumerate(lines):
+        if re.match(anchor_pattern, line):
+            anchor_idx = i
+            break
+    if anchor_idx is None:
+        return src
+
+    body_indent = None
+    for j in range(anchor_idx + 1, len(lines)):
+        l = lines[j]
+        if l.strip():
+            m = re.match(r"^(\s+)", l)
+            if m:
+                body_indent = m.group(1)
+            else:
+                body_indent = indent_unit
+            break
+    if body_indent is None:
+        return src
+
+    tail_start = None
+    for k in range(len(lines) - 1, anchor_idx, -1):
+        l = lines[k]
+        if not l.strip():
+            continue
+        if (not l.startswith(body_indent)) and (l.strip()):
+            tail_start = k
+        else:
+            break
+
+    if tail_start is None:
+        return src
+
+    for idx in range(tail_start, len(lines)):
+        if lines[idx].strip() and not lines[idx].startswith(body_indent):
+            lines[idx] = body_indent + lines[idx]
+
+    return "\n".join(lines)
