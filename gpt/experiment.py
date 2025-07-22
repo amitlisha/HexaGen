@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import argparse
 import random
-import traceback
 from pathlib import Path
 from typing import Dict, List, Optional
 import textwrap
+import matplotlib
 
 from openai_wrapper import call_gpt
 from utils.reading_tasks import read_task
@@ -18,10 +18,16 @@ from runner_utils import (
     save_json,
     save_plot,
     timestamp,
+    format_user_tb,
+    exec_snippet,
+    run_with_timeout,
+    save_script,
 )
 from constants.constants import WIDTH, HEIGHT
 from prompts import build_prompts, make_user_prompt, make_tile_prompt
 from metrics import evaluate_prediction
+
+matplotlib.use("Agg")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CLI helpers
@@ -71,6 +77,19 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Attach current board image to each prompt",
     )
+    p.add_argument(
+        "--workers",
+        "-j",
+        type=int,
+        default=1,
+        help="Number of tasks to run in parallel",
+    )
+    p.add_argument(
+        "--exec-timeout",
+        type=int,
+        default=10,
+        help="Seconds to wait for generated code before aborting (0 = no limit)",
+    )
     return p.parse_args()
 
 
@@ -113,7 +132,7 @@ def run_step_code(
     prev_pred_board: List[int]
     try:
         ns_prev: Dict[str, object] = {}
-        exec(code, ns_prev)
+        exec_snippet(code, ns_prev)
         prev_pred_board = ns_prev["board_state"]
     except Exception:
         prev_pred_board = [0] * (WIDTH * HEIGHT)
@@ -151,6 +170,8 @@ def run_step_code(
         if "board_state = g.board_state" not in new_script:
             new_script += "\nboard_state = g.board_state"
 
+        _ = save_script(out_dir, run_ts, step_idx, attempt, new_script, kind="step")
+
         log = {
             "step": step_idx,
             "attempt": attempt,
@@ -160,24 +181,26 @@ def run_step_code(
             "correct": False,
         }
 
-        ns: Dict[str, object] = {}
-        try:
-            exec(new_script, ns)
-            pred = ns["board_state"]
+        # execute with timeout
+        board_pred, err = run_with_timeout(new_script, cfg.exec_timeout)
+
+        if err is None:
             log["valid"] = True
             log.update(
-                evaluate_prediction(prev_pred_board, pred, prev_gold_board, gold_board)
+                evaluate_prediction(
+                    prev_pred_board, board_pred, prev_gold_board, gold_board
+                )
             )
             plot_path = out_dir / f"{run_ts}_plot_{step_idx:02}_{attempt:02}.png"
             plot_with_gold_path = (
                 out_dir / f"{run_ts}_plot_{step_idx:02}_{attempt:02}_gold.png"
             )
-            save_plot(pred, None, plot_path)
-            save_plot(pred, gold_board, plot_with_gold_path)
+            save_plot(board_pred, None, plot_path)
+            save_plot(board_pred, gold_board, plot_with_gold_path)
             return log, True, new_script, plot_path
-        except Exception:
-            last_exc = traceback.format_exc()
-            log["traceback"] = traceback.format_exc()
+        else:
+            last_exc = err
+            log["traceback"] = last_exc
             if cfg.retries and attempt >= cfg.retries:
                 log.update(
                     {
@@ -289,6 +312,8 @@ def run_full(
     if "board_state = g.board_state" not in new_code:
         new_code += "\nboard_state = g.board_state"
 
+    _ = save_script(task_dir, run_ts, step_idx=0, attempt=1, code=new_code, kind="full")
+
     log = {
         "attempt": 1,
         "code": new_code,
@@ -299,7 +324,7 @@ def run_full(
 
     ns = {}
     try:
-        exec(new_code, ns)
+        exec_snippet(new_code, ns)
         board_pred = ns["board_state"]
         log["valid"] = True
         log.update(
@@ -312,7 +337,8 @@ def run_full(
         )
         save_plot(board_pred, gold_final, task_dir / f"{run_ts}_plot_full.png")
     except Exception:
-        log["traceback"] = traceback.format_exc()
+        last_exc = format_user_tb(sys.exc_info()[1])
+        log["traceback"] = last_exc
         log.update(
             {
                 "precision_board": 0.0,
@@ -490,11 +516,40 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 def _run_set(cfg: argparse.Namespace) -> None:
     """Run and summarise all tasks from a dataset split."""
     print(f"Running full set: {cfg.set}")
-    per_task_stats = []
-    for tid, tsk in iter_set_tasks(cfg.set):
-        print(f"\n=== TASK {tid} ===")
-        st = run_task(cfg, tid, tsk)
-        per_task_stats.append(st)
+    tasks = list(iter_set_tasks(cfg.set))
+    per_task_stats = [None] * len(tasks)
+
+    if cfg.workers <= 1:
+        for idx, (tid, tsk) in enumerate(tasks):
+            print(f"\n=== TASK {tid} ===")
+            st = run_task(cfg, tid, tsk)
+            per_task_stats[idx] = st
+    else:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        with ThreadPoolExecutor(max_workers=cfg.workers) as ex:
+            futures = {
+                ex.submit(run_task, cfg, tid, tsk): i
+                for i, (tid, tsk) in enumerate(tasks)
+            }
+            for fut in as_completed(futures):
+                idx = futures[fut]
+                try:
+                    per_task_stats[idx] = fut.result()
+                except Exception as exc:
+                    tid = tasks[idx][0]
+                    print(f"Task {tid} failed: {exc}")
+                    per_task_stats[idx] = {
+                        "task_id": tid,
+                        "steps": 0,
+                        "valid": 0,
+                        "exact": 0,
+                        "exact_action": 0,
+                        "f1_board": 0.0,
+                        "f1_action": 0.0,
+                        "successful_steps": [],
+                        "failed_steps": [],
+                    }
 
     total_steps = sum(s["steps"] for s in per_task_stats)
     valid_total = sum(s["valid"] for s in per_task_stats)
