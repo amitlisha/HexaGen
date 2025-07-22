@@ -894,6 +894,14 @@ class Shape:
             [hexagon._shift(V) for hexagon in self._hexagons], from_hexagons=True
         )
 
+    def _get_color(self, color):
+        if color not in COLORS:
+            raise ValueError(
+                f"Unknown color '{color}'. Valid colors: {COLORS + ['all','any']}"
+            )
+
+        return Shape([t for t in self.tiles if t.color == color], game=self.game)
+
     def get_entire_board(game=None):
         """Return a Shape object containing all the tiles on the board"""
 
@@ -1103,6 +1111,7 @@ class Shape:
         - 'top' / 'bottom': to topmost/bottommost tiles of self
         - 'corners': the corners of self. If the shape is a polygon, these will be the polygon’s vertices
         - 'endpoints': the endpoints of self. If the shape is a line, these will be the ends of the line
+        - COLORS: get the tiles with provided color
         """
 
         if not self._linds:
@@ -1113,6 +1122,9 @@ class Shape:
                 raise Exception(
                     "Cannot use get('outside') or get('inside') on an open shape"
                 )
+
+        if criterion in COLORS:
+            return self._get_color(criterion)
 
         if criterion == "outside":
             return self._get_outside_tiles()
@@ -1141,7 +1153,9 @@ class Shape:
         if criterion == "endpoints":
             return self._get_extreme_tiles("endpoints")
 
-        raise ValueError(f"Unrecognized criterion: {criterion}")
+        raise ValueError(
+            f"Unrecognized criterion: {criterion} use one of the following: outside, inside, above, below, top, bottom. corners"
+        )
 
     def boundary(self, criterion="all"):
         """Return the boundary of the shape. These are tiles that are part of the shape and touch
@@ -1278,7 +1292,7 @@ class Shape:
 
     def neighbors(self, criterion="all"):
         """Return a Shape object containing the neighbors of self, or a subset of them,
-        accortidng to some criterion.
+        according to some criterion.
 
         Options:
         - ‘all’: all the neighbors of the shape
@@ -1581,6 +1595,10 @@ class Line(Shape):
             distance = v._norm()
             length = distance - 1 + 1 * include_start_tile + 1 * include_end_tile
         else:
+            if direction not in DIRECTIONS:
+                raise Exception(
+                    f"Cannot create Line: direction {direction} is not in {list(DIRECTIONS.keys())}"
+                )
             direction_vec = _Vec(direction)
         if not include_start_tile:
             shexagon = shexagon._shift(direction_vec)
