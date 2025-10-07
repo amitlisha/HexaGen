@@ -26,7 +26,7 @@ from runner_utils import (
 )
 from constants.constants import WIDTH, HEIGHT
 from prompts import build_prompts, make_user_prompt, make_tile_prompt
-from metrics import evaluate_prediction
+from metrics import evaluate_prediction, f1_score
 
 matplotlib.use("Agg")
 
@@ -497,8 +497,8 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 
     stats = summarize_logs(logs, cfg.mode, task_id)
 
-    # save per-task log
-    save_json({"stats": stats, "runs": logs}, run_dir / f"run_{timestamp()}.json")
+    run_log_path = run_dir / f"run_{timestamp()}.json"
+    save_json({"stats": stats, "runs": logs}, run_log_path)
 
     print(f"\nFinished task {task_id}")
     print(f"  • valid code    : {stats['valid']}/{stats['steps']}")
@@ -506,7 +506,13 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     print(f"  • action exact  : {stats['exact_action']}/{stats['steps']}")
     print(f"  • board F1      : {stats['f1_board']:.3f}")
     print(f"  • action F1     : {stats['f1_action']:.3f}")
-    return stats
+
+    return {
+        "stats": stats,
+        "runs": logs,
+        "run_dir": str(run_dir),
+        "run_log_path": str(run_log_path),
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -515,16 +521,17 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 
 
 def _run_set(cfg: argparse.Namespace) -> None:
-    """Run and summarise all tasks from a dataset split."""
+    """Run and summarise all tasks from a dataset split, then emit ONE JSON."""
     print(f"Running full set: {cfg.set}")
     tasks = list(iter_set_tasks(cfg.set))
-    per_task_stats = [None] * len(tasks)
+
+    per_task_payloads: List[Dict] = [None] * len(tasks)
 
     if cfg.workers <= 1:
         for idx, (tid, tsk) in enumerate(tasks):
             print(f"\n=== TASK {tid} ===")
-            st = run_task(cfg, tid, tsk)
-            per_task_stats[idx] = st
+            payload = run_task(cfg, tid, tsk)
+            per_task_payloads[idx] = payload
     else:
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -536,39 +543,64 @@ def _run_set(cfg: argparse.Namespace) -> None:
             for fut in as_completed(futures):
                 idx = futures[fut]
                 try:
-                    per_task_stats[idx] = fut.result()
+                    per_task_payloads[idx] = fut.result()
                 except Exception as exc:
                     tid = tasks[idx][0]
                     print(f"Task {tid} failed: {exc}")
-                    per_task_stats[idx] = {
-                        "task_id": tid,
-                        "steps": 0,
-                        "valid": 0,
-                        "exact": 0,
-                        "exact_action": 0,
-                        "f1_board": 0.0,
-                        "f1_action": 0.0,
-                        "successful_steps": [],
-                        "failed_steps": [],
+                    per_task_payloads[idx] = {
+                        "stats": {
+                            "task_id": tid,
+                            "mode": cfg.mode,
+                            "steps": 0,
+                            "total_attempts": 0,
+                            "valid": 0,
+                            "exact": 0,
+                            "exact_action": 0,
+                            "f1_board": 0.0,
+                            "f1_action": 0.0,
+                            "successful_steps": [],
+                            "failed_steps": [],
+                        },
+                        "runs": [],
+                        "run_dir": None,
+                        "run_log_path": None,
                     }
 
-    total_steps = sum(s["steps"] for s in per_task_stats)
-    valid_total = sum(s["valid"] for s in per_task_stats)
-    exact_total = sum(s["exact"] for s in per_task_stats)
-    exact_action_total = sum(s["exact_action"] for s in per_task_stats)
-    f1_board_total = (
-        sum(s["f1_board"] * s["steps"] for s in per_task_stats) / total_steps
-        if total_steps
-        else 0.0
-    )
-    f1_action_total = (
-        sum(s["f1_action"] * s["steps"] for s in per_task_stats) / total_steps
-        if total_steps
-        else 0.0
-    )
+    # ---------- aggregate ----------
+    stats_list = [p["stats"] for p in per_task_payloads]
+    total_steps = sum(s["steps"] for s in stats_list) or 0
+    valid_total = sum(s["valid"] for s in stats_list)
+    exact_total = sum(s["exact"] for s in stats_list)
+    exact_action_total = sum(s["exact_action"] for s in stats_list)
+
+    # accumulate raw tile counts from every step log
+    board_tp = board_p = board_g = 0
+    action_tp = action_p = action_g = 0
+
+    for payload in per_task_payloads:
+        for lg in payload["runs"]:
+            board_tp += lg.get("board_tp", 0)
+            board_p += lg.get("board_p", 0)
+            board_g += lg.get("board_g", 0)
+            action_tp += lg.get("action_tp", 0)
+            action_p += lg.get("action_p", 0)
+            action_g += lg.get("action_g", 0)
+
+    def _safe_ratio(num: int, den: int, alt: float) -> float:
+        return num / den if den else alt
+
+    # board micro-F1
+    prec_b = _safe_ratio(board_tp, board_p, 1.0 if board_g == 0 else 0.0)
+    rec_b = _safe_ratio(board_tp, board_g, 1.0 if board_p == 0 else 0.0)
+    f1_board_total = f1_score(prec_b, rec_b)
+
+    # action micro-F1
+    prec_a = _safe_ratio(action_tp, action_p, 1.0 if action_g == 0 else 0.0)
+    rec_a = _safe_ratio(action_tp, action_g, 1.0 if action_p == 0 else 0.0)
+    f1_action_total = f1_score(prec_a, rec_a)
 
     print("\n=== SET SUMMARY ===")
-    print(f"  • tasks         : {len(per_task_stats)}")
+    print(f"  • tasks         : {len(stats_list)}")
     print(f"  • valid code    : {valid_total}/{total_steps}")
     print(f"  • exact match   : {exact_total}/{total_steps}")
     print(f"  • action exact  : {exact_action_total}/{total_steps}")
@@ -577,37 +609,34 @@ def _run_set(cfg: argparse.Namespace) -> None:
 
     out_dir = RESULTS_DIR / cfg.set
     out_dir.mkdir(parents=True, exist_ok=True)
+    ts = timestamp()
 
-    summary_payload = [
-        {
-            "task_id": s["task_id"],
-            "successful_steps": s["successful_steps"],
-            "failed_steps": s["failed_steps"],
-            "f1_board": s["f1_board"],
-            "f1_action": s["f1_action"],
-            "exact": s["exact"],
-            "exact_action": s["exact_action"],
-        }
-        for s in per_task_stats
-    ]
-    save_json(summary_payload, out_dir / f"summary_{timestamp()}.json")
-
-    save_json(
-        {
-            "aggregate": {
-                "set": cfg.set,
-                "n_tasks": len(per_task_stats),
-                "total_steps": total_steps,
-                "valid": valid_total,
-                "exact": exact_total,
-                "exact_action": exact_action_total,
-                "f1_board": f1_board_total,
-                "f1_action": f1_action_total,
-            },
-            "per_task": per_task_stats,
+    single_payload = {
+        "config": vars(cfg),
+        "aggregate": {
+            "set": cfg.set,
+            "n_tasks": len(stats_list),
+            "total_steps": total_steps,
+            "valid": valid_total,
+            "exact": exact_total,
+            "exact_action": exact_action_total,
+            "f1_board": f1_board_total,
+            "f1_action": f1_action_total,
         },
-        out_dir / f"runs_{timestamp()}.json",
-    )
+        "tasks": [
+            {
+                **p["stats"],
+                "runs": p["runs"],
+                "run_dir": p["run_dir"],
+                "run_log_path": p["run_log_path"],
+            }
+            for p in per_task_payloads
+        ],
+    }
+
+    single_path = out_dir / f"all_{ts}.json"
+    save_json(single_payload, single_path)
+    print(f"\nSingle JSON written to: {single_path}")
 
 
 def main() -> None:
