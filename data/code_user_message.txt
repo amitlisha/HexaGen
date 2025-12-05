@@ -50,7 +50,7 @@ Class: Shape           # Base class for collections of tiles
                     'corners','endpoints'} ∪ DIRECTIONS ∪ COLORS
   Method: neighbors(criterion:str = 'all') -> Shape
     Param options: {'all','right','left','above','below','outside','inside','white'} ∪ DIRECTIONS
-  Method: boundary(criterion:str = 'all') -> Shape        # criterion ∈ {'all','outer','inner'}
+  Method: boundary(criterion:str = 'all') -> Shape        # criterion ∈ {'all','outer','inner'} # The method returns the boundary tiles belonging to the shape itself, without including any tiles outside the shape.
   Method: edge(direction:str) -> Shape                    # direction ∈ {'left','right','top','bottom'} ∪ DIRECTIONS
   Method: extreme(direction:str) -> Shape                 # direction ∈ DIRECTIONS
   Method: is_empty() -> bool
@@ -86,12 +86,12 @@ Class: Line (inherits Shape)                                      # Note creatin
   Method: draw(color:str) -> Line                                # inherited auto-paints
 
 # -------------------------------------------------------------------------------------
-Class: Circle (inherits Shape)
+Class: Circle (inherits Shape)            # The created Circle has a hollow center
   Method: __init__(center_tile:Tile, radius:int = 1)
   Method: draw(color:str) -> Circle        # inherited auto-paints
 
 # -------------------------------------------------------------------------------------
-Class: Triangle (inherits Shape)
+Class: Triangle (inherits Shape)           # The created triangle has only sides with the center beign hollow
   Method: __init__(start_tile:Tile, point:str, start_tile_type:str, side_length:int = 2)
     Param options: point ∈ {'left','right'}; start_tile_type ∈ {'side','top','bottom'}.
   Method: draw(color:str) -> Triangle      # inherited auto-paints

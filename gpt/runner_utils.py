@@ -16,10 +16,8 @@ import re
 from hexagen import Game
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT_DIR / "data"
 USER_FILE = "user_snippet.py"
-RESULTS_DIR = ROOT_DIR / "results-o3-tiles-vision"
-RESULTS_DIR.mkdir(exist_ok=True)
+DATA_DIR = ROOT_DIR / "data"
 
 
 def _timeout_worker(code: str, q):
@@ -36,8 +34,8 @@ def timestamp() -> str:
     return time.strftime("%Y-%m-%dT%H-%M-%S", time.localtime())
 
 
-def ensure_task_dir(task_id: int) -> Path:
-    path = RESULTS_DIR / f"task_{task_id}"
+def ensure_task_dir(experiment_name: str, task_id: int) -> Path:
+    path = get_results_dir_path(experiment_name) / f"task_{task_id}"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -176,3 +174,7 @@ def fix_missing_tail_indent(
             lines[i] = indent_unit + line  # prepend, no stripping
 
     return "\n".join(lines)
+
+
+def get_results_dir_path(experiment_name: str):
+    return ROOT_DIR / ("results-" + experiment_name)

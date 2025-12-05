@@ -1826,6 +1826,9 @@ class Triangle(Shape):
           The length of the side of the triangle
         """
 
+        if side_length < 2:
+            raise Exception("side_length parameter cannot be smaller than 2")
+
         tiles = []
         d_directions = {
             "left": ["up_right", "down", "up_left"],
