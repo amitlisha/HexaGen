@@ -7,3 +7,5 @@ results/
 results-old/
 launch.json
 CLAUDE.md
+results*/
+tags*.jsonl
