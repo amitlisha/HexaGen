@@ -12,12 +12,14 @@ import multiprocessing as mp
 import traceback
 from typing import Tuple, List
 import re
+import uuid
 
 from hexagen import Game
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 USER_FILE = "user_snippet.py"
 DATA_DIR = ROOT_DIR / "data"
+RUN_UID = uuid.uuid4()
 
 
 def _timeout_worker(code: str, q):
@@ -177,4 +179,4 @@ def fix_missing_tail_indent(
 
 
 def get_results_dir_path(experiment_name: str):
-    return ROOT_DIR / ("results-" + experiment_name)
+    return ROOT_DIR / f"results-{experiment_name}-{RUN_UID}"
