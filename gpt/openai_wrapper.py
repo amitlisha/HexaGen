@@ -51,12 +51,20 @@ def call_gpt(
         messages.append({"role": "user", "content": prompt})
 
     # Call API ----------------------------------------------------
-    resp = _client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        seed=seed,
-    )
+    # Reasoning models (o1/o3 series) don't support temperature parameter
+    is_reasoning_model = any(prefix in model.lower() for prefix in ["o1", "o3"])
+
+    api_params = {
+        "model": model,
+        "messages": messages,
+        "seed": seed,
+    }
+
+    if not is_reasoning_model:
+        api_params["temperature"] = temperature
+        api_params["max_tokens"] = max_tokens
+
+    resp = _client.chat.completions.create(**api_params)
     choice = resp.choices[0]
     return {
         "text": choice.message.content.strip(),
