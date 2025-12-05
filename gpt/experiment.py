@@ -11,7 +11,7 @@ from openai_wrapper import call_gpt
 from utils.reading_tasks import read_task
 from runner_utils import (
     DATA_DIR,
-    RESULTS_DIR,
+    get_results_dir_path,
     ensure_task_dir,
     extract_code,
     parse_tile_actions,
@@ -90,6 +90,11 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=10,
         help="Seconds to wait for generated code before aborting (0 = no limit)",
+    )
+    p.add_argument(
+        "--experiment-name",
+        type=str,
+        help="Experiment name",
     )
     return p.parse_args()
 
@@ -400,7 +405,7 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     instructions = task["steps"]
     gold_boards = task["gold_boards"]
 
-    out_dir = ensure_task_dir(task_id)
+    out_dir = ensure_task_dir(cfg.experiment_name, task_id)
     run_ts = timestamp()
     run_dir = out_dir / run_ts
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -607,7 +612,7 @@ def _run_set(cfg: argparse.Namespace) -> None:
     print(f"  • board F1      : {f1_board_total:.3f}")
     print(f"  • action F1     : {f1_action_total:.3f}")
 
-    out_dir = RESULTS_DIR / cfg.set
+    out_dir = get_results_dir_path(cfg.experiment_name) / cfg.set
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = timestamp()
 
