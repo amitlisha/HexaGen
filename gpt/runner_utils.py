@@ -22,9 +22,85 @@ DATA_DIR = ROOT_DIR / "data"
 RUN_UID = uuid.uuid4()
 
 
-def _timeout_worker(code: str, q):
+def get_library_classes(lib_file: str) -> List[str]:
+    """Extract public class names from a library file.
+
+    Args:
+        lib_file: Path to library file
+
+    Returns:
+        List of class names defined in the library (excluding private classes)
+    """
+    lib_path = Path(lib_file)
+    if not lib_path.exists():
+        raise FileNotFoundError(f"Library file not found: {lib_file}")
+
+    lib_code = lib_path.read_text()
+
+    # Parse the file to find class definitions
+    import ast
+    tree = ast.parse(lib_code)
+
+    classes = []
+    # Only look at top-level class definitions (node.body),
+    # not nested classes inside methods (ast.walk would find those too)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            # Only include public classes (not starting with _)
+            if not node.name.startswith('_'):
+                classes.append(node.name)
+
+    return classes
+
+
+def generate_import_statement(lib_file: str) -> str:
+    """Generate the correct import statement for a library.
+
+    Args:
+        lib_file: Path to library file
+
+    Returns:
+        Import statement string, e.g. "from hexagen import Game, Tile, Shape"
+    """
+    classes = get_library_classes(lib_file)
+
+    if not classes:
+        # Fallback to default imports if no classes found
+        return "from hexagen import Game, Tile, Shape, Line, Circle, Triangle"
+
+    # Sort for consistency
+    classes.sort()
+    return f"from hexagen import {', '.join(classes)}"
+
+
+def _inject_custom_lib(lib_file: str):
+    """Inject a custom library file as the 'hexagen' module."""
+    import sys
+    import types
+
+    lib_path = Path(lib_file)
+    if not lib_path.exists():
+        raise FileNotFoundError(f"Library file not found: {lib_file}")
+
+    # Read and execute the library code
+    lib_code = lib_path.read_text()
+    lib_module = types.ModuleType("hexagen")
+    lib_module.__file__ = str(lib_path)
+
+    # Execute library code in the module's namespace
+    exec(compile(lib_code, str(lib_path), "exec"), lib_module.__dict__)
+
+    # Inject into sys.modules so 'from hexagen import ...' works
+    sys.modules["hexagen"] = lib_module
+
+
+def _timeout_worker(code: str, q, lib_file: str = None):
     """Executes `code` and returns ('ok', board_state) or ('err', traceback)."""
     try:
+        # Inject custom library if provided
+        if lib_file:
+            _inject_custom_lib(lib_file)
+
         ns = {}
         exec_snippet(code, ns)
         q.put(("ok", ns.get("board_state")))
@@ -47,6 +123,7 @@ def save_json(obj: Dict[str, Any], path: Path) -> None:
 
 
 def extract_code(raw: str) -> str:
+    """Extract code from LLM response, removing imports and Game context."""
     m = re.search(r"```(?:python)?\s*([\s\S]+?)```", raw, re.I)
     src = m.group(1) if m else raw
 
@@ -62,6 +139,24 @@ def extract_code(raw: str) -> str:
         and not re.search(r"\bwith\s+Game\(\)\s+as\s+g\s*:\s*", ln)
     ]
     return "\n".join(lines).rstrip("\n")
+
+
+def prepend_imports_and_context(code: str, lib_file: str = "hexagen/hexagen.py") -> str:
+    """Prepend import statement and Game context to code.
+
+    Args:
+        code: Code snippet (without imports/context)
+        lib_file: Path to library file (to determine what to import)
+
+    Returns:
+        Complete executable code with imports and Game context
+    """
+    import_stmt = generate_import_statement(lib_file)
+
+    return f"""{import_stmt}
+
+with Game() as g:
+{code}"""
 
 
 def save_plot(
@@ -126,10 +221,11 @@ import multiprocessing as mp
 def run_with_timeout(
     src: str,
     timeout_sec: int = 10,
+    lib_file: str = None,
 ):
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
-    p = ctx.Process(target=_timeout_worker, args=(src, q), daemon=True)
+    p = ctx.Process(target=_timeout_worker, args=(src, q, lib_file), daemon=True)
     p.start()
     p.join(timeout_sec)
 
