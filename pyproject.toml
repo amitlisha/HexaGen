@@ -14,6 +14,10 @@ dependencies = [
     "scipy",
     "matplotlib",
     "openai",
+    "google-generativeai",
+    "google-cloud-aiplatform",
+    "pillow",
+    "tenacity",
 ]
 
 [tool.setuptools]

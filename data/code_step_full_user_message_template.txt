@@ -1,0 +1,20 @@
+{API_SPEC}
+# --------------------------------------------------------------------------------------
+Snippet: g = Game()           # ← already created by the runner
+Snippet: board_state = g.board_state   # ← must appear as last line
+Note: Do not add imports or create the Game object
+# --------------------------------------------------------------------------------------
+
+##### ALL INSTRUCTIONS (for context - you will solve them ONE AT A TIME)
+{ALL_INSTRUCTIONS}
+
+##### INSTRUCTIONS COMPLETED SO FAR
+{HISTORY_BLOCK}
+
+##### CURRENT SCRIPT
+```python
+{CODE_SO_FAR}
+{NEXT_STEP}
+```
+
+**IMPORTANT**: You can see all instructions above for context, but you should ONLY implement the current TODO step now. Write concise, non-repetitive code. As the script grows, reuse variables and avoid redundant patterns. Each step should add minimal new code.

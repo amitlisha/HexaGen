@@ -1,0 +1,12 @@
+##### ALL INSTRUCTIONS (for context - you will solve them ONE AT A TIME)
+{ALL_INSTRUCTIONS}
+
+##### INSTRUCTIONS COMPLETED SO FAR
+{HISTORY_BLOCK}
+
+##### NEXT INSTRUCTION TO SOLVE
+{NEXT_STEP}
+
+**IMPORTANT**: You can see all instructions above for context, but you should ONLY predict tiles for the current instruction now. Be precise and avoid redundancy.
+
+Provide the tiles as a list of (row,column,color) tuples:
