@@ -15,7 +15,7 @@ with Game() as g:
     '''
     1. Make a blue flower of six tiles surrounding the fifth tile in the tenth column.
     '''
-    tile = Tile(column=10, row=5)
+    tile = Tile(row=5, column=10)
     tile.neighbors().draw('blue')
     
     '''
@@ -24,6 +24,6 @@ with Game() as g:
     '''
     for row in [3,7]:
       for column in [8,12]:
-        tile = Tile(column, row)
+        tile = Tile(row, column)
         tile.neighbors().draw('orange')
     g.plot(gold_boards=gold_boards, multiple=0)

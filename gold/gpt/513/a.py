@@ -16,19 +16,19 @@ with Game() as g:
     # game = HexagonsGame()
     
     # Starting at the upper left, in the third column, paint the second and third tiles from the top green and all the tiles adjacent to them purple.
-    tile = Tile(3, 2)
+    tile = Tile(2, 3)
     tile.draw('green')
     for direction in DIRECTIONS:
         tile.neighbor(direction).draw('purple')
     
     # Repeat this color pattern of green surrounded by purple, starting with green on the second and third tiles from the bottom in the fourth column from the right,
     # and once more, starting with green on the second and third tiles from the bottom in the seventh column from the left.
-    tile = Tile(-4, -3)
+    tile = Tile(-3, -4)
     tile.draw('green')
     for direction in DIRECTIONS:
         tile.neighbor(direction).draw('purple')
     
-    tile = Tile(7, -3)
+    tile = Tile(-3, 7)
     tile.draw('green')
     for direction in DIRECTIONS:
         tile.neighbor(direction).draw('purple')
@@ -51,17 +51,17 @@ with Game() as g:
         shift_direction = 'down_left'
     
     # In the third column from the left, paint the second tile from the bottom blue and the one directly above it green.
-    tile = Tile(-3, -1)
+    tile = Tile(-1, -3)
     tile.draw('blue')
     tile.neighbor('up').draw('green')
     
     # Paint the second tile from the top green and the tile directly below it blue in the seventh column from the left.
-    tile = Tile(7, 2)
+    tile = Tile(2, 7)
     tile.draw('green')
     tile.neighbor('down').draw('blue')
     
     # In the eighth column from the right, paint the second tile from the top blue and the one directly below it green.
-    tile = Tile(-8, 2)
+    tile = Tile(2, -8)
     tile.draw('blue')
     tile.neighbor('down').draw('green')
     

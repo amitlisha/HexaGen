@@ -10,7 +10,7 @@ from tests.helpers import assert_shape_linds, assert_board_non_zeros
         ({"direction": "down_right", "length": 5}, [0, 1, 20, 21, 40]),
         ({"direction": "down_right", "length": 5, "include_start_tile": False}, [1, 20, 21, 40, 41]),
         ({"direction": "down_right", "length": 5, "include_end_tile": False}, [0, 1, 20, 21, 40]),
-        ({"end_tile_coords": (5, 3)}, [0, 1, 20, 21, 40]),
+        ({"end_tile_coords": (3, 5)}, [0, 1, 20, 21, 40]),
     ],
 )
 

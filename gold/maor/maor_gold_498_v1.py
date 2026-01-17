@@ -20,7 +20,7 @@ with Game() as g:
     '''
     2. Go down five hexagons in the 4th lower column and color that hexagon green.
     '''
-    tile1 = Tile(column=4*2,row=5)
+    tile1 = Tile(row=5, column=4*2)
     tile1.draw('green')
     
     '''

@@ -20,7 +20,7 @@ with Game() as g:
     colors = ['orange','green','green','green','orange','green','orange','orange','orange']
     columns = range(1,19,2)
     for i in range(9):
-      tile = Tile(column=columns[i], row=1)
+      tile = Tile(row=1, column=columns[i])
       tile.draw(colors[i])
     
     '''
@@ -30,7 +30,7 @@ with Game() as g:
     for i in range(9):
       if colors[i] == 'orange':
         for r in [2,3,4,5]:
-          tile=Tile(column=columns[i], row=r)
+          tile=Tile(row=r, column=columns[i])
           tile.draw('purple')
     
     '''
@@ -40,7 +40,7 @@ with Game() as g:
     for i in range(9):
       if colors[i] == 'green':
         for r in [2,3,4,5]:
-          tile=Tile(column=columns[i], row=r)
+          tile=Tile(row=r, column=columns[i])
           tile.draw('blue')
     
     '''
@@ -53,7 +53,7 @@ with Game() as g:
     colors = ['green', 'green', 'orange', 'orange', 'orange', 'green', 'green', 'orange', 'green']
     
     for i in range(9):
-      tile = Tile(column=columns[i], row=-1)
+      tile = Tile(row=-1, column=columns[i])
       tile.draw(colors[i])
     
     '''
@@ -63,7 +63,7 @@ with Game() as g:
     for i in range(9):
       if colors[i] == 'orange':
         for r in [-2,-3,-4,-5]:
-          tile=Tile(column=columns[i], row=r)
+          tile=Tile(row=r, column=columns[i])
           tile.draw('purple')
     
     '''
@@ -73,7 +73,7 @@ with Game() as g:
     for i in range(9):
       if colors[i] == 'green':
         for r in [-2,-3,-4,-5]:
-          tile=Tile(column=columns[i], row=r)
+          tile=Tile(row=r, column=columns[i])
           tile.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

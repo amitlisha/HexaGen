@@ -6,21 +6,114 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 import ast
+import traceback
+import linecache
+import multiprocessing as mp
+import traceback
+from typing import Tuple, List
+import re
+import uuid
 
 from hexagen import Game
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+USER_FILE = "user_snippet.py"
 DATA_DIR = ROOT_DIR / "data"
-RESULTS_DIR = ROOT_DIR / "results"
-RESULTS_DIR.mkdir(exist_ok=True)
+RUN_UID = uuid.uuid4()
+
+
+def get_library_classes(lib_file: str) -> List[str]:
+    """Extract public class names from a library file.
+
+    Args:
+        lib_file: Path to library file
+
+    Returns:
+        List of class names defined in the library (excluding private classes)
+    """
+    lib_path = Path(lib_file)
+    if not lib_path.exists():
+        raise FileNotFoundError(f"Library file not found: {lib_file}")
+
+    lib_code = lib_path.read_text()
+
+    # Parse the file to find class definitions
+    import ast
+    tree = ast.parse(lib_code)
+
+    classes = []
+    # Only look at top-level class definitions (node.body),
+    # not nested classes inside methods (ast.walk would find those too)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef):
+            # Only include public classes (not starting with _)
+            if not node.name.startswith('_'):
+                classes.append(node.name)
+
+    return classes
+
+
+def generate_import_statement(lib_file: str) -> str:
+    """Generate the correct import statement for a library.
+
+    Args:
+        lib_file: Path to library file
+
+    Returns:
+        Import statement string, e.g. "from hexagen import Game, Tile, Shape"
+    """
+    classes = get_library_classes(lib_file)
+
+    if not classes:
+        # Fallback to default imports if no classes found
+        return "from hexagen import Game, Tile, Shape, Line, Circle, Triangle"
+
+    # Sort for consistency
+    classes.sort()
+    return f"from hexagen import {', '.join(classes)}"
+
+
+def _inject_custom_lib(lib_file: str):
+    """Inject a custom library file as the 'hexagen' module."""
+    import sys
+    import types
+
+    lib_path = Path(lib_file)
+    if not lib_path.exists():
+        raise FileNotFoundError(f"Library file not found: {lib_file}")
+
+    # Read and execute the library code
+    lib_code = lib_path.read_text()
+    lib_module = types.ModuleType("hexagen")
+    lib_module.__file__ = str(lib_path)
+
+    # Execute library code in the module's namespace
+    exec(compile(lib_code, str(lib_path), "exec"), lib_module.__dict__)
+
+    # Inject into sys.modules so 'from hexagen import ...' works
+    sys.modules["hexagen"] = lib_module
+
+
+def _timeout_worker(code: str, q, lib_file: str = None):
+    """Executes `code` and returns ('ok', board_state) or ('err', traceback)."""
+    try:
+        # Inject custom library if provided
+        if lib_file:
+            _inject_custom_lib(lib_file)
+
+        ns = {}
+        exec_snippet(code, ns)
+        q.put(("ok", ns.get("board_state")))
+    except Exception as exc:
+        q.put(("err", format_user_tb(exc)))
 
 
 def timestamp() -> str:
     return time.strftime("%Y-%m-%dT%H-%M-%S", time.localtime())
 
 
-def ensure_task_dir(task_id: int) -> Path:
-    path = RESULTS_DIR / f"task_{task_id}"
+def ensure_task_dir(experiment_name: str, task_id: int) -> Path:
+    path = get_results_dir_path(experiment_name) / f"task_{task_id}"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -30,9 +123,40 @@ def save_json(obj: Dict[str, Any], path: Path) -> None:
 
 
 def extract_code(raw: str) -> str:
-    """Remove ```python fences if present."""
+    """Extract code from LLM response, removing imports and Game context."""
     m = re.search(r"```(?:python)?\s*([\s\S]+?)```", raw, re.I)
-    return (m.group(1) if m else raw).strip()
+    src = m.group(1) if m else raw
+
+    w = re.search(r"\bwith\s+Game\(\)\s+as\s+g\s*:\s*", src)
+    body = src[w.end() :] if w else src
+    if body.startswith("\n"):
+        body = body[1:]
+
+    lines = [
+        ln
+        for ln in body.splitlines()
+        if not re.match(r"\s*(?:from\s+\S+\s+import|import\s+\S+)", ln)
+        and not re.search(r"\bwith\s+Game\(\)\s+as\s+g\s*:\s*", ln)
+    ]
+    return "\n".join(lines).rstrip("\n")
+
+
+def prepend_imports_and_context(code: str, lib_file: str = "hexagen/hexagen.py") -> str:
+    """Prepend import statement and Game context to code.
+
+    Args:
+        code: Code snippet (without imports/context)
+        lib_file: Path to library file (to determine what to import)
+
+    Returns:
+        Complete executable code with imports and Game context
+    """
+    import_stmt = generate_import_statement(lib_file)
+
+    return f"""{import_stmt}
+
+with Game() as g:
+{code}"""
 
 
 def save_plot(
@@ -49,17 +173,17 @@ def save_plot(
             g.plot(multiple=False, file_name=str(out), show=False)
 
 
-def parse_tile_actions(raw: str) -> List[tuple[int, int, str]]:
-    """Parse `(row,column,color)` tuples from raw model output."""
+def parse_tile_actions(raw: str) -> List[Tuple[int, int, str]]:
+    """Parse `(row,column,color)` Tuples from raw model output."""
     raw = raw.strip()
     try:
         data = ast.literal_eval(raw)
-        if isinstance(data, tuple):
+        if isinstance(data, Tuple):
             data = [data]
         if isinstance(data, list):
             out = []
             for item in data:
-                if isinstance(item, (list, tuple)) and len(item) == 3:
+                if isinstance(item, (list, Tuple)) and len(item) == 3:
                     r, c, col = item
                     out.append((int(r), int(c), str(col).lower()))
             if out:
@@ -69,3 +193,86 @@ def parse_tile_actions(raw: str) -> List[tuple[int, int, str]]:
 
     pattern = r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*['\"]?([a-zA-Z]+)['\"]?\s*\)"
     return [(int(r), int(c), col.lower()) for r, c, col in re.findall(pattern, raw)]
+
+
+def format_user_tb(exc: BaseException, user_file: str = USER_FILE) -> str:
+    """Return only the traceback frames that belong to the compiled user snippet."""
+    tb = exc.__traceback__
+    # Skip frames until we reach the snippet we compiled ourselves
+    while tb and tb.tb_frame.f_code.co_filename != user_file:
+        tb = tb.tb_next
+    return "".join(traceback.format_exception(type(exc), exc, tb))
+
+
+def exec_snippet(src: str, globals_ns: dict, filename: str = "user_snippet.py"):
+    """Execute `src` so that tracebacks include the actual source lines."""
+    linecache.cache[filename] = (
+        len(src),  # length of source
+        None,  # mtime (None = unknown / don’t check file)
+        src.splitlines(True),  # list of lines *with* \n
+        filename,
+    )
+    exec(compile(src, filename, "exec"), globals_ns)
+
+
+import multiprocessing as mp
+
+
+def run_with_timeout(
+    src: str,
+    timeout_sec: int = 10,
+    lib_file: str = None,
+):
+    ctx = mp.get_context("spawn")
+    q = ctx.Queue()
+    p = ctx.Process(target=_timeout_worker, args=(src, q, lib_file), daemon=True)
+    p.start()
+    p.join(timeout_sec)
+
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        return None, "TIMEOUT"
+
+    status, payload = q.get()
+    return (payload, None) if status == "ok" else (None, payload)
+
+
+def save_script(
+    out_dir: Path, run_ts: str, step: int, attempt: int, code: str, kind: str = "step"
+) -> Path:
+    path = out_dir / f"{run_ts}_{kind}_{step:02}_{attempt:02}.py"
+    path.write_text(code, encoding="utf-8")
+    return path
+
+
+def fix_missing_tail_indent(
+    src: str,
+    anchor_pattern=r"^\s*with\s+Game\(\)\s+as\s+g\s*:\s*$",
+    indent_unit: str = "    ",
+) -> str:
+    lines = src.splitlines()
+    if not lines:
+        return src
+
+    anchor_idx = next(
+        (i for i, l in enumerate(lines) if re.match(anchor_pattern, l)), None
+    )
+    if anchor_idx is None:
+        return src
+
+    triggered = False
+    for i in range(anchor_idx + 1, len(lines)):
+        line = lines[i]
+        if not line.strip():
+            continue
+        if not triggered and not line.startswith(indent_unit):
+            triggered = True
+        if triggered:
+            lines[i] = indent_unit + line  # prepend, no stripping
+
+    return "\n".join(lines)
+
+
+def get_results_dir_path(experiment_name: str):
+    return ROOT_DIR / f"results-{experiment_name}-{RUN_UID}"

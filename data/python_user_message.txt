@@ -1,0 +1,7 @@
+##### CONTEXT (completed instructions so far)
+{HISTORY_BLOCK}
+
+##### INSTRUCTIONS
+{NEXT_STEP}
+
+Write Python code with a `get_tiles()` function that returns the list of (row, column, color) tuples:

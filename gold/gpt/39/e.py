@@ -7,7 +7,7 @@ from constants.constants import *
 with Game() as g:
     
     # create game board
-    board = [[Tile(col, row) for col in range(1, WIDTH+1)] for row in range(1, HEIGHT+1)]
+    board = [[Tile(row, col) for col in range(1, WIDTH+1)] for row in range(1, HEIGHT+1)]
     
     # get the tile on the fifth row down from the top and tenth row from the left
     tile = board[5-1][10-1]

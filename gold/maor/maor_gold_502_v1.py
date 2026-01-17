@@ -16,7 +16,7 @@ with Game() as g:
     1. Start in the 4th column from the right, and color the top four hexes of the
     column blue
     '''
-    line1 = Line(start_tile=Tile(-4,1), direction='down', length=4)
+    line1 = Line(start_tile=Tile(1, -4), direction='down', length=4)
     line1.draw('blue')
     
     '''
@@ -33,20 +33,20 @@ with Game() as g:
     3. In the next two columns out from this (the 2nd and 6th columns from the right)
     skip the first hex and color the 2nd and 3rd hexes blue.
     '''
-    line4 = Line(start_tile=Tile(-2, 2), direction='down', length=2)
+    line4 = Line(start_tile=Tile(2, -2), direction='down', length=2)
     line4.draw('blue')
     
-    line5 = Line(start_tile=Tile(-6, 2), direction='down', length=2)
+    line5 = Line(start_tile=Tile(2, -6), direction='down', length=2)
     line5.draw('blue')
     
     '''
     4. In the 1st and 7th columns from the right skip the first hex and color the 2nd
     hex only blue. A diamond shape should be drawn now.
     '''
-    tile1 = Tile(-1, 2)
+    tile1 = Tile(2, -1)
     tile1.draw('blue')
     
-    tile2 = Tile(-7, 2)
+    tile2 = Tile(2, -7)
     tile2.draw('blue')
     
     g.plot(gold_boards=gold_boards, multiple=0)

@@ -17,14 +17,14 @@ with Game() as g:
     Leave the center blank.
     '''
     g.record_step(step_name='1')
-    circle = Circle(center_tile=Tile(2,2))
+    circle = Circle(center_tile=Tile(2, 2))
     circle.draw('purple')
     
     '''
     2. Make a triangle pointing left with six colored orange tiles, with the leftmost
     point touching the right side of the purple circle.
     '''
-    triangle = Triangle(start_tile=Tile(4,2), point='left', start_tile_type='side', side_length=3)
+    triangle = Triangle(start_tile=Tile(2, 4), point='left', start_tile_type='side', side_length=3)
     triangle.draw('orange')
     
     '''

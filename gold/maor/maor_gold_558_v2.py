@@ -16,7 +16,7 @@ with Game() as g:
     1. Paint the second cell of the third column green and also the one below it.
     '''
     g.record_step('1+2')
-    tile1 = Tile(column=3, row=2)
+    tile1 = Tile(row=2, column=3)
     tile1.draw('green')
     tile2 = tile1.neighbor(direction='down')
     tile2.draw('green')
@@ -34,7 +34,7 @@ with Game() as g:
     above it green.
     '''
     g.record_step('3+4')
-    tile1 = Tile(column=3, row=-2)
+    tile1 = Tile(row=-2, column=3)
     tile1.draw('blue')
     tile2 = tile1.neighbor(direction='up')
     tile2.draw('green')
@@ -50,14 +50,14 @@ with Game() as g:
     5. Repeat steps 3 and 4 starting with the second cell of the 7th column.
     '''
     shape = g.get_record('3+4')
-    shape.copy_paste(source=shape[1], destination=Tile(7,2))
+    shape.copy_paste(source=shape[1], destination=Tile(2, 7))
     
     '''
     6. Repeat steps 3 and 4 starting with the second cell of the 11th column and switch
     the positions of the blue and green.
     '''
     shape = g.get_record('3+4')
-    shape = shape.copy_paste(source=shape[1], destination=Tile(11,2))
+    shape = shape.copy_paste(source=shape[1], destination=Tile(2, 11))
     shape.recolor({'green': 'blue', 'blue': 'green', 'orange': 'orange'})
     
     '''
@@ -66,7 +66,7 @@ with Game() as g:
     '''
     g.record_step('7')
     shape = g.get_record('1+2')
-    shape = shape.copy_paste(source=shape[0], destination=Tile(15,2))
+    shape = shape.copy_paste(source=shape[0], destination=Tile(2, 15))
     shape.recolor({'green': 'blue', 'purple': 'purple'})
     g.record_step('7_end')
     
@@ -75,19 +75,19 @@ with Game() as g:
     '''
     g.record_step('8')
     shape = g.get_record('1+2')
-    shape = shape.copy_paste(source=shape[1], destination=Tile(7,-2))
+    shape = shape.copy_paste(source=shape[1], destination=Tile(-2, 7))
     g.record_step('8_end')
     
     '''
     9. Repeat step 7 beginning with the second cell from the bottom of column 11.
     '''
     shape = g.get_record(step_names=['7'])
-    shape = shape.copy_paste(source=shape[1], destination=Tile(11,-2))
+    shape = shape.copy_paste(source=shape[1], destination=Tile(-2, 11))
     
     '''
     10. Repeat step 8 starting with the second cell from the bottom of column 15.
     '''
     shape = g.get_record(step_names=['8'])
-    shape = shape.copy_paste(source=shape[1], destination=Tile(15,-2))
+    shape = shape.copy_paste(source=shape[1], destination=Tile(-2, 15))
     
     g.plot(gold_boards=gold_boards, multiple=0)

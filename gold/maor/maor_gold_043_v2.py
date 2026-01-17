@@ -15,25 +15,25 @@ with Game() as g:
     '''
     1. With red, paint the cell at the 1st column on the left and 2nd row from top.
     '''
-    tile1 = Tile(column=1, row=2)
+    tile1 = Tile(row=2, column=1)
     tile1.draw('red')
     
     '''
     2. With red, paint the top 2 cells of the 2nd column from left.
     '''
-    tile2 = Tile(column=2, row=1)
+    tile2 = Tile(row=1, column=2)
     tile2.draw('red')
-    tile3 = Tile(column=2, row=2)
+    tile3 = Tile(row=2, column=2)
     tile3.draw('red')
     
     '''
     3. With red, paint the top 3 rows of the 3rd column from the left.
     '''
-    tile4 = Tile(column=3, row=1)
+    tile4 = Tile(row=1, column=3)
     tile4.draw('red')
-    tile5 = Tile(column=3, row=2)
+    tile5 = Tile(row=2, column=3)
     tile5.draw('red')
-    tile6 = Tile(column=3, row=3)
+    tile6 = Tile(row=3, column=3)
     tile6.draw('red')
     
     '''

@@ -4,5 +4,9 @@ hexagen.egg-info/
 *.csv
 *.ipynb
 results/
+results-old/
 launch.json
 CLAUDE.md
+results*/
+tags*.jsonl
+generated_libs/
