@@ -7,43 +7,43 @@ from constants.constants import *
 with Game() as g:
     
     # set up the board by creating tiles and drawing them in the specified colors
-    center = Tile(8, 3)
+    center = Tile(3, 8)
     center.draw('white')
     for direction in ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']:
         neighbor = center.neighbor(direction)
         neighbor.draw('blue')
     
-    right_center = Tile(-8, 3)
+    right_center = Tile(3, -8)
     right_center.draw('white')
     for direction in ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']:
         neighbor = right_center.neighbor(direction)
         neighbor.draw('green')
     
-    right_five = Tile(-6, 5)
+    right_five = Tile(5, -6)
     right_five.draw('white')
     for direction in ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']:
         neighbor = right_five.neighbor(direction)
         neighbor.draw('blue')
     
-    right_four = Tile(-7, -4)
+    right_four = Tile(-4, -7)
     right_four.draw('white')
     for direction in ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']:
         neighbor = right_four.neighbor(direction)
         neighbor.draw('green')
     
-    left_nine = Tile(9, -3)
+    left_nine = Tile(-3, 9)
     left_nine.draw('white')
     for direction in ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']:
         neighbor = left_nine.neighbor(direction)
         neighbor.draw('blue')
     
-    left_five = Tile(7, -5)
+    left_five = Tile(-5, 7)
     left_five.draw('white')
     for direction in ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']:
         neighbor = left_five.neighbor(direction)
         neighbor.draw('green')
     
-    left_ten = Tile(10, -5)
+    left_ten = Tile(-5, 10)
     left_ten.draw('white')
     for direction in ['up', 'down', 'down_right', 'up_left', 'down_left', 'up_right']:
         neighbor = left_ten.neighbor(direction)

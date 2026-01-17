@@ -15,13 +15,13 @@ with Game() as g:
     '''
     1. In the first column from the left, color the 4th tile from the bottom purple.
     '''
-    tile1 = Tile(column=1, row=-4)
+    tile1 = Tile(row=-4, column=1)
     tile1.draw('purple')
     
     '''
     2. In the 6th column from the right, color the top most tile green
     '''
-    tile2 = Tile(column=-6, row=1)
+    tile2 = Tile(row=1, column=-6)
     tile2.draw('green')
     
     '''
@@ -41,14 +41,14 @@ with Game() as g:
     '''
     5. In the first column from the left, the lowermost tile is blue.
     '''
-    tile1 = Tile(column=1, row=-1)
+    tile1 = Tile(row=-1, column=1)
     tile1.draw('blue')
     
     '''
     6. In the first column from the right, the topmost tile is orange.  There will be a
     line connecting these two tiles.
     '''
-    tile2 = Tile(column=-1, row=1)
+    tile2 = Tile(row=1, column=-1)
     tile2.draw('orange')
     
     line = Line(start_tile=tile1, end_tile=tile2)
@@ -66,7 +66,7 @@ with Game() as g:
     3rd from the bottom is an orange tile. Connect these two tiles with two red
     tiles, forming a straight line.
     '''
-    line = Line(start_tile=Tile(1,-4), end_tile=Tile(4,-3), include_start_tile=False, include_end_tile=False)
+    line = Line(start_tile=Tile(-4, 1), end_tile=Tile(-3, 4), include_start_tile=False, include_end_tile=False)
     line.draw('red')
     
     '''
@@ -74,7 +74,7 @@ with Game() as g:
     4th from the bottom is an orange tile. Connect these two tiles with two yellow
     tiles, forming a straight line.
     '''
-    line = Line(start_tile=Tile(3,-5), end_tile=Tile(6,-4), include_start_tile=False, include_end_tile=False)
+    line = Line(start_tile=Tile(-5, 3), end_tile=Tile(-4, 6), include_start_tile=False, include_end_tile=False)
     line.draw('yellow')
     
     '''
@@ -82,7 +82,7 @@ with Game() as g:
     8th column, 5th from the bottom is a blue tile. Connect these two tiles with two
     red tiles, forming a straight line.
     '''
-    line = Line(start_tile=Tile(5,-6), end_tile=Tile(8,-5), include_start_tile=False, include_end_tile=False)
+    line = Line(start_tile=Tile(-6, 5), end_tile=Tile(-5, 8), include_start_tile=False, include_end_tile=False)
     line.draw('red')
     
     '''
@@ -90,7 +90,7 @@ with Game() as g:
     column from the left, the fifth tile down is blue. Connect these two tiles with
     2 yellow tiles.
     '''
-    line = Line(start_tile=Tile(7,4), end_tile=Tile(10,5), include_start_tile=False, include_end_tile=False)
+    line = Line(start_tile=Tile(4, 7), end_tile=Tile(5, 10), include_start_tile=False, include_end_tile=False)
     line.draw('yellow')
     
     '''
@@ -98,7 +98,7 @@ with Game() as g:
     column from the left, the 4th tile down is orange.  Connect these tiles with 2
     yellow lines to form a straight line.
     '''
-    line = Line(start_tile=Tile(9,3), end_tile=Tile(12,4), include_start_tile=False, include_end_tile=False)
+    line = Line(start_tile=Tile(3, 9), end_tile=Tile(4, 12), include_start_tile=False, include_end_tile=False)
     line.draw('yellow')
     
     '''
@@ -106,7 +106,7 @@ with Game() as g:
     column from the right, third tile down is an orange tile.  Connect these tiles
     with 2 red tiles to form a straight line.
     '''
-    line = Line(start_tile=Tile(-8,2), end_tile=Tile(-5,3), include_start_tile=False, include_end_tile=False)
+    line = Line(start_tile=Tile(2, -8), end_tile=Tile(3, -5), include_start_tile=False, include_end_tile=False)
     line.draw('red')
     
     '''
@@ -114,7 +114,7 @@ with Game() as g:
     from the right, the second tile down is blue.  Connect these two tiles with 2
     red tiles to form a straight line.
     '''
-    line = Line(start_tile=Tile(-6,1), end_tile=Tile(-3,2), include_start_tile=False, include_end_tile=False)
+    line = Line(start_tile=Tile(1, -6), end_tile=Tile(2, -3), include_start_tile=False, include_end_tile=False)
     line.draw('red')
     
     g.plot(gold_boards=gold_boards, multiple=0)

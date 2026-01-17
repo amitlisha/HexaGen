@@ -16,7 +16,7 @@ with Game() as g:
     1. On the eighth row from the left, vertically, and the fifth tile down on that row, 
     leave it blank but fill in all tiles that touch that with red.
     '''
-    tile1 = Tile(8, 5)
+    tile1 = Tile(5, 8)
     neighbors = tile1.neighbors()
     neighbors.draw('red')
     
@@ -34,7 +34,7 @@ with Game() as g:
     3.  Color in the tile, immediate to the left of the leftmost two tiles, with red, 
     this is the fifth tile from top and sixth from the left.
     '''
-    down_tile = Tile(6, 5)
+    down_tile = Tile(5, 6)
     down_tile.draw('red')
     
     g.plot(gold_boards=gold_boards, multiple=0)

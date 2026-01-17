@@ -16,21 +16,21 @@ with Game() as g:
     1. Use purple to shade the 3rd spot in the 2nd column, 6th spot in the 6th column,
     9th spot in the 10th column, and the 3rd spot in the 14th column.
     '''
-    for tile in [Tile(2,3), Tile(6,6), Tile(10,9), Tile(14,3)]:
+    for tile in [Tile(3, 2), Tile(6, 6), Tile(9, 10), Tile(3, 14)]:
       tile.draw('purple')
     
     '''
     2. Use blue to shade the 6th spot in the 2nd column, 9th spot in the 6th column,
     3rd spot in the 10th column, and 6th spot in the 14th column.
     '''
-    for tile in [Tile(2,6), Tile(6,9), Tile(10,3), Tile(14,6)]:
+    for tile in [Tile(6, 2), Tile(9, 6), Tile(3, 10), Tile(6, 14)]:
       tile.draw('blue')
     
     '''
     3. Use orange to shade the 9th spot in the 2nd column, 3rd spot in the 6th column,
     6th spot in the 10th column, and 9th spot in the 14th column.
     '''
-    for tile in [Tile(2,9), Tile(6,3), Tile(10,6), Tile(14,9)]:
+    for tile in [Tile(9, 2), Tile(3, 6), Tile(6, 10), Tile(9, 14)]:
       tile.draw('orange')
     
     '''

@@ -6,15 +6,15 @@ from constants.constants import *
 
 with Game() as g:
     
-    third_column = [Tile(3, 2), Tile(3, 3)]
+    third_column = [Tile(2, 3), Tile(3, 3)]
     for tile in third_column:
         tile.draw('green')
     
-    seventh_column_bottom = [Tile(7, -3), Tile(7, -2)]
+    seventh_column_bottom = [Tile(-3, 7), Tile(-2, 7)]
     for tile in seventh_column_bottom:
         tile.draw('green')
     
-    fifteenth_column_bottom = [Tile(15, -3), Tile(15, -2)]
+    fifteenth_column_bottom = [Tile(-3, 15), Tile(-2, 15)]
     for tile in fifteenth_column_bottom:
         tile.draw('green')
     
@@ -25,11 +25,11 @@ with Game() as g:
             if neighbor.color == 'white':
                 neighbor.draw('purple')
     
-    fifteenth_column_top = [Tile(15, 2), Tile(15, 3)]
+    fifteenth_column_top = [Tile(2, 15), Tile(3, 15)]
     for tile in fifteenth_column_top:
         tile.draw('blue')
     
-    eleventh_column_bottom = [Tile(11, -3), Tile(11, -2)]
+    eleventh_column_bottom = [Tile(-3, 11), Tile(-2, 11)]
     for tile in eleventh_column_bottom:
         tile.draw('blue')
     
@@ -40,19 +40,19 @@ with Game() as g:
             if neighbor.color == 'white':
                 neighbor.draw('purple')
     
-    Tile(3, -3).draw('green')
+    Tile(-3, 3).draw('green')
     
-    Tile(3, -2).draw('blue')
+    Tile(-2, 3).draw('blue')
     
-    Tile(7, 2).draw('green')
+    Tile(2, 7).draw('green')
     
-    Tile(7, 3).draw('blue')
+    Tile(3, 7).draw('blue')
     
-    Tile(11, 2).draw('blue')
+    Tile(2, 11).draw('blue')
     
-    Tile(11, 3).draw('green')
+    Tile(3, 11).draw('green')
     
-    duos = [(Tile(3, -2), Tile(3, -3)),        (Tile(7, 2), Tile(7, 3)),        (Tile(11, 2), Tile(11, 3)),        (Tile(15, 2), Tile(15, 3))]
+    duos = [(Tile(-2, 3), Tile(-3, 3)),        (Tile(2, 7), Tile(3, 7)),        (Tile(2, 11), Tile(3, 11)),        (Tile(2, 15), Tile(3, 15))]
     for duo in duos:
         for tile in duo:
             neighbors = tile.neighbors()

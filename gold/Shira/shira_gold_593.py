@@ -30,7 +30,7 @@ with Game() as g:
     4. Following the same grouping pattern, paint the top 3 tiles of the 3rd column
     purple.
     '''
-    line4 = Line(start_tile=Tile(3, 1), direction='down', length=3)
+    line4 = Line(start_tile=Tile(1, 3), direction='down', length=3)
     line4.draw('purple')
     '''
     5. Directly below the purple tiles, paint the next 3 tiles below that yellow.
@@ -45,7 +45,7 @@ with Game() as g:
     '''
     7. Paint the top 3 tiles of the fifth column yellow.
     '''
-    line7 = Line(start_tile=Tile(5, 1), direction='down', length=3)
+    line7 = Line(start_tile=Tile(1, 5), direction='down', length=3)
     line7.draw('yellow')
     '''
     8. Paint the next 3 tiles immediately under that blue.
@@ -64,7 +64,7 @@ with Game() as g:
     column = 5
     for _ in range(2):
       column += 2
-      line1 = Line(start_tile=Tile(column, 1), direction='down', length=3)
+      line1 = Line(start_tile=Tile(1, column), direction='down', length=3)
       line1.draw('blue')
       line2 = Line(start_tile=line1.neighbors('down'), direction='down', length=3)
       line2.draw('purple')
@@ -72,7 +72,7 @@ with Game() as g:
       line3.draw('yellow')
     
       column += 2
-      line4 = Line(start_tile=Tile(column, 1), direction='down', length=3)
+      line4 = Line(start_tile=Tile(1, column), direction='down', length=3)
       line4.draw('purple')
       line5 = Line(start_tile=line4.neighbors('down'), direction='down', length=3)
       line5.draw('yellow')
@@ -80,7 +80,7 @@ with Game() as g:
       line6.draw('blue')
     
       column += 2
-      line7 = Line(start_tile=Tile(column, 1), direction='down', length=3)
+      line7 = Line(start_tile=Tile(1, column), direction='down', length=3)
       line7.draw('yellow')
       line8 = Line(start_tile=line7.neighbors('down'), direction='down', length=3)
       line8.draw('blue')

@@ -13,17 +13,17 @@ with Game() as g:
     board = [[None for j in range(WIDTH)] for i in range(HEIGHT)]
     
     # Create the red triangles
-    red_tile = Tile(9, 1)
+    red_tile = Tile(1, 9)
     red_tile.draw('red')
     red_tile.neighbor('down_right').draw('red')
     red_tile.neighbor('down_left').draw('red')
     
-    red_tile2 = Tile(2, 4)
+    red_tile2 = Tile(4, 2)
     red_tile2.draw('red')
     red_tile2.neighbor('down_right').draw('red')
     red_tile2.neighbor('down_left').draw('red')
     
-    red_tile3 = Tile(14, 4)
+    red_tile3 = Tile(4, 14)
     red_tile3.draw('red')
     red_tile3.neighbor('down_right').draw('red')
     red_tile3.neighbor('down_left').draw('red')
@@ -34,16 +34,16 @@ with Game() as g:
     red_tile4.neighbor('down_left').draw('red')
     
     # Create the white tiles between the red triangles
-    white_tile = Tile(9, 2)
+    white_tile = Tile(2, 9)
     white_tile.draw('white')
     
-    white_tile2 = Tile(2, 5)
+    white_tile2 = Tile(5, 2)
     white_tile2.draw('white')
     
-    white_tile3 = Tile(14, 5)
+    white_tile3 = Tile(5, 14)
     white_tile3.draw('white')
     
-    white_tile4 = Tile(7, 8)
+    white_tile4 = Tile(8, 7)
     white_tile4.draw('white')
     
     # Record the red triangles as a step

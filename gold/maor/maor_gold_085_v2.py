@@ -16,7 +16,7 @@ with Game() as g:
     1. In the 1st column from the left, color the bottom-most tile GREEN. Color the
     tile down and to the right of this tile GREEN as well.
     '''
-    tile1 = Tile(1,-1)
+    tile1 = Tile(-1, 1)
     tile1.draw('green')
     
     tile2 = tile1.neighbor('down_right')
@@ -28,7 +28,7 @@ with Game() as g:
     2. In the 4th column from the left, color the bottom-most tile YELLOW. Color the
     tile up and to the right of this tile YELLOW as well.
     '''
-    tile3 = Tile(4,-1)
+    tile3 = Tile(-1, 4)
     tile3.draw('yellow')
     
     tile4= tile3.neighbor('up_right')
@@ -39,7 +39,7 @@ with Game() as g:
     '''
     3. In the 7th column from the left, color the two bottom-most tiles GREEN.
     '''
-    line1 = Line(start_tile=Tile(7,-1), direction='up', length=2)
+    line1 = Line(start_tile=Tile(-1, 7), direction='up', length=2)
     line1.draw('green')
     
     '''

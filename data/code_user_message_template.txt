@@ -1,0 +1,14 @@
+{API_SPEC}
+# --------------------------------------------------------------------------------------
+Snippet: g = Game()           # ← already created by the runner
+Snippet: board_state = g.board_state   # ← must appear as last line
+Note: Do not add imports or create the Game object
+# --------------------------------------------------------------------------------------
+##### CONTEXT (completed instructions so far)
+{HISTORY_BLOCK}
+
+##### CURRENT SCRIPT
+```python
+{CODE_SO_FAR}
+{NEXT_STEP}
+```

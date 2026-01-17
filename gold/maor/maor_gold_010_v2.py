@@ -16,7 +16,7 @@ with Game() as g:
     1. With purple, paint the cell located at the 9th column from left and 5th row from
     top.
     '''
-    tile = Tile(column=9, row=5)
+    tile = Tile(row=5, column=9)
     tile.draw('purple')
     
     '''

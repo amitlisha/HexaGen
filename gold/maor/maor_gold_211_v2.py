@@ -18,7 +18,7 @@ with Game() as g:
     surrounding this blank tile will be purple. This makes a flower.
     '''
     g.record_step(step_name='flower')
-    tile1 = Tile(column=2, row=2)
+    tile1 = Tile(row=2, column=2)
     tile1.neighbors().draw('purple')
     
     '''
@@ -27,7 +27,7 @@ with Game() as g:
     colored orange. This makes a Triangle.
     '''
     g.record_step(step_name='triangle')
-    for tile in [Tile(4,2), Tile(5,2), Tile(5,3), Tile(6,1), Tile(6,2), Tile(6,3)]:
+    for tile in [Tile(2, 4), Tile(2, 5), Tile(3, 5), Tile(1, 6), Tile(2, 6), Tile(3, 6)]:
       tile.draw('orange')
     
     '''

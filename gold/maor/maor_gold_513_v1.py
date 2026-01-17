@@ -19,9 +19,9 @@ with Game() as g:
     c = 3
     r = 2
     
-    tile1 = Tile(column=c, row=r)
+    tile1 = Tile(row=r, column=c)
     tile1.draw('green')
-    tile2 = Tile(column=c, row=r+1)
+    tile2 = Tile(row=r+1, column=c)
     tile2.draw('green')
     
     tiles = tile1+tile2
@@ -36,9 +36,9 @@ with Game() as g:
     c = -4
     r = -3
     
-    tile1 = Tile(column=c, row=r)
+    tile1 = Tile(row=r, column=c)
     tile1.draw('green')
-    tile2 = Tile(column=c, row=r+1)
+    tile2 = Tile(row=r+1, column=c)
     tile2.draw('green')
     
     tiles = tile1+tile2
@@ -47,9 +47,9 @@ with Game() as g:
     c = 7
     r = -3
     
-    tile1 = Tile(column=c, row=r)
+    tile1 = Tile(row=r, column=c)
     tile1.draw('green')
-    tile2 = Tile(column=c, row=r+1)
+    tile2 = Tile(row=r+1, column=c)
     tile2.draw('green')
     
     tiles = tile1+tile2
@@ -64,9 +64,9 @@ with Game() as g:
     c = -4
     r = 2
     
-    tile1 = Tile(column=c, row=r)
+    tile1 = Tile(row=r, column=c)
     tile1.draw('blue')
-    tile2 = Tile(column=c, row=r+1)
+    tile2 = Tile(row=r+1, column=c)
     tile2.draw('blue')
     
     tiles = tile1+tile2
@@ -75,9 +75,9 @@ with Game() as g:
     c = -8
     r = -3
     
-    tile1 = Tile(column=c, row=r)
+    tile1 = Tile(row=r, column=c)
     tile1.draw('blue')
-    tile2 = Tile(column=c, row=r+1)
+    tile2 = Tile(row=r+1, column=c)
     tile2.draw('blue')
     
     tiles = tile1+tile2
@@ -87,9 +87,9 @@ with Game() as g:
     4. In the third column from the left, paint the second tile from the bottom blue
     and the one directly above it green.
     '''
-    tile1 = Tile(column=3, row=-2)
+    tile1 = Tile(row=-2, column=3)
     tile1.draw('blue')
-    tile2 = Tile(column=3, row=-3)
+    tile2 = Tile(row=-3, column=3)
     tile2.draw('green')
     
     pair1 = tile1+tile2
@@ -98,9 +98,9 @@ with Game() as g:
     5. Paint the second tile from the top green and the tile directly below it blue in
     the seventh column from the left.
     '''
-    tile1 = Tile(column=7, row=2)
+    tile1 = Tile(row=2, column=7)
     tile1.draw('green')
-    tile2 = Tile(column=7, row=3)
+    tile2 = Tile(row=3, column=7)
     tile2.draw('blue')
     
     pair2 = tile1+tile2
@@ -109,9 +109,9 @@ with Game() as g:
     6. In the eighth column from the right, paint the second tile from the top blue and
     the one directly below it green.
     '''
-    tile1 = Tile(column=-8, row=2)
+    tile1 = Tile(row=2, column=-8)
     tile1.draw('blue')
-    tile2 = Tile(column=-8, row=3)
+    tile2 = Tile(row=3, column=-8)
     tile2.draw('green')
     
     pair3 = tile1+tile2

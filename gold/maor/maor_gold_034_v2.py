@@ -15,20 +15,20 @@ with Game() as g:
     '''
     1. Make a blue flower of six tiles surrounding the fifth tile in the tenth column.
     '''
-    circle = Circle(center_tile=Tile(column=10, row=5), radius=1)
+    circle = Circle(center_tile=Tile(row=5, column=10), radius=1)
     circle.draw('blue')
     
     '''
     2. Make four orange flowers connecting to the original on the outermost corners,
     leaving a white tile between each orange flower.
     '''
-    circle = Circle(center_tile=Tile(column=8, row=3), radius=1)
+    circle = Circle(center_tile=Tile(row=3, column=8), radius=1)
     circle.draw('orange')
-    circle = Circle(center_tile=Tile(column=8, row=7), radius=1)
+    circle = Circle(center_tile=Tile(row=7, column=8), radius=1)
     circle.draw('orange')
-    circle = Circle(center_tile=Tile(column=12, row=3), radius=1)
+    circle = Circle(center_tile=Tile(row=3, column=12), radius=1)
     circle.draw('orange')
-    circle = Circle(center_tile=Tile(column=12, row=7), radius=1)
+    circle = Circle(center_tile=Tile(row=7, column=12), radius=1)
     circle.draw('orange')
     
     g.plot(gold_boards=gold_boards, multiple=0)

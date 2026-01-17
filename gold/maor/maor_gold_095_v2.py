@@ -15,33 +15,33 @@ with Game() as g:
     '''
     1. In the 5th column from the left, color the 3rd tile down yellow.
     '''
-    tile1 = Tile(column=5, row=3)
+    tile1 = Tile(row=3, column=5)
     tile1.draw('yellow')
     
     '''
     2. In the 5th column from the left, color the third tile from the bottom black.
     '''
-    tile2 = Tile(column=5, row=-3)
+    tile2 = Tile(row=-3, column=5)
     tile2.draw('black')
     
     '''
     3. In the 7th column from the right, color the 4th tile from the top blue.
     '''
-    tile3 = Tile(column=-7, row=4)
+    tile3 = Tile(row=4, column=-7)
     tile3.draw('blue')
     
     '''
     4. In the first column from the left start at the top tile and create a straight
     line in orange tiles to the yellow tile.
     '''
-    line1 = Line(start_tile=Tile(1,1), end_tile=tile1, include_end_tile=False)
+    line1 = Line(start_tile=Tile(1, 1), end_tile=tile1, include_end_tile=False)
     line1.draw('orange')
     
     '''
     5. In the 9th column from the left, start at the top tile and create a straight
     line in orange tiles to the yellow tile.
     '''
-    line2 = Line(start_tile=Tile(9,1), end_tile=tile1, include_end_tile=False)
+    line2 = Line(start_tile=Tile(1, 9), end_tile=tile1, include_end_tile=False)
     line2.draw('orange')
     
     '''
@@ -62,7 +62,7 @@ with Game() as g:
     straight line from here to the blue tile. Leave the black tile black, and leave
     the blue tile blue.
     '''
-    line4 = Line(start_tile=Tile(column=1, row=-1), end_tile=tile3)
+    line4 = Line(start_tile=Tile(row=-1, column=1), end_tile=tile3)
     line4.draw('purple')
     
     tile2.draw('black')
@@ -77,7 +77,7 @@ with Game() as g:
     '''
     10. In the first column from the right, color the 4th tile from the bottom purple.
     '''
-    tile5 = Tile(column=-1, row=-4)
+    tile5 = Tile(row=-4, column=-1)
     tile5.draw('purple')
     
     '''

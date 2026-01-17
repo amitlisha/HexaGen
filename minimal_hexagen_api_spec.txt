@@ -1,0 +1,29 @@
+# ================================  HEXAGEN API SPEC  ===============================
+# One entity per line; two-space indentation shows containment.
+# Extra "Notes:" lines clarify hidden behaviour.
+
+Import: from hexagen import Game, Tile, Shape
+
+Constant: WIDTH = 18
+Constant: HEIGHT = 10
+Constant: COLORS = ['white','black','yellow','green','red','blue','purple','orange']
+
+# These are the hexagon board directions, most methods use these directions, some of them also extends the list to more directions.
+Constant: DIRECTIONS = ['up','down','up_right','down_left','up_left','down_right']
+
+# -------------------------------------------------------------------------------------
+Class: Game
+  Method: __init__(width:int = WIDTH, height:int = HEIGHT)
+  Method: start(width:int = WIDTH, height:int = HEIGHT) -> Game
+  Method: __enter__() -> Game
+  Method: __exit__(exc_type, exc, tb) -> bool
+  Method: plot(gold_boards:list[int] | list[list[int]] | None = None,
+               multiple:bool = False, file_name:str | None = None, show:bool = True) -> Figure
+
+# -------------------------------------------------------------------------------------
+Class: Tile (inherits Shape)
+  Method: __init__(row:int, column:int, game:Game | None = None)
+  Method: draw(color:str) -> Tile
+  Property: color:str
+  Property: column:int
+  Property: row:int

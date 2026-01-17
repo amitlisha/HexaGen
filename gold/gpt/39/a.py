@@ -12,7 +12,7 @@ with Game() as g:
     
     # Draw the red circle
     red_tiles = []
-    red_center = Tile(central_tile_column, central_tile_row)
+    red_center = Tile(central_tile_row, central_tile_column)
     red_tiles.append(red_center)
     for direction in DIRECTIONS:
         neighbor = red_center.neighbor(direction)
