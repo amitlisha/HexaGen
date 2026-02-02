@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import argparse
 import random
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import matplotlib
 
 from config import parse_args
+from datasets import get_dataset
 from runners.step_runner import run_step_code
 from runners.full_runner import run_full
 from runners.code_step_full_runner import run_code_step_full
@@ -28,25 +33,6 @@ from prompts import build_prompts
 from metrics import f1_score
 
 matplotlib.use("Agg")
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Dataset helpers
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def iter_set_tasks(split: str):
-    import json
-
-    path = DATA_DIR / f"{split}.jsonl"
-    with path.open("r", encoding="utf-8") as fh:
-        for line in fh:
-            o = json.loads(line)
-            proc = [r for r in o["drawing_procedure"] if r[1] != "NONE"]
-            yield o["index"], {
-                "steps": [r[1] for r in proc],
-                "gold_boards": [r[2] for r in proc],
-            }
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Result summarization
@@ -88,14 +74,26 @@ def summarize_logs(logs: List[Dict], mode: str, task_id: int) -> Dict:
     }
 
 
-def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
+def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
     """
-    Execute ONE Hexagons task and return its stats dictionary.
-    This is the original single-task logic extracted from main().
+    Execute ONE task (Hexagons or LARC) and return its stats dictionary.
+
+    Args:
+        cfg: Configuration namespace
+        task_id: Task identifier (int for Hexagons, str for LARC)
+        task_data: Task data from dataset
     """
-    sys_prompt, user_tmpl = build_prompts(cfg.mode, cfg.vision, cfg.api_spec_file)
-    instructions = task["steps"]
-    gold_boards = task["gold_boards"]
+    dataset = get_dataset(cfg.dataset)
+
+    sys_prompt, user_tmpl = build_prompts(cfg.mode, cfg.vision, cfg.api_spec_file, cfg.dataset)
+    instructions = dataset.get_instructions(task_data)
+    gold_boards = dataset.get_gold_boards(task_data)
+
+    # Get output board dimensions (used only for validation/plotting, NOT passed to LLM for LARC)
+    board_width, board_height = dataset.get_board_dimensions(task_data)
+
+    # For LARC: keep the 2D input grid for prompt formatting
+    input_grid_2d = task_data.get("test_input")
 
     out_dir = ensure_task_dir(cfg.experiment_name, task_id)
     run_ts = timestamp()
@@ -115,7 +113,7 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 
     history: List[str] = []
     logs: List[Dict] = []
-    board_state: List[int] = [0] * (WIDTH * HEIGHT)
+    board_state: List[int] = dataset.get_initial_board(task_data)
 
     if cfg.mode == "code-step":
         for idx, instruction in enumerate(instructions, 1):
@@ -206,6 +204,10 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
             current_img,
             run_dir,
             run_ts,
+            dataset.get_initial_board(task_data),
+            board_width,
+            board_height,
+            input_grid_2d,
         )
         logs = [log]
         print(
@@ -223,6 +225,10 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
             current_img,
             run_dir,
             run_ts,
+            dataset.get_initial_board(task_data),
+            board_width,
+            board_height,
+            input_grid_2d,
         )
         logs = [log]
         print(
@@ -233,7 +239,7 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     elif cfg.mode == "tiles-step-full":
         for idx, instruction in enumerate(instructions, 1):
             gold_current = gold_boards[idx - 1]
-            prev_gold = gold_boards[idx - 2] if idx > 1 else [0] * (WIDTH * HEIGHT)
+            prev_gold = gold_boards[idx - 2] if idx > 1 else dataset.get_initial_board(task_data)
             log, _, board_state, plot_path = run_tiles_step_full(
                 cfg,
                 sys_prompt,
@@ -248,6 +254,9 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
                 run_dir,
                 idx,
                 run_ts,
+                board_width,
+                board_height,
+                input_grid_2d,
             )
             logs.append(log)
             history.append(instruction)
@@ -264,7 +273,7 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     else:  # cfg.mode == "tiles-step"
         for idx, instruction in enumerate(instructions, 1):
             gold_current = gold_boards[idx - 1]
-            prev_gold = gold_boards[idx - 2] if idx > 1 else [0] * (WIDTH * HEIGHT)
+            prev_gold = gold_boards[idx - 2] if idx > 1 else dataset.get_initial_board(task_data)
             log, _, board_state, plot_path = run_tile_step(
                 cfg,
                 sys_prompt,
@@ -278,6 +287,9 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
                 run_dir,
                 idx,
                 run_ts,
+                board_width,
+                board_height,
+                input_grid_2d,
             )
             logs.append(log)
             history.append(instruction)
@@ -319,22 +331,23 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 def _run_set(cfg: argparse.Namespace) -> None:
     """Run and summarise all tasks from a dataset split, then emit ONE JSON."""
     print(f"Running full set: {cfg.set}")
-    tasks = list(iter_set_tasks(cfg.set))
+    dataset = get_dataset(cfg.dataset)
+    tasks = list(dataset.iter_tasks(cfg.set))
 
     per_task_payloads: List[Dict] = [None] * len(tasks)
 
     if cfg.workers <= 1:
-        for idx, (tid, tsk) in enumerate(tasks):
+        for idx, (tid, task_data) in enumerate(tasks):
             print(f"\n=== TASK {tid} ===")
-            payload = run_task(cfg, tid, tsk)
+            payload = run_task(cfg, tid, task_data)
             per_task_payloads[idx] = payload
     else:
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
         with ThreadPoolExecutor(max_workers=cfg.workers) as ex:
             futures = {
-                ex.submit(run_task, cfg, tid, tsk): i
-                for i, (tid, tsk) in enumerate(tasks)
+                ex.submit(run_task, cfg, tid, task_data): i
+                for i, (tid, task_data) in enumerate(tasks)
             }
             for fut in as_completed(futures):
                 idx = futures[fut]
@@ -442,7 +455,11 @@ def main() -> None:
     if cfg.set:
         _run_set(cfg)
     else:
-        _ = run_task(cfg, cfg.task, read_task(cfg.task))
+        dataset = get_dataset(cfg.dataset)
+        task_data = read_task(cfg.task) if cfg.dataset == "hexagons" else None
+        if task_data is None:
+            raise ValueError(f"Single task mode (--task) requires hexagons dataset")
+        _ = run_task(cfg, cfg.task, task_data)
 
 
 if __name__ == "__main__":

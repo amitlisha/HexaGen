@@ -1,0 +1,12 @@
+##### INPUT GRID
+{INPUT_GRID}
+
+##### CONTEXT (completed instructions so far)
+{HISTORY_BLOCK}
+
+##### TASK DESCRIPTION
+{NEXT_STEP}
+
+Write Python code with a `get_tiles()` function that computes the output grid.
+The variable `input_grid` is already available as a 2D list.
+Return: [(height, width), (row, col, color), ...]

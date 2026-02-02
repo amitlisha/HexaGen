@@ -173,26 +173,59 @@ def save_plot(
             g.plot(multiple=False, file_name=str(out), show=False)
 
 
-def parse_tile_actions(raw: str) -> List[Tuple[int, int, str]]:
-    """Parse `(row,column,color)` Tuples from raw model output."""
+def parse_tile_actions(raw: str) -> Tuple[Optional[Tuple[int, int]], List[Tuple[int, int, any]]]:
+    """Parse tile actions from raw model output.
+
+    For LARC: First tuple is (height, width), rest are (row, col, color) with int colors
+    For Hexagons: No dimensions, just (row, col, color) with string colors
+
+    Returns:
+        Tuple of (dimensions, tiles)
+        - dimensions: (height, width) for LARC, None for Hexagons
+        - tiles: List of (row, col, color) tuples
+    """
     raw = raw.strip()
     try:
         data = ast.literal_eval(raw)
         if isinstance(data, Tuple):
             data = [data]
-        if isinstance(data, list):
-            out = []
-            for item in data:
+        if isinstance(data, list) and len(data) > 0:
+            dimensions = None
+            tiles = []
+
+            # Check if first tuple is dimensions (LARC format)
+            first_item = data[0]
+            start_idx = 0
+
+            if isinstance(first_item, (list, Tuple)) and len(first_item) == 2:
+                # Could be dimensions (height, width) or a tile (row, col) without color
+                # Dimensions are always at index 0 and both values should be positive integers
+                if all(isinstance(x, int) and x > 0 for x in first_item):
+                    # Check if this looks like dimensions vs a partial tile
+                    # If there are more tuples and they have 3 elements, first is likely dimensions
+                    if len(data) > 1 and isinstance(data[1], (list, Tuple)) and len(data[1]) == 3:
+                        dimensions = (int(first_item[0]), int(first_item[1]))
+                        start_idx = 1
+
+            # Parse remaining tiles
+            for item in data[start_idx:]:
                 if isinstance(item, (list, Tuple)) and len(item) == 3:
                     r, c, col = item
-                    out.append((int(r), int(c), str(col).lower()))
-            if out:
-                return out
+                    # Preserve int colors (LARC), convert string colors to lowercase (Hexagons)
+                    if isinstance(col, int):
+                        tiles.append((int(r), int(c), col))
+                    else:
+                        tiles.append((int(r), int(c), str(col).lower()))
+
+            if tiles:
+                return dimensions, tiles
     except Exception:
         pass
 
+    # Fallback regex for Hexagons color names
     pattern = r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*['\"]?([a-zA-Z]+)['\"]?\s*\)"
-    return [(int(r), int(c), col.lower()) for r, c, col in re.findall(pattern, raw)]
+    tiles = [(int(r), int(c), col.lower()) for r, c, col in re.findall(pattern, raw)]
+    return None, tiles
 
 
 def format_user_tb(exc: BaseException, user_file: str = USER_FILE) -> str:

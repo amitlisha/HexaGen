@@ -13,8 +13,14 @@ def parse_args() -> argparse.Namespace:
     grp.add_argument("--task", type=int, help="Run a single task ID (legacy mode)")
     grp.add_argument(
         "--set",
-        choices=["train", "dev", "test", "4-samples"],
-        help="Run every task listed in the chosen JSONL file",
+        type=str,
+        help="Run every task in the chosen dataset split (e.g., 'train', 'dev', 'test' for Hexagons; 'train', 'test' for LARC)",
+    )
+    p.add_argument(
+        "--dataset",
+        choices=["hexagons", "larc"],
+        default="hexagons",
+        help="Dataset to use for experiments (default: hexagons)",
     )
     p.add_argument(
         "--model",
