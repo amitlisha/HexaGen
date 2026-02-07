@@ -42,8 +42,9 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--mode",
+        nargs="+",
         choices=["code-step", "code-full", "code-step-full", "tiles-step", "tiles-full", "tiles-step-full", "python-full"],
-        default="code-step",
+        default=["code-step"],
         help="code-step = one code instruction at a time (default); "
         "code-full = all code instructions in one prompt; "
         "code-step-full = all instructions visible, solve one at a time (emphasizes concise code); "
@@ -51,6 +52,12 @@ def parse_args() -> argparse.Namespace:
         "tiles-full = predict all tiles at once for all instructions; "
         "tiles-step-full = all instructions visible, predict tiles one at a time; "
         "python-full = unrestricted Python code outputting (row, col, color) tuples",
+    )
+    p.add_argument(
+        "--repeats",
+        type=int,
+        default=1,
+        help="Number of times to run each selected mode",
     )
     p.add_argument(
         "--vision",
@@ -88,5 +95,17 @@ def parse_args() -> argparse.Namespace:
         default="hexagen/hexagen.py",
         help="Path to library implementation file (for testing generated libraries). "
              "Default: hexagen/hexagen.py",
+    )
+    p.add_argument(
+        "--base-url",
+        type=str,
+        default=None,
+        help="Base URL for the LLM API (e.g., http://localhost:8000/v1 for local models)",
+    )
+    p.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="API key for the LLM provider (overrides environment variables)",
     )
     return p.parse_args()
