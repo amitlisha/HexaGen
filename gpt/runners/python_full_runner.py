@@ -12,7 +12,7 @@ import multiprocessing as mp
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from llm_wrapper import call_llm
-from runner_utils import save_plot
+from runner_utils import save_plot, save_script
 from constants.constants import COLORS, WIDTH, HEIGHT
 from prompts import make_larc_tile_prompt
 from metrics import evaluate_prediction
@@ -104,7 +104,10 @@ def extract_and_execute_python(
         p.join()
         raise TimeoutError(f"Code execution timed out after {timeout} seconds")
 
-    status, result = q.get()
+    try:
+        status, result = q.get(timeout=10)
+    except Exception:
+        raise RuntimeError("Worker process died without returning result")
     if status == "error":
         raise RuntimeError(result)
 
@@ -178,6 +181,9 @@ def run_python_full(
         tiles = []
         valid = False
         error_msg = str(e)
+
+    # Save the generated Python script
+    save_script(task_dir, run_ts, step=0, attempt=1, code=resp["text"], kind="python_full")
 
     # For LARC: validate dimensions
     dimension_match = True

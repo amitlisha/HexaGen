@@ -1,0 +1,224 @@
+# ================================  LARC DSL API SPEC  ================================
+# One function per line; indented "Notes:" lines clarify non-obvious behaviour.
+# All functions are top-level (no classes). Import with: from larc.dsl import *
+
+# ── Type Aliases ─────────────────────────────────────────────────────────────────
+# Integer        = int                                    (a color value or scalar)
+# Boolean        = bool
+# IntegerTuple   = Tuple[int, int]                        (row, col coordinate)
+# Numerical      = int | IntegerTuple                     (scalar or 2D vector; arithmetic ops work element-wise on tuples)
+# Grid           = Tuple[Tuple[int, ...], ...]            (2D grid of color ints, row-major)
+# Cell           = Tuple[int, IntegerTuple]               (color, (row, col))
+# Object         = FrozenSet[Cell]                        (set of colored cells)
+# Objects        = FrozenSet[Object]
+# Indices        = FrozenSet[IntegerTuple]                (set of (row, col) positions, no color)
+# Patch          = Object | Indices                       (cells with or without color)
+# Element        = Object | Grid                          (anything that has colored cells)
+# Piece          = Grid | Patch                           (anything with spatial extent)
+
+# ── Color Mapping ────────────────────────────────────────────────────────────────
+# 0 = black, 1 = blue, 2 = red, 3 = green, 4 = yellow,
+# 5 = grey, 6 = magenta, 7 = orange, 8 = cyan, 9 = maroon
+# Background is typically the most common color in a grid (often 0).
+
+# ── Arithmetic & Numerical ───────────────────────────────────────────────────────
+identity(x:Any) -> Any                                    # returns x unchanged
+add(a:Numerical, b:Numerical) -> Numerical                # element-wise addition; works on ints and tuples
+subtract(a:Numerical, b:Numerical) -> Numerical           # element-wise subtraction
+multiply(a:Numerical, b:Numerical) -> Numerical           # element-wise multiplication
+divide(a:Numerical, b:Numerical) -> Numerical             # element-wise floor division
+invert(n:Numerical) -> Numerical                          # negation: -n (element-wise on tuples)
+double(n:Numerical) -> Numerical                          # n * 2 (element-wise)
+halve(n:Numerical) -> Numerical                           # n // 2 (element-wise)
+increment(x:Numerical) -> Numerical                       # x + 1 (element-wise)
+decrement(x:Numerical) -> Numerical                       # x - 1 (element-wise)
+crement(x:Numerical) -> Numerical                         # +1 if positive, -1 if negative, 0 if zero (element-wise)
+sign(x:Numerical) -> Numerical                            # sign: 1, -1, or 0 (element-wise)
+even(n:int) -> bool                                       # True if n is even
+positive(x:int) -> bool                                   # True if x > 0
+greater(a:int, b:int) -> bool                             # True if a > b
+toivec(i:int) -> IntegerTuple                             # (i, 0) — vertical offset vector
+tojvec(j:int) -> IntegerTuple                             # (0, j) — horizontal offset vector
+astuple(a:int, b:int) -> IntegerTuple                     # construct (a, b)
+
+# ── Logic ────────────────────────────────────────────────────────────────────────
+flip(b:bool) -> bool                                      # logical NOT
+equality(a:Any, b:Any) -> bool                            # a == b
+both(a:bool, b:bool) -> bool                              # logical AND
+either(a:bool, b:bool) -> bool                            # logical OR
+branch(condition:bool, a:Any, b:Any) -> Any               # if condition then a else b
+
+# ── Container / Collection ───────────────────────────────────────────────────────
+contained(value:Any, container:Container) -> bool         # True if value is in container
+size(container:Container) -> int                          # number of elements (len)
+first(container:Container) -> Any                         # first element (iteration order)
+last(container:Container) -> Any                          # last element (iteration order)
+initset(value:Any) -> FrozenSet                           # frozenset containing only value
+insert(value:Any, container:FrozenSet) -> FrozenSet       # add value to set
+remove(value:Any, container:Container) -> Container       # remove all occurrences of value
+other(container:Container, value:Any) -> Any              # the *other* element (for two-element containers)
+combine(a:Container, b:Container) -> Container            # union / concatenation (preserves type: frozenset or tuple)
+intersection(a:FrozenSet, b:FrozenSet) -> FrozenSet       # set intersection
+difference(a:FrozenSet, b:FrozenSet) -> FrozenSet         # a - b (elements in a not in b)
+merge(containers:Container[Container]) -> Container       # flatten one level: union all inner containers
+dedupe(tup:Tuple) -> Tuple                                # remove duplicate elements, keep first occurrence
+order(container:Container, compfunc:Callable) -> Tuple    # sort by key function, returns tuple
+repeat(item:Any, num:int) -> Tuple                        # tuple of num copies of item
+interval(start:int, stop:int, step:int) -> Tuple          # range(start, stop, step) as tuple
+product(a:Container, b:Container) -> FrozenSet            # cartesian product of two containers
+pair(a:Tuple, b:Tuple) -> Tuple[Tuple]                    # zip two tuples into tuple of pairs
+
+# ── Selection & Search ───────────────────────────────────────────────────────────
+maximum(container:FrozenSet[int]) -> int                  # max value (0 if empty)
+minimum(container:FrozenSet[int]) -> int                  # min value (0 if empty)
+valmax(container:Container, compfunc:Callable) -> int     # max of compfunc(x) over container
+valmin(container:Container, compfunc:Callable) -> int     # min of compfunc(x) over container
+argmax(container:Container, compfunc:Callable) -> Any     # element with largest compfunc(x)
+argmin(container:Container, compfunc:Callable) -> Any     # element with smallest compfunc(x)
+mostcommon(container:Container) -> Any                    # most frequent element
+leastcommon(container:Container) -> Any                   # least frequent element
+sfilter(container:Container, condition:Callable) -> Container  # keep elements where condition(e) is True
+mfilter(container:Container, function:Callable) -> FrozenSet   # sfilter then merge (flatten filtered results)
+extract(container:Container, condition:Callable) -> Any   # first element satisfying condition
+totuple(container:FrozenSet) -> Tuple                     # convert frozenset to tuple
+
+# ── Higher-Order / Functional Combinators ────────────────────────────────────────
+compose(outer:Callable, inner:Callable) -> Callable       # lambda x: outer(inner(x))
+chain(h:Callable, g:Callable, f:Callable) -> Callable     # lambda x: h(g(f(x)))
+matcher(function:Callable, target:Any) -> Callable        # lambda x: function(x) == target
+rbind(function:Callable, fixed:Any) -> Callable           # partial-apply rightmost arg: f(x,fixed) or f(x,y,fixed)
+lbind(function:Callable, fixed:Any) -> Callable           # partial-apply leftmost arg: f(fixed,y) or f(fixed,y,z)
+power(function:Callable, n:int) -> Callable               # apply function n times: f(f(...f(x)...))
+fork(outer:Callable, a:Callable, b:Callable) -> Callable  # lambda x: outer(a(x), b(x))
+apply(function:Callable, container:Container) -> Container      # map function over each element (preserves container type)
+rapply(functions:Container, value:Any) -> Container             # apply each function to value
+mapply(function:Callable, container:Container[Container]) -> FrozenSet  # apply then merge (map + flatten)
+papply(function:Callable, a:Tuple, b:Tuple) -> Tuple            # zip-apply: tuple(f(ai,bi) for ai,bi in zip(a,b))
+mpapply(function:Callable, a:Tuple, b:Tuple) -> Tuple           # papply then merge
+prapply(function:Callable, a:Container, b:Container) -> FrozenSet  # apply on cartesian product: {f(ai,bj)}
+
+# ── Color Queries ────────────────────────────────────────────────────────────────
+mostcolor(element:Element) -> int                         # most common color in grid or object (typically the background)
+leastcolor(element:Element) -> int                        # least common color in grid or object
+palette(element:Element) -> FrozenSet[int]                # set of all colors present
+numcolors(element:Element) -> int                         # number of distinct colors
+color(obj:Object) -> int                                  # the single color of a univalued object
+colorcount(element:Element, value:int) -> int             # count of cells with given color
+colorfilter(objs:Objects, value:int) -> Objects           # keep only objects whose color == value
+sizefilter(container:Container, n:int) -> FrozenSet       # keep only items with len == n
+
+# ── Coordinate / Index Extraction ────────────────────────────────────────────────
+asindices(grid:Grid) -> Indices                           # all (row,col) positions in grid
+ofcolor(grid:Grid, value:int) -> Indices                  # positions of cells with given color
+toindices(patch:Patch) -> Indices                         # strip colors from Object -> Indices; pass-through for Indices
+recolor(value:int, patch:Patch) -> Object                 # assign color to every cell in patch
+toobject(patch:Patch, grid:Grid) -> Object                # look up colors from grid for each index in patch
+asobject(grid:Grid) -> Object                             # convert entire grid to Object (all cells with their colors)
+normalize(patch:Patch) -> Patch                           # translate so upper-left corner is at (0,0)
+shift(patch:Patch, directions:IntegerTuple) -> Patch      # translate every cell by (di, dj)
+
+# ── Spatial Queries ──────────────────────────────────────────────────────────────
+height(piece:Piece) -> int                                # number of rows (grid) or bounding-box height (patch)
+width(piece:Piece) -> int                                 # number of columns (grid) or bounding-box width (patch)
+shape(piece:Piece) -> IntegerTuple                        # (height, width)
+portrait(piece:Piece) -> bool                             # True if height > width
+ulcorner(patch:Patch) -> IntegerTuple                     # (min_row, min_col) — upper-left of bounding box
+urcorner(patch:Patch) -> IntegerTuple                     # (min_row, max_col) — upper-right
+llcorner(patch:Patch) -> IntegerTuple                     # (max_row, min_col) — lower-left
+lrcorner(patch:Patch) -> IntegerTuple                     # (max_row, max_col) — lower-right
+corners(patch:Patch) -> Indices                           # set of all four bounding-box corner indices
+center(patch:Patch) -> IntegerTuple                       # center of bounding box (integer division)
+centerofmass(patch:Patch) -> IntegerTuple                 # mean position of all cells (integer division)
+uppermost(patch:Patch) -> int                             # min row index
+lowermost(patch:Patch) -> int                             # max row index
+leftmost(patch:Patch) -> int                              # min column index
+rightmost(patch:Patch) -> int                             # max column index
+square(piece:Piece) -> bool                               # True if piece forms a filled square
+vline(patch:Patch) -> bool                                # True if patch is a vertical line (width 1)
+hline(patch:Patch) -> bool                                # True if patch is a horizontal line (height 1)
+hmatching(a:Patch, b:Patch) -> bool                       # True if patches share any row
+vmatching(a:Patch, b:Patch) -> bool                       # True if patches share any column
+manhattan(a:Patch, b:Patch) -> int                        # closest Manhattan distance between any two cells
+adjacent(a:Patch, b:Patch) -> bool                        # True if manhattan distance == 1
+bordering(patch:Patch, grid:Grid) -> bool                 # True if patch touches any grid edge
+position(a:Patch, b:Patch) -> IntegerTuple                # relative direction from a to b: (row_sign, col_sign)
+  # Notes: returns e.g. (1,-1) meaning b is below-left of a. Components are -1, 0, or 1.
+
+# ── Neighbors ────────────────────────────────────────────────────────────────────
+dneighbors(loc:IntegerTuple) -> Indices                   # 4 directly adjacent cells (up/down/left/right)
+ineighbors(loc:IntegerTuple) -> Indices                   # 4 diagonally adjacent cells
+neighbors(loc:IntegerTuple) -> Indices                    # all 8 surrounding cells (dneighbors + ineighbors)
+
+# ── Object Detection & Partitioning ─────────────────────────────────────────────
+objects(grid:Grid, univalued:bool, diagonal:bool, without_bg:bool) -> Objects
+  # Notes: connected-component labelling. univalued=True groups only same-color cells;
+  #   diagonal=True uses 8-connectivity (else 4). without_bg=True ignores background color.
+partition(grid:Grid) -> Objects                           # group all cells by color (no connectivity, includes bg)
+fgpartition(grid:Grid) -> Objects                         # same as partition but excludes the background color
+
+# ── Grid Lookup & Construction ───────────────────────────────────────────────────
+index(grid:Grid, loc:IntegerTuple) -> int                 # color at (row,col); returns None if out of bounds
+canvas(value:int, dimensions:IntegerTuple) -> Grid        # create uniform grid of given color and (rows,cols) size
+crop(grid:Grid, start:IntegerTuple, dims:IntegerTuple) -> Grid  # extract subgrid at (row,col) with (h,w)
+subgrid(patch:Patch, grid:Grid) -> Grid                   # smallest subgrid enclosing the patch's bounding box
+
+# ── Grid Transformations ─────────────────────────────────────────────────────────
+rot90(grid:Grid) -> Grid                                  # 90-degree clockwise rotation
+rot180(grid:Grid) -> Grid                                 # 180-degree rotation
+rot270(grid:Grid) -> Grid                                 # 90-degree counter-clockwise rotation
+hmirror(piece:Piece) -> Piece                             # flip top-to-bottom (horizontal axis reflection)
+vmirror(piece:Piece) -> Piece                             # flip left-to-right (vertical axis reflection)
+dmirror(piece:Piece) -> Piece                             # reflect along main diagonal (transpose)
+cmirror(piece:Piece) -> Piece                             # reflect along counter-diagonal
+  # Notes: hmirror/vmirror/dmirror/cmirror work on Grid, Object, or Indices.
+
+# ── Grid Scaling ─────────────────────────────────────────────────────────────────
+hupscale(grid:Grid, factor:int) -> Grid                   # stretch each cell horizontally by factor
+vupscale(grid:Grid, factor:int) -> Grid                   # stretch each cell vertically by factor
+upscale(element:Element, factor:int) -> Element           # scale grid or object by factor in both directions
+downscale(grid:Grid, factor:int) -> Grid                  # shrink grid by sampling every factor-th cell
+
+# ── Grid Splitting & Joining ─────────────────────────────────────────────────────
+hconcat(a:Grid, b:Grid) -> Grid                           # concatenate side by side (same height required)
+vconcat(a:Grid, b:Grid) -> Grid                           # concatenate top to bottom (same width required)
+hsplit(grid:Grid, n:int) -> Tuple[Grid]                   # split into n horizontal slices (left to right)
+vsplit(grid:Grid, n:int) -> Tuple[Grid]                   # split into n vertical slices (top to bottom)
+tophalf(grid:Grid) -> Grid                                # upper half of rows
+bottomhalf(grid:Grid) -> Grid                             # lower half of rows
+lefthalf(grid:Grid) -> Grid                               # left half of columns
+righthalf(grid:Grid) -> Grid                              # right half of columns
+trim(grid:Grid) -> Grid                                   # remove one-cell border on all sides
+
+# ── Grid Drawing / Mutation ──────────────────────────────────────────────────────
+fill(grid:Grid, value:int, patch:Patch) -> Grid           # set all patch positions to given color
+paint(grid:Grid, obj:Object) -> Grid                      # stamp object (with its colors) onto grid
+underfill(grid:Grid, value:int, patch:Patch) -> Grid      # fill only where grid has background color
+underpaint(grid:Grid, obj:Object) -> Grid                 # paint only where grid has background color
+cover(grid:Grid, patch:Patch) -> Grid                     # erase patch by filling with background color
+move(grid:Grid, obj:Object, offset:IntegerTuple) -> Grid  # remove obj, then paint it shifted by offset
+replace(grid:Grid, replacee:int, replacer:int) -> Grid    # substitute one color for another everywhere
+switch(grid:Grid, a:int, b:int) -> Grid                   # swap two colors everywhere
+cellwise(a:Grid, b:Grid, fallback:int) -> Grid            # where a and b agree keep the value, else use fallback
+
+# ── Line & Frontier Geometry ─────────────────────────────────────────────────────
+connect(a:IntegerTuple, b:IntegerTuple) -> Indices        # indices forming a straight line between two points
+  # Notes: works for horizontal, vertical, and 45-degree diagonal lines. Returns empty set if not axis-aligned/diagonal.
+shoot(start:IntegerTuple, direction:IntegerTuple) -> Indices  # ray from start in given direction (up to 42 cells)
+vfrontier(location:IntegerTuple) -> Indices               # full vertical column through location (rows 0-29)
+hfrontier(location:IntegerTuple) -> Indices               # full horizontal row through location (cols 0-29)
+frontiers(grid:Grid) -> Objects                           # all uniform-color full rows and columns in grid
+compress(grid:Grid) -> Grid                               # remove all frontier rows and columns from grid
+
+# ── Bounding Box Helpers ─────────────────────────────────────────────────────────
+backdrop(patch:Patch) -> Indices                          # all indices inside bounding box of patch
+delta(patch:Patch) -> Indices                             # bounding box minus the patch itself (holes / complement)
+box(patch:Patch) -> Indices                               # perimeter indices of bounding box (rectangle outline)
+inbox(patch:Patch) -> Indices                             # rectangle outline one cell *inside* the bounding box
+outbox(patch:Patch) -> Indices                            # rectangle outline one cell *outside* the bounding box
+gravitate(source:Patch, destination:Patch) -> IntegerTuple  # offset to move source until adjacent to destination
+  # Notes: moves along row or column axis depending on alignment; returns the total (di,dj) offset.
+
+# ── Pattern Matching ─────────────────────────────────────────────────────────────
+occurrences(grid:Grid, obj:Object) -> Indices             # all (row,col) positions where obj appears in grid
+hperiod(obj:Object) -> int                                # smallest horizontal repeat period of object
+vperiod(obj:Object) -> int                                # smallest vertical repeat period of object

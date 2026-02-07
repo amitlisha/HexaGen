@@ -267,7 +267,10 @@ def run_with_timeout(
         p.join()
         return None, "TIMEOUT"
 
-    status, payload = q.get()
+    try:
+        status, payload = q.get(timeout=10)
+    except Exception:
+        return None, "Worker process died without returning result"
     return (payload, None) if status == "ok" else (None, payload)
 
 

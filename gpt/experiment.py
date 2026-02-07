@@ -103,11 +103,14 @@ def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
     # Only generate code template for code-generation modes
     code_so_far = ""
     if cfg.mode in ("code-step", "code-full", "code-step-full"):
-        code_so_far = (
-            f"{generate_import_statement(cfg.lib_file)}\n"
-            "from constants import HEIGHT, WIDTH\n"
-            "with Game() as g:\n"
-        )
+        if cfg.dataset == "larc":
+            code_so_far = ""
+        else:
+            code_so_far = (
+                f"{generate_import_statement(cfg.lib_file)}\n"
+                "from constants import HEIGHT, WIDTH\n"
+                "with Game() as g:\n"
+            )
 
     current_img: Optional[Path] = DATA_DIR / "empty_board.png" if cfg.vision else None
 
@@ -156,6 +159,9 @@ def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
             current_img,
             run_dir,
             run_ts,
+            input_grid_2d=input_grid_2d,
+            width=board_width,
+            height=board_height,
         )
         logs = [log]
         print(

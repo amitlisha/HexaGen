@@ -50,15 +50,19 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
             sys_p = DATA_DIR / "python_system_prompt.txt"
             user_p = DATA_DIR / "python_user_message.txt"
     else:
-        if vision:
-            sys_p = DATA_DIR / "code_with_vision_system_prompt.txt"
+        if dataset == "larc":
+            sys_p = DATA_DIR / "larc_code_full_system_prompt.txt"
+            user_p = DATA_DIR / "larc_code_full_user_message.txt"
         else:
-            sys_p = DATA_DIR / "code_system_prompt.txt"
-        # Use template file for code mode (supports dynamic API spec)
-        if mode == "code-step-full":
-            user_p = DATA_DIR / "code_step_full_user_message_template.txt"
-        else:
-            user_p = DATA_DIR / "code_user_message_template.txt"
+            if vision:
+                sys_p = DATA_DIR / "code_with_vision_system_prompt.txt"
+            else:
+                sys_p = DATA_DIR / "code_system_prompt.txt"
+            # Use template file for code mode (supports dynamic API spec)
+            if mode == "code-step-full":
+                user_p = DATA_DIR / "code_step_full_user_message_template.txt"
+            else:
+                user_p = DATA_DIR / "code_user_message_template.txt"
 
     system_tmpl = f"{shared_sys_p.read_text()}\n\n{sys_p.read_text()}"
     user_tmpl = user_p.read_text()
@@ -69,7 +73,10 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
         if api_spec_file:
             api_spec_path = Path(api_spec_file)
         else:
-            api_spec_path = DATA_DIR / "hexagen_api_spec.txt"
+            if dataset == "larc":
+                api_spec_path = DATA_DIR / "larc_api_spec.txt"
+            else:
+                api_spec_path = DATA_DIR / "hexagen_api_spec.txt"
 
         if not api_spec_path.exists():
             raise FileNotFoundError(f"API spec file not found: {api_spec_path}")
@@ -78,11 +85,15 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
         user_tmpl = user_tmpl.replace("{API_SPEC}", api_spec)
 
     # Validate required placeholders
-    tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]
-    if mode not in ("tiles-step", "tiles-full", "tiles-step-full", "python-full"):
-        tags.append("{CODE_SO_FAR}")
-    if mode in ("code-step-full", "tiles-step-full"):
-        tags.append("{ALL_INSTRUCTIONS}")
+    if dataset == "larc" and mode == "code-full":
+        tags = ["{INPUT_GRID}", "{NEXT_STEP}"]
+    else:
+        tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]
+        if mode not in ("tiles-step", "tiles-full", "tiles-step-full", "python-full"):
+            tags.append("{CODE_SO_FAR}")
+        if mode in ("code-step-full", "tiles-step-full"):
+            tags.append("{ALL_INSTRUCTIONS}")
+    
     for tag in tags:
         if tag not in user_tmpl:
             raise ValueError(f"{user_p.name} missing placeholder {tag}")
