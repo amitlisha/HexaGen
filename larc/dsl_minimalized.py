@@ -1,276 +1,115 @@
-from typing import Any, Callable
-
-
-def merge(
-    containers: tuple | frozenset
-) -> tuple | frozenset:
-    """ merging """
-    return type(containers)(e for c in containers for e in c)
-
-
-def sfilter(
-    container: tuple | frozenset,
-    condition: Callable
-) -> tuple | frozenset:
-    """ keep elements in container that satisfy condition """
-    return type(container)(e for e in container if condition(e))
-
-
-def mfilter(
-    container: tuple | frozenset,
-    function: Callable
-) -> frozenset:
-    """ filter and merge """
-    return merge(sfilter(container, function))
-
-
-def extract(
-    container: tuple | frozenset,
-    condition: Callable
-) -> Any:
-    """ first element of container that satisfies condition """
-    return next(e for e in container if condition(e))
-
-
-def compose(
-    outer: Callable,
-    inner: Callable
-) -> Callable:
-    """ function composition """
-    return lambda x: outer(inner(x))
-
-
-def chain(
-    h: Callable,
-    g: Callable,
-    f: Callable,
-) -> Callable:
-    """ function composition with three functions """
-    return lambda x: h(g(f(x)))
-
-
-def matcher(
-    function: Callable,
-    target: Any
-) -> Callable:
-    """ construction of equality function """
-    return lambda x: function(x) == target
-
-
-def rbind(
-    function: Callable,
-    fixed: Any
-) -> Callable:
-    """ fix the rightmost argument """
-    n = function.__code__.co_argcount
-    if n == 2:
-        return lambda x: function(x, fixed)
-    elif n == 3:
-        return lambda x, y: function(x, y, fixed)
-    else:
-        return lambda x, y, z: function(x, y, z, fixed)
-
-
-def lbind(
-    function: Callable,
-    fixed: Any
-) -> Callable:
-    """ fix the leftmost argument """
-    n = function.__code__.co_argcount
-    if n == 2:
-        return lambda y: function(fixed, y)
-    elif n == 3:
-        return lambda y, z: function(fixed, y, z)
-    else:
-        return lambda y, z, a: function(fixed, y, z, a)
-
-
-def power(
-    function: Callable,
-    n: int
-) -> Callable:
-    """ power of function """
-    if n == 1:
-        return function
-    return compose(function, power(function, n - 1))
-
-
-def fork(
-    outer: Callable,
-    a: Callable,
-    b: Callable
-) -> Callable:
-    """ creates a wrapper function """
-    return lambda x: outer(a(x), b(x))
-
-
-def apply(
-    function: Callable,
-    container: tuple | frozenset
-) -> tuple | frozenset:
-    """ apply function to each item in container """
-    return type(container)(function(e) for e in container)
-
-
-def rapply(
-    functions: tuple | frozenset,
-    value: Any
-) -> tuple | frozenset:
-    """ apply each function in container to value """
-    return type(functions)(function(value) for function in functions)
-
-
-def mapply(
-    function: Callable,
-    container: tuple | frozenset
-) -> frozenset:
-    """ apply and merge """
-    return merge(apply(function, container))
-
-
-def papply(
-    function: Callable,
-    a: tuple,
-    b: tuple
-) -> tuple:
-    """ apply function on two vectors """
-    return tuple(function(i, j) for i, j in zip(a, b))
-
-
-def mpapply(
-    function: Callable,
-    a: tuple,
-    b: tuple
-) -> tuple:
-    """ apply function on two vectors and merge """
-    return merge(papply(function, a, b))
-
-
-def prapply(
-    function,
-    a: tuple | frozenset,
-    b: tuple | frozenset
-) -> frozenset:
-    """ apply function on cartesian product """
-    return frozenset(function(i, j) for j in b for i in a)
-
-
-# --- merged: mostcolor + leastcolor ---
-
-def extremecolor(
+def dominant_color(
     element: tuple | frozenset,
-    kind: str = 'most'
+    mode: str = 'most'
 ) -> int:
-    """ most or least common color (kind: 'most' or 'least') """
+    """ Return the most or least common color (mode: 'most' or 'least'). """
     values = [v for r in element for v in r] if isinstance(element, tuple) else [v for v, _ in element]
-    func = max if kind == 'most' else min
+    func = max if mode == 'most' else min
     return func(set(values), key=values.count)
 
 
 def height(
     piece: tuple | frozenset
 ) -> int:
-    """ height of grid or patch """
+    """ Height of a grid (number of rows) or patch (bounding box height). """
     if len(piece) == 0:
         return 0
     if isinstance(piece, tuple):
         return len(piece)
-    return boundary(piece, 'bottom') - boundary(piece, 'top') + 1
+    return get_boundary(piece, 'bottom') - get_boundary(piece, 'top') + 1
 
 
 def width(
     piece: tuple | frozenset
 ) -> int:
-    """ width of grid or patch """
+    """ Width of a grid (number of columns) or patch (bounding box width). """
     if len(piece) == 0:
         return 0
     if isinstance(piece, tuple):
         return len(piece[0])
-    return boundary(piece, 'right') - boundary(piece, 'left') + 1
+    return get_boundary(piece, 'right') - get_boundary(piece, 'left') + 1
 
 
-def shape(
+def dimensions(
     piece: tuple | frozenset
 ) -> tuple:
-    """ height and width of grid or patch """
+    """ Return (height, width) of a grid or patch. """
     return (height(piece), width(piece))
 
 
-def portrait(
+def is_portrait(
     piece: tuple | frozenset
 ) -> bool:
-    """ whether height is greater than width """
+    """ Return True if height is greater than width. """
     return height(piece) > width(piece)
 
 
-def colorcount(
+def count_color(
     element: tuple | frozenset,
-    value: int
+    color: int
 ) -> int:
-    """ number of cells with color """
+    """ Count the number of cells with the given color. """
     if isinstance(element, tuple):
-        return sum(row.count(value) for row in element)
-    return sum(v == value for v, _ in element)
+        return sum(row.count(color) for row in element)
+    return sum(v == color for v, _ in element)
 
 
-def colorfilter(
-    objs: frozenset,
-    value: int
+def filter_by_color(
+    objects: frozenset,
+    color: int
 ) -> frozenset:
-    """ filter objects by color """
-    return frozenset(obj for obj in objs if next(iter(obj))[0] == value)
+    """ Keep only objects whose color matches the given color. """
+    return frozenset(obj for obj in objects if next(iter(obj))[0] == color)
 
 
-def sizefilter(
+def filter_by_size(
     container: tuple | frozenset,
-    n: int
+    size: int
 ) -> frozenset:
-    """ filter items by size """
-    return frozenset(item for item in container if len(item) == n)
+    """ Keep only items whose length equals the given size. """
+    return frozenset(item for item in container if len(item) == size)
 
 
-def asindices(
+def all_indices(
     grid: tuple
 ) -> frozenset:
-    """ indices of all grid cells """
+    """ Return all (row, col) indices of a grid. """
     return frozenset((i, j) for i in range(len(grid)) for j in range(len(grid[0])))
 
 
-def ofcolor(
+def indices_with_color(
     grid: tuple,
-    value: int
+    color: int
 ) -> frozenset:
-    """ indices of all grid cells with value """
-    return frozenset((i, j) for i, r in enumerate(grid) for j, v in enumerate(r) if v == value)
+    """ Return all (row, col) indices where the grid cell equals the given color. """
+    return frozenset((i, j) for i, r in enumerate(grid) for j, v in enumerate(r) if v == color)
 
 
-# --- merged: ulcorner + urcorner + llcorner + lrcorner ---
-
-def corner(
+def get_corner(
     patch: frozenset,
-    position: str = 'ul'
+    position: str = 'upper_left'
 ) -> tuple:
-    """ corner index of patch (position: 'ul', 'ur', 'll', 'lr') """
-    indices = toindices(patch)
+    """ Return the corner index of a patch's bounding box (position: 'upper_left', 'upper_right', 'lower_left', 'lower_right'). """
+    indices = to_indices(patch)
     rows, cols = zip(*indices)
-    row_funcs = {'ul': min, 'ur': min, 'll': max, 'lr': max}
-    col_funcs = {'ul': min, 'ur': max, 'll': min, 'lr': max}
+    row_funcs = {'upper_left': min, 'upper_right': min, 'lower_left': max, 'lower_right': max}
+    col_funcs = {'upper_left': min, 'upper_right': max, 'lower_left': min, 'lower_right': max}
     return (row_funcs[position](rows), col_funcs[position](cols))
 
 
 def crop(
     grid: tuple,
     start: tuple,
-    dims: tuple
+    size: tuple
 ) -> tuple:
-    """ subgrid specified by start and dimension """
-    return tuple(r[start[1]:start[1]+dims[1]] for r in grid[start[0]:start[0]+dims[0]])
+    """ Extract a subgrid at the given start (row, col) with the given size (height, width). """
+    return tuple(r[start[1]:start[1]+size[1]] for r in grid[start[0]:start[0]+size[0]])
 
 
-def toindices(
+def to_indices(
     patch: frozenset
 ) -> frozenset:
-    """ indices of object cells """
+    """ Strip colors from an object to get plain (row, col) indices. Pass-through if already indices. """
     if len(patch) == 0:
         return frozenset()
     if isinstance(next(iter(patch))[1], tuple):
@@ -279,69 +118,73 @@ def toindices(
 
 
 def recolor(
-    value: int,
+    color: int,
     patch: frozenset
 ) -> frozenset:
-    """ recolor patch """
-    return frozenset((value, index) for index in toindices(patch))
+    """ Assign a new color to every cell in a patch. """
+    return frozenset((color, index) for index in to_indices(patch))
 
 
-def shift(
+def translate(
     patch: frozenset,
-    directions: tuple
+    offset: tuple
 ) -> frozenset:
-    """ shift patch """
+    """ Translate (shift) a patch by the given (row_offset, col_offset). """
     if len(patch) == 0:
         return patch
-    di, dj = directions
+    di, dj = offset
     if isinstance(next(iter(patch))[1], tuple):
         return frozenset((value, (i + di, j + dj)) for value, (i, j) in patch)
     return frozenset((i + di, j + dj) for i, j in patch)
 
 
-def normalize(
+def normalize_to_origin(
     patch: frozenset
 ) -> frozenset:
-    """ moves upper left corner to origin """
+    """ Translate the patch so its upper-left corner is at (0, 0). """
     if len(patch) == 0:
         return patch
-    return shift(patch, (-boundary(patch, 'top'), -boundary(patch, 'left')))
+    return translate(patch, (-get_boundary(patch, 'top'), -get_boundary(patch, 'left')))
 
 
-def dneighbors(
-    loc: tuple
+def orthogonal_neighbors(
+    location: tuple
 ) -> frozenset:
-    """ directly adjacent indices """
-    return frozenset({(loc[0] - 1, loc[1]), (loc[0] + 1, loc[1]), (loc[0], loc[1] - 1), (loc[0], loc[1] + 1)})
+    """ Return the 4 orthogonally adjacent indices (up, down, left, right). """
+    return frozenset({(location[0] - 1, location[1]), (location[0] + 1, location[1]), (location[0], location[1] - 1), (location[0], location[1] + 1)})
 
 
-def ineighbors(
-    loc: tuple
+def diagonal_neighbors(
+    location: tuple
 ) -> frozenset:
-    """ diagonally adjacent indices """
-    return frozenset({(loc[0] - 1, loc[1] - 1), (loc[0] - 1, loc[1] + 1), (loc[0] + 1, loc[1] - 1), (loc[0] + 1, loc[1] + 1)})
+    """ Return the 4 diagonally adjacent indices. """
+    return frozenset({(location[0] - 1, location[1] - 1), (location[0] - 1, location[1] + 1), (location[0] + 1, location[1] - 1), (location[0] + 1, location[1] + 1)})
 
 
-def neighbors(
-    loc: tuple
+def all_neighbors(
+    location: tuple
 ) -> frozenset:
-    """ adjacent indices """
-    return dneighbors(loc) | ineighbors(loc)
+    """ Return all 8 adjacent indices (orthogonal + diagonal). """
+    return orthogonal_neighbors(location) | diagonal_neighbors(location)
 
 
-def objects(
+def find_objects(
     grid: tuple,
     univalued: bool,
     diagonal: bool,
-    without_bg: bool
+    without_background: bool
 ) -> frozenset:
-    """ objects occurring on the grid """
-    bg = extremecolor(grid) if without_bg else None
+    """ Find connected-component objects on the grid.
+    univalued: only group same-color cells.
+    diagonal: use 8-connectivity (otherwise 4-connectivity).
+    without_background: ignore the most common (background) color.
+    """
+    bg = dominant_color(grid) if without_background else None
     objs = set()
     occupied = set()
     h, w = len(grid), len(grid[0])
-    unvisited = asindices(grid)
-    diagfun = neighbors if diagonal else dneighbors
+    unvisited = all_indices(grid)
+    neighbor_fn = all_neighbors if diagonal else orthogonal_neighbors
     for loc in unvisited:
         if loc in occupied:
             continue
@@ -358,38 +201,36 @@ def objects(
                     obj.add((v, cand))
                     occupied.add(cand)
                     neighborhood |= {
-                        (i, j) for i, j in diagfun(cand) if 0 <= i < h and 0 <= j < w
+                        (i, j) for i, j in neighbor_fn(cand) if 0 <= i < h and 0 <= j < w
                     }
             cands = neighborhood - occupied
         objs.add(frozenset(obj))
     return frozenset(objs)
 
 
-# --- merged: partition + fgpartition ---
-
-def partition(
+def partition_by_color(
     grid: tuple,
-    without_bg: bool = False
+    without_background: bool = False
 ) -> frozenset:
-    """ partition grid by color (without_bg: exclude background color) """
-    colors = palette(grid)
-    if without_bg:
-        colors = colors - {extremecolor(grid)}
+    """ Partition grid cells by color. Each partition is a frozenset of (color, (row, col)).
+    without_background: exclude the most common (background) color.
+    """
+    colors = unique_colors(grid)
+    if without_background:
+        colors = colors - {dominant_color(grid)}
     return frozenset(
         frozenset(
-            (v, (i, j)) for i, r in enumerate(grid) for j, v in enumerate(r) if v == value
-        ) for value in colors
+            (v, (i, j)) for i, r in enumerate(grid) for j, v in enumerate(r) if v == c
+        ) for c in colors
     )
 
 
-# --- merged: uppermost + lowermost + leftmost + rightmost ---
-
-def boundary(
+def get_boundary(
     patch: frozenset,
     side: str
 ) -> int:
-    """ boundary index of patch (side: 'top', 'bottom', 'left', 'right') """
-    indices = toindices(patch)
+    """ Return the boundary index of a patch (side: 'top', 'bottom', 'left', 'right'). """
+    indices = to_indices(patch)
     if side == 'top':
         return min(i for i, j in indices)
     elif side == 'bottom':
@@ -400,117 +241,111 @@ def boundary(
         return max(j for i, j in indices)
 
 
-def square(
+def is_square(
     piece: tuple | frozenset
 ) -> bool:
-    """ whether the piece forms a square """
+    """ Return True if the piece forms a filled square. """
     return len(piece) == len(piece[0]) if isinstance(piece, tuple) else height(piece) * width(piece) == len(piece) and height(piece) == width(piece)
 
 
-# --- merged: vline + hline ---
-
-def isline(
+def is_line(
     patch: frozenset,
     axis: str = 'vertical'
 ) -> bool:
-    """ whether patch forms a line (axis: 'vertical' or 'horizontal') """
+    """ Return True if the patch forms a straight line (axis: 'vertical' or 'horizontal'). """
     if axis == 'vertical':
         return height(patch) == len(patch) and width(patch) == 1
     else:
         return width(patch) == len(patch) and height(patch) == 1
 
 
-# --- merged: hmatching + vmatching ---
-
-def matching(
+def shares_axis(
     a: frozenset,
     b: frozenset,
     axis: str = 'row'
 ) -> bool:
-    """ whether patches share a row or column (axis: 'row' or 'column') """
+    """ Return True if two patches share any row or column (axis: 'row' or 'column'). """
     if axis == 'row':
-        return len(set(i for i, j in toindices(a)) & set(i for i, j in toindices(b))) > 0
+        return len(set(i for i, j in to_indices(a)) & set(i for i, j in to_indices(b))) > 0
     else:
-        return len(set(j for i, j in toindices(a)) & set(j for i, j in toindices(b))) > 0
+        return len(set(j for i, j in to_indices(a)) & set(j for i, j in to_indices(b))) > 0
 
 
-def manhattan(
+def manhattan_distance(
     a: frozenset,
     b: frozenset
 ) -> int:
-    """ closest manhattan distance between two patches """
-    return min(abs(ai - bi) + abs(aj - bj) for ai, aj in toindices(a) for bi, bj in toindices(b))
+    """ Return the closest Manhattan distance between any two cells of two patches. """
+    return min(abs(ai - bi) + abs(aj - bj) for ai, aj in to_indices(a) for bi, bj in to_indices(b))
 
 
-def adjacent(
+def are_adjacent(
     a: frozenset,
     b: frozenset
 ) -> bool:
-    """ whether two patches are adjacent """
-    return manhattan(a, b) == 1
+    """ Return True if the closest Manhattan distance between two patches is exactly 1. """
+    return manhattan_distance(a, b) == 1
 
 
-def bordering(
+def touches_border(
     patch: frozenset,
     grid: tuple
 ) -> bool:
-    """ whether a patch is adjacent to a grid border """
-    return boundary(patch, 'top') == 0 or boundary(patch, 'left') == 0 or boundary(patch, 'bottom') == len(grid) - 1 or boundary(patch, 'right') == len(grid[0]) - 1
+    """ Return True if the patch touches any edge of the grid. """
+    return get_boundary(patch, 'top') == 0 or get_boundary(patch, 'left') == 0 or get_boundary(patch, 'bottom') == len(grid) - 1 or get_boundary(patch, 'right') == len(grid[0]) - 1
 
 
-def centerofmass(
+def center_of_mass(
     patch: frozenset
 ) -> tuple:
-    """ center of mass """
-    return tuple(map(lambda x: sum(x) // len(patch), zip(*toindices(patch))))
+    """ Return the mean (row, col) position of all cells in the patch (integer division). """
+    return tuple(map(lambda x: sum(x) // len(patch), zip(*to_indices(patch))))
 
 
-def palette(
+def unique_colors(
     element: tuple | frozenset
 ) -> frozenset:
-    """ colors occurring in object or grid """
+    """ Return the set of all distinct colors in a grid or object. """
     if isinstance(element, tuple):
         return frozenset({v for r in element for v in r})
     return frozenset({v for v, _ in element})
 
 
-def numcolors(
+def count_unique_colors(
     element: tuple | frozenset
 ) -> int:
-    """ number of colors occurring in object or grid """
-    return len(palette(element))
+    """ Return the number of distinct colors in a grid or object. """
+    return len(unique_colors(element))
 
 
-def color(
+def get_color(
     obj: frozenset
 ) -> int:
-    """ color of object """
+    """ Return the color of a single-color object. """
     return next(iter(obj))[0]
 
 
-def toobject(
+def to_colored_object(
     patch: frozenset,
     grid: tuple
 ) -> frozenset:
-    """ object from patch and grid """
+    """ Look up colors from the grid for each index in the patch, returning a colored object. """
     h, w = len(grid), len(grid[0])
-    return frozenset((grid[i][j], (i, j)) for i, j in toindices(patch) if 0 <= i < h and 0 <= j < w)
+    return frozenset((grid[i][j], (i, j)) for i, j in to_indices(patch) if 0 <= i < h and 0 <= j < w)
 
 
-def asobject(
+def grid_to_object(
     grid: tuple
 ) -> frozenset:
-    """ conversion of grid to object """
+    """ Convert an entire grid into an object (frozenset of (color, (row, col))). """
     return frozenset((v, (i, j)) for i, r in enumerate(grid) for j, v in enumerate(r))
 
-
-# --- merged: rot90 + rot180 + rot270 ---
 
 def rotate(
     grid: tuple,
     angle: int = 90
 ) -> tuple:
-    """ rotate grid clockwise (angle: 90, 180, 270) """
+    """ Rotate a grid clockwise (angle: 90, 180, or 270 degrees). """
     if angle == 90:
         return tuple(row for row in zip(*grid[::-1]))
     elif angle == 180:
@@ -520,31 +355,34 @@ def rotate(
     return grid
 
 
-# --- merged: hmirror + vmirror + dmirror + cmirror ---
-
 def mirror(
     piece: tuple | frozenset,
     axis: str = 'horizontal'
 ) -> tuple | frozenset:
-    """ mirror piece (axis: 'horizontal', 'vertical', 'diagonal', 'counterdiagonal') """
+    """ Mirror/reflect a piece (axis: 'horizontal', 'vertical', 'diagonal', 'counterdiagonal').
+    horizontal: flip top-to-bottom.
+    vertical: flip left-to-right.
+    diagonal: transpose along main diagonal.
+    counterdiagonal: transpose along counter-diagonal.
+    """
     if axis == 'horizontal':
         if isinstance(piece, tuple):
             return piece[::-1]
-        d = corner(piece, 'ul')[0] + corner(piece, 'lr')[0]
+        d = get_corner(piece, 'upper_left')[0] + get_corner(piece, 'lower_right')[0]
         if isinstance(next(iter(piece))[1], tuple):
             return frozenset((v, (d - i, j)) for v, (i, j) in piece)
         return frozenset((d - i, j) for i, j in piece)
     elif axis == 'vertical':
         if isinstance(piece, tuple):
             return tuple(row[::-1] for row in piece)
-        d = corner(piece, 'ul')[1] + corner(piece, 'lr')[1]
+        d = get_corner(piece, 'upper_left')[1] + get_corner(piece, 'lower_right')[1]
         if isinstance(next(iter(piece))[1], tuple):
             return frozenset((v, (i, d - j)) for v, (i, j) in piece)
         return frozenset((i, d - j) for i, j in piece)
     elif axis == 'diagonal':
         if isinstance(piece, tuple):
             return tuple(zip(*piece))
-        a, b = corner(piece, 'ul')
+        a, b = get_corner(piece, 'upper_left')
         if isinstance(next(iter(piece))[1], tuple):
             return frozenset((v, (j - b + a, i - a + b)) for v, (i, j) in piece)
         return frozenset((j - b + a, i - a + b) for i, j in piece)
@@ -554,51 +392,49 @@ def mirror(
         return mirror(mirror(mirror(piece, 'vertical'), 'diagonal'), 'vertical')
 
 
-# --- merged: fill + underfill ---
-
 def fill(
     grid: tuple,
-    value: int,
+    color: int,
     patch: frozenset,
-    bg_only: bool = False
+    background_only: bool = False
 ) -> tuple:
-    """ fill value at indices (bg_only: only fill background cells) """
+    """ Set all patch positions to the given color.
+    background_only: only fill cells that currently have the background color.
+    """
     h, w = len(grid), len(grid[0])
-    bg = extremecolor(grid) if bg_only else None
+    bg = dominant_color(grid) if background_only else None
     g = list(list(row) for row in grid)
-    for i, j in toindices(patch):
+    for i, j in to_indices(patch):
         if 0 <= i < h and 0 <= j < w:
-            if not bg_only or g[i][j] == bg:
-                g[i][j] = value
+            if not background_only or g[i][j] == bg:
+                g[i][j] = color
     return tuple(tuple(row) for row in g)
 
-
-# --- merged: paint + underpaint ---
 
 def paint(
     grid: tuple,
     obj: frozenset,
-    bg_only: bool = False
+    background_only: bool = False
 ) -> tuple:
-    """ paint object to grid (bg_only: only paint over background cells) """
+    """ Stamp an object (with its colors) onto the grid.
+    background_only: only paint over cells that have the background color.
+    """
     h, w = len(grid), len(grid[0])
-    bg = extremecolor(grid) if bg_only else None
+    bg = dominant_color(grid) if background_only else None
     g = list(list(row) for row in grid)
     for value, (i, j) in obj:
         if 0 <= i < h and 0 <= j < w:
-            if not bg_only or g[i][j] == bg:
+            if not background_only or g[i][j] == bg:
                 g[i][j] = value
     return tuple(tuple(row) for row in g)
 
 
-# --- merged: hupscale + vupscale ---
-
-def axis_upscale(
+def upscale_along_axis(
     grid: tuple,
     factor: int,
     axis: str = 'horizontal'
 ) -> tuple:
-    """ upscale grid along one axis (axis: 'horizontal' or 'vertical') """
+    """ Upscale a grid along one axis (axis: 'horizontal' stretches columns, 'vertical' stretches rows). """
     if axis == 'horizontal':
         g = tuple()
         for row in grid:
@@ -618,7 +454,7 @@ def upscale(
     element: tuple | frozenset,
     factor: int
 ) -> tuple | frozenset:
-    """ upscale object or grid """
+    """ Scale a grid or object by the given factor in both directions. """
     if isinstance(element, tuple):
         g = tuple()
         for row in element:
@@ -630,22 +466,22 @@ def upscale(
     else:
         if len(element) == 0:
             return frozenset()
-        di_inv, dj_inv = corner(element, 'ul')
+        di_inv, dj_inv = get_corner(element, 'upper_left')
         di, dj = (-di_inv, -dj_inv)
-        normed_obj = shift(element, (di, dj))
+        normed_obj = translate(element, (di, dj))
         o = set()
         for value, (i, j) in normed_obj:
             for io in range(factor):
                 for jo in range(factor):
                     o.add((value, (i * factor + io, j * factor + jo)))
-        return shift(frozenset(o), (di_inv, dj_inv))
+        return translate(frozenset(o), (di_inv, dj_inv))
 
 
 def downscale(
     grid: tuple,
     factor: int
 ) -> tuple:
-    """ downscale grid """
+    """ Shrink a grid by sampling every factor-th cell. """
     h, w = len(grid), len(grid[0])
     g = tuple()
     for i in range(h):
@@ -662,96 +498,94 @@ def downscale(
     return dsg
 
 
-# --- merged: hconcat + vconcat ---
-
-def concat(
+def concatenate(
     a: tuple,
     b: tuple,
     axis: str = 'horizontal'
 ) -> tuple:
-    """ concatenate two grids (axis: 'horizontal' or 'vertical') """
+    """ Concatenate two grids (axis: 'horizontal' = side by side, 'vertical' = top to bottom). """
     if axis == 'horizontal':
         return tuple(i + j for i, j in zip(a, b))
     else:
         return a + b
 
 
-def subgrid(
+def extract_subgrid(
     patch: frozenset,
     grid: tuple
 ) -> tuple:
-    """ smallest subgrid containing object """
-    return crop(grid, corner(patch, 'ul'), shape(patch))
+    """ Extract the smallest subgrid that contains the patch's bounding box. """
+    return crop(grid, get_corner(patch, 'upper_left'), dimensions(patch))
 
 
-# --- merged: hsplit + vsplit ---
-
-def split(
+def split_grid(
     grid: tuple,
-    n: int,
+    parts: int,
     axis: str = 'horizontal'
 ) -> tuple:
-    """ split grid into n parts (axis: 'horizontal' or 'vertical') """
+    """ Split a grid into N equal parts (axis: 'horizontal' = left-to-right, 'vertical' = top-to-bottom). """
     if axis == 'horizontal':
-        h, w = len(grid), len(grid[0]) // n
-        offset = len(grid[0]) % n != 0
-        return tuple(crop(grid, (0, w * i + i * offset), (h, w)) for i in range(n))
+        h, w = len(grid), len(grid[0]) // parts
+        offset = len(grid[0]) % parts != 0
+        return tuple(crop(grid, (0, w * i + i * offset), (h, w)) for i in range(parts))
     else:
-        h, w = len(grid) // n, len(grid[0])
-        offset = len(grid) % n != 0
-        return tuple(crop(grid, (h * i + i * offset, 0), (h, w)) for i in range(n))
+        h, w = len(grid) // parts, len(grid[0])
+        offset = len(grid) % parts != 0
+        return tuple(crop(grid, (h * i + i * offset, 0), (h, w)) for i in range(parts))
 
 
-def cellwise(
+def cellwise_combine(
     a: tuple,
     b: tuple,
-    fallback: int
+    fallback_color: int
 ) -> tuple:
-    """ cellwise match of two grids """
+    """ Combine two grids cell-by-cell: keep the value where they agree, use fallback_color where they differ. """
     h, w = len(a), len(a[0])
     resulting_grid = tuple()
     for i in range(h):
         row = tuple()
         for j in range(w):
             a_value = a[i][j]
-            value = a_value if a_value == b[i][j] else fallback
+            value = a_value if a_value == b[i][j] else fallback_color
             row = row + (value,)
         resulting_grid = resulting_grid + (row, )
     return resulting_grid
 
 
-def replace(
+def replace_color(
     grid: tuple,
-    replacee: int,
-    replacer: int
+    old_color: int,
+    new_color: int
 ) -> tuple:
-    """ color substitution """
-    return tuple(tuple(replacer if v == replacee else v for v in r) for r in grid)
+    """ Replace all occurrences of old_color with new_color in the grid. """
+    return tuple(tuple(new_color if v == old_color else v for v in r) for r in grid)
 
 
-def switch(
+def swap_colors(
     grid: tuple,
-    a: int,
-    b: int
+    color_a: int,
+    color_b: int
 ) -> tuple:
-    """ color switching """
-    return tuple(tuple(v if (v != a and v != b) else {a: b, b: a}[v] for v in r) for r in grid)
+    """ Swap two colors everywhere in the grid. """
+    return tuple(tuple(v if (v != color_a and v != color_b) else {color_a: color_b, color_b: color_a}[v] for v in r) for r in grid)
 
 
-def center(
+def get_center(
     patch: frozenset
 ) -> tuple:
-    """ center of the patch """
-    return (boundary(patch, 'top') + height(patch) // 2, boundary(patch, 'left') + width(patch) // 2)
+    """ Return the center (row, col) of the patch's bounding box (integer division). """
+    return (get_boundary(patch, 'top') + height(patch) // 2, get_boundary(patch, 'left') + width(patch) // 2)
 
 
-def position(
+def relative_direction(
     a: frozenset,
     b: frozenset
 ) -> tuple:
-    """ relative position between two patches """
-    ia, ja = center(toindices(a))
-    ib, jb = center(toindices(b))
+    """ Return the relative direction from patch a to patch b as (row_sign, col_sign).
+    Each component is -1, 0, or 1. E.g. (1, -1) means b is below and to the left of a.
+    """
+    ia, ja = get_center(to_indices(a))
+    ib, jb = get_center(to_indices(b))
     if ia == ib:
         return (0, 1 if ja < jb else -1)
     elif ja == jb:
@@ -762,40 +596,42 @@ def position(
         return (-1, 1 if ja < jb else -1)
 
 
-def index(
+def color_at(
     grid: tuple,
-    loc: tuple
+    location: tuple
 ) -> int:
-    """ color at location """
-    i, j = loc
+    """ Return the color at the given (row, col) location. Returns None if out of bounds. """
+    i, j = location
     h, w = len(grid), len(grid[0])
     if not (0 <= i < h and 0 <= j < w):
         return None
-    return grid[loc[0]][loc[1]]
+    return grid[location[0]][location[1]]
 
 
-def canvas(
-    value: int,
-    dimensions: tuple
+def create_grid(
+    color: int,
+    size: tuple
 ) -> tuple:
-    """ grid construction """
-    return tuple(tuple(value for j in range(dimensions[1])) for i in range(dimensions[0]))
+    """ Create a uniform grid filled with the given color and size (rows, cols). """
+    return tuple(tuple(color for j in range(size[1])) for i in range(size[0]))
 
 
-def corners(
+def all_corners(
     patch: frozenset
 ) -> frozenset:
-    """ indices of corners """
-    return frozenset({corner(patch, pos) for pos in ('ul', 'ur', 'll', 'lr')})
+    """ Return the four corner indices of the patch's bounding box. """
+    return frozenset({get_corner(patch, pos) for pos in ('upper_left', 'upper_right', 'lower_left', 'lower_right')})
 
 
-def connect(
-    a: tuple,
-    b: tuple
+def line_between(
+    point_a: tuple,
+    point_b: tuple
 ) -> frozenset:
-    """ line between two points """
-    ai, aj = a
-    bi, bj = b
+    """ Return the indices forming a straight line between two points.
+    Works for horizontal, vertical, and 45-degree diagonal lines. Returns empty set otherwise.
+    """
+    ai, aj = point_a
+    bi, bj = point_b
     si = min(ai, bi)
     ei = max(ai, bi) + 1
     sj = min(aj, bj)
@@ -811,116 +647,114 @@ def connect(
     return frozenset()
 
 
-def cover(
+def erase(
     grid: tuple,
     patch: frozenset
 ) -> tuple:
-    """ remove object from grid """
-    return fill(grid, extremecolor(grid), toindices(patch))
+    """ Erase a patch from the grid by filling it with the background (most common) color. """
+    return fill(grid, dominant_color(grid), to_indices(patch))
 
 
-def trim(
+def trim_border(
     grid: tuple
 ) -> tuple:
-    """ trim border of grid """
+    """ Remove the one-cell border on all sides of the grid. """
     return tuple(r[1:-1] for r in grid[1:-1])
 
 
-def move(
+def move_object(
     grid: tuple,
     obj: frozenset,
     offset: tuple
 ) -> tuple:
-    """ move object on grid """
-    return paint(cover(grid, obj), shift(obj, offset))
+    """ Remove an object from the grid, then paint it back shifted by the given offset. """
+    return paint(erase(grid, obj), translate(obj, offset))
 
 
-# --- merged: tophalf + bottomhalf + lefthalf + righthalf ---
-
-def half(
+def get_half(
     grid: tuple,
     side: str = 'top'
 ) -> tuple:
-    """ half of grid (side: 'top', 'bottom', 'left', 'right') """
+    """ Return half of the grid (side: 'top', 'bottom', 'left', 'right'). """
     if side == 'top':
         return grid[:len(grid) // 2]
     elif side == 'bottom':
         return grid[len(grid) // 2 + len(grid) % 2:]
     elif side == 'left':
-        return rotate(half(rotate(grid, 90), 'top'), 270)
+        return rotate(get_half(rotate(grid, 90), 'top'), 270)
     elif side == 'right':
-        return rotate(half(rotate(grid, 90), 'bottom'), 270)
+        return rotate(get_half(rotate(grid, 90), 'bottom'), 270)
 
 
-# --- merged: vfrontier + hfrontier ---
-
-def frontier(
+def full_line_through(
     location: tuple,
     axis: str = 'vertical'
 ) -> frozenset:
-    """ frontier line through location (axis: 'vertical' or 'horizontal') """
+    """ Return a full line of indices through the given location (axis: 'vertical' or 'horizontal'). """
     if axis == 'vertical':
         return frozenset((i, location[1]) for i in range(30))
     else:
         return frozenset((location[0], j) for j in range(30))
 
 
-def backdrop(
+def filled_bounding_box(
     patch: frozenset
 ) -> frozenset:
-    """ indices in bounding box of patch """
+    """ Return all indices inside the bounding box of the patch. """
     if len(patch) == 0:
         return frozenset({})
-    indices = toindices(patch)
-    si, sj = corner(indices, 'ul')
-    ei, ej = corner(patch, 'lr')
+    indices = to_indices(patch)
+    si, sj = get_corner(indices, 'upper_left')
+    ei, ej = get_corner(patch, 'lower_right')
     return frozenset((i, j) for i in range(si, ei + 1) for j in range(sj, ej + 1))
 
 
-def delta(
+def bounding_box_complement(
     patch: frozenset
 ) -> frozenset:
-    """ indices in bounding box but not part of patch """
+    """ Return indices inside the bounding box that are NOT part of the patch. """
     if len(patch) == 0:
         return frozenset({})
-    return backdrop(patch) - toindices(patch)
+    return filled_bounding_box(patch) - to_indices(patch)
 
 
-def gravitate(
+def gravitate_toward(
     source: frozenset,
     destination: frozenset
 ) -> tuple:
-    """ direction to move source until adjacent to destination """
-    si, sj = center(source)
-    di, dj = center(destination)
+    """ Return the offset needed to move source until it is adjacent to destination. """
+    si, sj = get_center(source)
+    di, dj = get_center(destination)
     i, j = 0, 0
-    if matching(source, destination, 'column'):
+    if shares_axis(source, destination, 'column'):
         i = 1 if si < di else -1
     else:
         j = 1 if sj < dj else -1
     gi, gj = i, j
     c = 0
-    while not adjacent(source, destination) and c < 42:
+    while not are_adjacent(source, destination) and c < 42:
         c += 1
         gi += i
         gj += j
-        source = shift(source, (i, j))
+        source = translate(source, (i, j))
     return (gi - i, gj - j)
 
 
-# --- merged: inbox + outbox + box ---
-
-def boundbox(
+def bounding_box_outline(
     patch: frozenset,
-    delta: int = 0
+    offset: int = 0
 ) -> frozenset:
-    """ bounding box outline with offset (delta: 0=exact, 1=inner, -1=outer) """
+    """ Return the perimeter indices of the bounding box.
+    offset=0: exact bounding box outline.
+    offset=1: outline one cell inside (inbox).
+    offset=-1: outline one cell outside (outbox).
+    """
     if len(patch) == 0:
         return frozenset()
-    ai = boundary(patch, 'top') + delta
-    aj = boundary(patch, 'left') + delta
-    bi = boundary(patch, 'bottom') - delta
-    bj = boundary(patch, 'right') - delta
+    ai = get_boundary(patch, 'top') + offset
+    aj = get_boundary(patch, 'left') + offset
+    bi = get_boundary(patch, 'bottom') - offset
+    bj = get_boundary(patch, 'right') - offset
     si, sj = min(ai, bi), min(aj, bj)
     ei, ej = max(ai, bi), max(aj, bj)
     vlines = {(i, sj) for i in range(si, ei + 1)} | {(i, ej) for i in range(si, ei + 1)}
@@ -928,28 +762,28 @@ def boundbox(
     return frozenset(vlines | hlines)
 
 
-def shoot(
+def cast_ray(
     start: tuple,
     direction: tuple
 ) -> frozenset:
-    """ line from starting point and direction """
-    return connect(start, (start[0] + 42 * direction[0], start[1] + 42 * direction[1]))
+    """ Cast a ray from the starting point in the given direction (up to 42 cells). """
+    return line_between(start, (start[0] + 42 * direction[0], start[1] + 42 * direction[1]))
 
 
-def occurrences(
+def find_occurrences(
     grid: tuple,
     obj: frozenset
 ) -> frozenset:
-    """ locations of occurrences of object in grid """
+    """ Find all (row, col) positions where the given object appears in the grid. """
     occs = set()
-    normed = normalize(obj)
+    normed = normalize_to_origin(obj)
     h, w = len(grid), len(grid[0])
-    oh, ow = shape(obj)
+    oh, ow = dimensions(obj)
     h2, w2 = h - oh + 1, w - ow + 1
     for i in range(h2):
         for j in range(w2):
             occurs = True
-            for v, (a, b) in shift(normed, (i, j)):
+            for v, (a, b) in translate(normed, (i, j)):
                 if not (0 <= a < h and 0 <= b < w and grid[a][b] == v):
                     occurs = False
                     break
@@ -958,10 +792,10 @@ def occurrences(
     return frozenset(occs)
 
 
-def frontiers(
+def find_frontiers(
     grid: tuple
 ) -> frozenset:
-    """ set of frontiers """
+    """ Find all uniform-color full rows and columns in the grid. """
     h, w = len(grid), len(grid[0])
     row_indices = tuple(i for i, r in enumerate(grid) if len(set(r)) == 1)
     column_indices = tuple(j for j, c in enumerate(mirror(grid, 'diagonal')) if len(set(c)) == 1)
@@ -970,31 +804,29 @@ def frontiers(
     return hfrontiers | vfrontiers
 
 
-def compress(
+def remove_frontiers(
     grid: tuple
 ) -> tuple:
-    """ removes frontiers from grid """
+    """ Remove all uniform-color full rows and columns from the grid. """
     ri = tuple(i for i, r in enumerate(grid) if len(set(r)) == 1)
     ci = tuple(j for j, c in enumerate(mirror(grid, 'diagonal')) if len(set(c)) == 1)
     return tuple(tuple(v for j, v in enumerate(r) if j not in ci) for i, r in enumerate(grid) if i not in ri)
 
 
-# --- merged: hperiod + vperiod ---
-
-def period(
+def find_period(
     obj: frozenset,
     axis: str = 'horizontal'
 ) -> int:
-    """ periodicity along axis (axis: 'horizontal' or 'vertical') """
-    normalized = normalize(obj)
-    size = width(normalized) if axis == 'horizontal' else height(normalized)
-    for p in range(1, size):
+    """ Find the smallest repeating period of the object along the given axis (axis: 'horizontal' or 'vertical'). """
+    normalized = normalize_to_origin(obj)
+    total = width(normalized) if axis == 'horizontal' else height(normalized)
+    for p in range(1, total):
         if axis == 'horizontal':
-            offsetted = shift(normalized, (0, -p))
+            offsetted = translate(normalized, (0, -p))
             pruned = frozenset({(c, (i, j)) for c, (i, j) in offsetted if j >= 0})
         else:
-            offsetted = shift(normalized, (-p, 0))
+            offsetted = translate(normalized, (-p, 0))
             pruned = frozenset({(c, (i, j)) for c, (i, j) in offsetted if i >= 0})
         if pruned.issubset(normalized):
             return p
-    return size
+    return total
