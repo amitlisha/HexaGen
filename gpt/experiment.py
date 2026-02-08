@@ -52,9 +52,9 @@ def summarize_logs(logs: List[Dict], mode: str, task_id: int) -> Dict:
         total_steps = 1
         valid_cnt = 1 if logs[0].get("valid", False) else 0
         exact_cnt = 1 if logs[0].get("exact_board", False) else 0
-        exact_action_cnt = 1 if logs[0].get("exact_board", False) else 0
+        exact_action_cnt = 1 if logs[0].get("exact_action", False) else 0
         avg_f1_board = logs[0].get("f1_board", 0.0)
-        avg_f1_action = logs[0].get("f1_board", 0.0)
+        avg_f1_action = logs[0].get("f1_action", 0.0)
 
     successful_steps = [i + 1 for i, lg in enumerate(logs) if lg["correct"]]
     failed_steps = [i + 1 for i, lg in enumerate(logs) if not lg["correct"]]
