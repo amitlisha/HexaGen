@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import argparse
 import random
-from pathlib import Path
 from typing import Dict, List, Optional
 import matplotlib
 
@@ -23,11 +25,56 @@ from runner_utils import (
     save_json,
     timestamp,
 )
+from llm_wrapper import init_llm
 from constants.constants import WIDTH, HEIGHT
 from prompts import build_prompts
 from metrics import f1_score
 
 matplotlib.use("Agg")
+
+
+def _gold_failed_runs(task: Dict, mode: str) -> List[Dict]:
+    """Build synthetic failed-run entries carrying gold counts.
+
+    When a task crashes before any runner executes, we still need the gold
+    tile counts (board_g, action_g) so aggregate micro-F1 penalises recall
+    correctly instead of silently ignoring the task.
+    """
+    gold_boards = task["gold_boards"]
+    is_full = mode in ("code-full", "tiles-full", "python-full")
+    if is_full:
+        final = gold_boards[-1]
+        bg = sum(1 for t in final if t != 0)
+        return [
+            {
+                "valid": False,
+                "board_tp": 0,
+                "board_p": 0,
+                "board_g": bg,
+                "action_tp": 0,
+                "action_p": 0,
+                "action_g": bg,
+            }
+        ]
+    blank = [0] * (WIDTH * HEIGHT)
+    runs: List[Dict] = []
+    for i, gb in enumerate(gold_boards):
+        prev = gold_boards[i - 1] if i > 0 else blank
+        bg = sum(1 for t in gb if t != 0)
+        ag = sum(1 for a, b in zip(prev, gb) if a != b)
+        runs.append(
+            {
+                "valid": False,
+                "board_tp": 0,
+                "board_p": 0,
+                "board_g": bg,
+                "action_tp": 0,
+                "action_p": 0,
+                "action_g": ag,
+            }
+        )
+    return runs
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Dataset helpers
@@ -316,7 +363,7 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def _run_set(cfg: argparse.Namespace) -> None:
+def _run_set(cfg: argparse.Namespace) -> Dict:
     """Run and summarise all tasks from a dataset split, then emit ONE JSON."""
     print(f"Running full set: {cfg.set}")
     tasks = list(iter_set_tasks(cfg.set))
@@ -341,7 +388,7 @@ def _run_set(cfg: argparse.Namespace) -> None:
                 try:
                     per_task_payloads[idx] = fut.result()
                 except Exception as exc:
-                    tid = tasks[idx][0]
+                    tid, tsk = tasks[idx]
                     print(f"Task {tid} failed: {exc}")
                     per_task_payloads[idx] = {
                         "stats": {
@@ -357,7 +404,7 @@ def _run_set(cfg: argparse.Namespace) -> None:
                             "successful_steps": [],
                             "failed_steps": [],
                         },
-                        "runs": [],
+                        "runs": _gold_failed_runs(tsk, cfg.mode),
                         "run_dir": None,
                         "run_log_path": None,
                     }
@@ -434,15 +481,55 @@ def _run_set(cfg: argparse.Namespace) -> None:
     save_json(single_payload, single_path)
     print(f"\nSingle JSON written to: {single_path}")
 
+    single_payload["file_path"] = str(single_path)
+    return single_payload
+
 
 def main() -> None:
     cfg = parse_args()
     random.seed(cfg.seed)
 
-    if cfg.set:
-        _run_set(cfg)
-    else:
-        _ = run_task(cfg, cfg.task, read_task(cfg.task))
+    # Initialize LLM clients globally for persistence
+    init_llm(cfg)
+
+    modes = cfg.mode if isinstance(cfg.mode, list) else [cfg.mode]
+
+    all_results = []
+
+    for mode in modes:
+        for r in range(cfg.repeats):
+            print(
+                f"\n\n>>> STARTING RUN: Mode={mode}, Repeat={r+1}/{cfg.repeats} <<<\n"
+            )
+
+            # Create a run-specific config
+            run_cfg = argparse.Namespace(**vars(cfg))
+            run_cfg.mode = mode
+
+            if cfg.set:
+                res = _run_set(run_cfg)
+                all_results.append(
+                    {
+                        "mode": mode,
+                        "repeat": r + 1,
+                        "summary": res["aggregate"],
+                        "file": res.get("file_path"),
+                    }
+                )
+            else:
+                _ = run_task(run_cfg, cfg.task, read_task(cfg.task))
+
+    if cfg.set and len(all_results) > 0:
+        out_dir = get_results_dir_path(cfg.experiment_name) / cfg.set
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = timestamp()
+
+        batch_summary_path = out_dir / f"batch_summary_{ts}.json"
+
+        batch_payload = {"config": vars(cfg), "runs": all_results}
+
+        save_json(batch_payload, batch_summary_path)
+        print(f"\nBatch summary JSON written to: {batch_summary_path}")
 
 
 if __name__ == "__main__":

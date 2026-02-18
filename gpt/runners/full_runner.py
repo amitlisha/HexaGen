@@ -111,6 +111,9 @@ def run_full(
 
             # Check if we should retry
             if cfg.retries and attempt >= cfg.retries:
+                # Compute gold counts so failed runs still contribute to
+                # aggregate recall (board_g / action_g).
+                board_g = sum(1 for t in gold_final if t != 0)
                 log.update(
                     {
                         "precision_board": 0.0,
@@ -121,6 +124,12 @@ def run_full(
                         "recall_action": 0.0,
                         "f1_action": 0.0,
                         "exact_action": False,
+                        "board_tp": 0,
+                        "board_p": 0,
+                        "board_g": board_g,
+                        "action_tp": 0,
+                        "action_p": 0,
+                        "action_g": board_g,
                     }
                 )
                 return log
