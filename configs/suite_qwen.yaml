@@ -1,0 +1,67 @@
+# Example suite configuration for DSL generation experiments.
+#
+# Usage:
+#   python gpt/suite_runner.py configs/example_suite.yaml
+#   python gpt/suite_runner.py configs/example_suite.yaml --dry-run
+#   python gpt/suite_runner.py configs/example_suite.yaml --setup baseline singleshot
+#   python gpt/suite_runner.py configs/example_suite.yaml --skip-generation
+#   python gpt/suite_runner.py configs/example_suite.yaml --repeat-start 2
+
+suite_name: "Qwen3-30B-A3B-Thinking-2507"
+
+# Shared DSL generation parameters (passed to orchestrator.py).
+# Each setup inherits these and can override any of them.
+dsl_defaults:
+  train_data: data/train_standard.jsonl
+  base_lib_docs: minimal_hexagen_api_spec.txt
+  base_lib: minimal_hexagen.py
+  model: Qwen/Qwen3-30B-A3B-Thinking-2507
+  workers: 1
+  base_url: http://127.0.0.1:8000/v1
+  # output_dir: generated_libs      # default
+  # temperature: 0.7                # default
+  # max_tokens: 2000                # default
+  # seed: 42                        # default
+  # batch_size: 100                 # default
+  # meta_batch_size: 10             # default
+  # refinement_iterations: 1        # default
+  # vision: false                   # default
+  # stage: all                      # default
+
+# Evaluation parameters (passed to experiment.py).
+# Always runs code-full mode with the generated DSL library.
+eval:
+  set: dev
+  model: Qwen/Qwen3-30B-A3B-Thinking-2507
+  workers: 20
+  base_url: http://127.0.0.1:8000/v1
+  exec_timeout: 60
+  # mode: code-full                 # default, always code-full
+  # temperature: 0                  # default
+  # max_tokens: 15000               # default
+  # history: true                   # default
+  # retries: 3                      # default
+
+# Number of independent DSL generation + evaluation cycles per setup.
+repeats: 3
+
+# DSL generation setups. Each setup can override any dsl_defaults parameter.
+setups:
+  # Baseline: full pipeline with hierarchical batching + refinement
+  - name: "baseline"
+
+  # Ablation: single-shot analysis (no hierarchical batching in stage 1)
+  - name: "singleshot"
+    ablation: [singleshot]
+
+  # Ablation: skip refinement (stage 2)
+  - name: "no-refinement"
+    ablation: [no-refinement]
+
+  # Ablation: both single-shot and no refinement
+  - name: "singleshot-no-refinement"
+    ablation: [singleshot, no-refinement]
+
+  # Variant: more refinement iterations
+  # - name: "more-refinement"
+  #   refinement_iterations: 5

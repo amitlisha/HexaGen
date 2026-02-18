@@ -79,6 +79,18 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--max-tokens", type=int, default=2000, help="Max tokens for LLM responses"
     )
+    p.add_argument(
+        "--base-url",
+        type=str,
+        default=None,
+        help="Base URL for the LLM API (e.g., http://localhost:8000/v1 for local models)",
+    )
+    p.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="API key for the LLM provider (overrides environment variables)",
+    )
 
     # Vision
     p.add_argument(

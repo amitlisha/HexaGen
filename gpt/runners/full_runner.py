@@ -38,6 +38,7 @@ def _dsl_exec_worker(code_str: str, queue, input_grid_tuple):
         # Import everything from dsl
         try:
             import larc.dsl as dsl_module
+
             for name in dir(dsl_module):
                 if not name.startswith("_"):
                     namespace[name] = getattr(dsl_module, name)
@@ -217,7 +218,9 @@ def run_full(
             # LARC validation: dimensions must match
             target_h = height if height is not None else len(input_grid_2d)
             target_w = (
-                width if width is not None else (len(input_grid_2d[0]) if input_grid_2d else 0)
+                width
+                if width is not None
+                else (len(input_grid_2d[0]) if input_grid_2d else 0)
             )
 
             dimension_match = pred_h == target_h and pred_w == target_w
@@ -273,9 +276,7 @@ def run_full(
                 # Dimensions differ – plot pred with its own shape, gold with its own
                 plot_w = pred_w or (width or 1)
                 plot_h = pred_h or (height or 1)
-                save_larc_plot(
-                    pred_board, None, plot_path, plot_w, plot_h
-                )
+                save_larc_plot(pred_board, None, plot_path, plot_w, plot_h)
         except ImportError:
             save_plot(pred_board, gold_final, plot_path)
         except Exception as e:
@@ -359,6 +360,7 @@ def run_full(
 
                 # Check if we should retry
                 if cfg.retries and attempt >= cfg.retries:
+                    board_g = sum(1 for t in gold_final if t != 0)
                     log.update(
                         {
                             "precision_board": 0.0,
@@ -369,6 +371,12 @@ def run_full(
                             "recall_action": 0.0,
                             "f1_action": 0.0,
                             "exact_action": False,
+                            "board_tp": 0,
+                            "board_p": 0,
+                            "board_g": board_g,
+                            "action_tp": 0,
+                            "action_p": 0,
+                            "action_g": board_g,
                         }
                     )
                     return log

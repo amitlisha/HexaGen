@@ -4,13 +4,62 @@ from __future__ import annotations
 
 import base64
 import mimetypes
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import os
+import argparse
 
 from tenacity import retry, wait_exponential_jitter, stop_after_attempt
 
 os.environ["GRPC_DNS_RESOLVER"] = "native"
+
+# Global clients/state for persistence
+_OPENAI_CLIENT: Optional[Any] = None
+_GEMINI_CONFIGURED: bool = False
+_VERTEX_CONFIGURED: bool = False
+
+
+def init_llm(cfg: argparse.Namespace) -> None:
+    """Initialize LLM clients based on configuration."""
+    global _OPENAI_CLIENT, _GEMINI_CONFIGURED, _VERTEX_CONFIGURED
+
+    # OpenAI / Local OpenAI-compatible
+    from openai import OpenAI
+
+    client_kwargs = {}
+    if hasattr(cfg, "base_url") and cfg.base_url:
+        client_kwargs["base_url"] = cfg.base_url
+    if hasattr(cfg, "api_key") and cfg.api_key:
+        client_kwargs["api_key"] = cfg.api_key
+    elif hasattr(cfg, "base_url") and cfg.base_url:
+        client_kwargs["api_key"] = "EMPTY"
+
+    _OPENAI_CLIENT = OpenAI(**client_kwargs)
+
+    # Gemini / Vertex AI
+    if _is_gemini_model(cfg.model):
+        project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get(
+            "VERTEX_PROJECT_ID"
+        )
+
+        if project_id:
+            import vertexai
+
+            location = os.environ.get("VERTEX_LOCATION", "global")
+            vertexai.init(project=project_id, location=location)
+            _VERTEX_CONFIGURED = True
+        else:
+            import google.generativeai as genai
+
+            api_key = (
+                getattr(cfg, "api_key", None)
+                or os.environ.get("GOOGLE_API_KEY")
+                or os.environ.get("GEMINI_API_KEY")
+            )
+            if api_key:
+                genai.configure(api_key=api_key)
+                _GEMINI_CONFIGURED = True
 
 
 def _file_to_data_url(p: str | Path) -> str:
@@ -25,6 +74,21 @@ def _file_to_data_url(p: str | Path) -> str:
 def _file_to_bytes(p: str | Path) -> bytes:
     """Read file as bytes for Gemini."""
     return Path(p).read_bytes()
+
+
+def _strip_thinking_tokens(text: str) -> str:
+    """Strip <think>...</think> blocks from model output (e.g. Qwen3 thinking).
+
+    Handles three cases:
+    1. Complete <think>...</think> blocks
+    2. Missing opening <think> (vLLM may consume it as a special token) -
+       strips everything up to and including </think>
+    """
+    # Strip complete <think>...</think> blocks
+    text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL)
+    # Handle missing opening <think> tag
+    text = re.sub(r"^.*?</think>\s*", "", text, flags=re.DOTALL)
+    return text.strip()
 
 
 def _is_gemini_model(model: str) -> bool:
@@ -96,9 +160,11 @@ def _call_openai(
     images: Optional[List[str | Path]],
 ) -> Dict[str, Any]:
     """Call OpenAI API."""
-    from openai import OpenAI
+    global _OPENAI_CLIENT
+    if _OPENAI_CLIENT is None:
+        from openai import OpenAI
 
-    client = OpenAI()
+        _OPENAI_CLIENT = OpenAI()
 
     # Build messages
     messages: List[Dict[str, Any]] = []
@@ -128,10 +194,12 @@ def _call_openai(
         api_params["temperature"] = temperature
         api_params["max_tokens"] = max_tokens
 
-    resp = client.chat.completions.create(**api_params)
+    resp = _OPENAI_CLIENT.chat.completions.create(**api_params)
     choice = resp.choices[0]
+    text = choice.message.content.strip()
+    text = _strip_thinking_tokens(text)
     return {
-        "text": choice.message.content.strip(),
+        "text": text,
         "usage": resp.usage.model_dump(exclude_none=True),
         "raw": resp.model_dump(exclude_none=True),
     }
@@ -145,15 +213,12 @@ def _call_gemini(
     system_prompt: Optional[str],
     images: Optional[List[str | Path]],
 ) -> Dict[str, Any]:
-    """Call Google Gemini API or Vertex AI.
-
-    Auto-detects whether to use Gemini API or Vertex AI based on environment:
-    - If GCP_PROJECT_ID or VERTEX_PROJECT_ID is set: use Vertex AI
-    - Otherwise: use Gemini API (requires GOOGLE_API_KEY or GEMINI_API_KEY)
-    """
+    """Call Google Gemini API or Vertex AI."""
     import os
 
-    # Check if we should use Vertex AI
+    global _VERTEX_CONFIGURED, _GEMINI_CONFIGURED
+
+    # Check for Vertex preference first
     project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get("VERTEX_PROJECT_ID")
 
     if project_id:
@@ -189,14 +254,16 @@ def _call_gemini_api(
     import google.generativeai as genai
     import os
 
-    # Configure API key
-    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "GOOGLE_API_KEY or GEMINI_API_KEY environment variable must be set for Gemini API"
-        )
-
-    genai.configure(api_key=api_key)
+    global _GEMINI_CONFIGURED
+    if not _GEMINI_CONFIGURED:
+        # Configure API key if not already done
+        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "GOOGLE_API_KEY or GEMINI_API_KEY environment variable must be set for Gemini API"
+            )
+        genai.configure(api_key=api_key)
+        _GEMINI_CONFIGURED = True
 
     # Create model instance
     generation_config = {
@@ -283,11 +350,12 @@ def _call_vertex_ai(
     from vertexai.preview.generative_models import GenerativeModel, Part
     import os
 
-    # Get location (default to us-central1)
-    location = os.environ.get("VERTEX_LOCATION", "global")
-
-    # Initialize Vertex AI
-    vertexai.init(project=project_id, location=location)
+    global _VERTEX_CONFIGURED
+    if not _VERTEX_CONFIGURED:
+        # Fallback initialization if init_llm wasn't called or didn't find the project_id
+        location = os.environ.get("VERTEX_LOCATION", "global")
+        vertexai.init(project=project_id, location=location)
+        _VERTEX_CONFIGURED = True
 
     # Create model instance
     generation_config = {
