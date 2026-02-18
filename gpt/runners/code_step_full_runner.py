@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from llm_wrapper import call_llm
@@ -90,7 +91,9 @@ def run_code_step_full(
         if "board_state = g.board_state" not in new_script:
             new_script += "\nboard_state = g.board_state"
 
-        _ = save_script(out_dir, run_ts, step_idx, attempt, new_script, kind="code-step-full")
+        _ = save_script(
+            out_dir, run_ts, step_idx, attempt, new_script, kind="code-step-full"
+        )
 
         log = {
             "step": step_idx,
@@ -125,9 +128,7 @@ def run_code_step_full(
                 # Compute gold counts so failed runs still contribute to
                 # aggregate recall (board_g / action_g).
                 board_g = sum(1 for t in gold_board if t != 0)
-                action_g = sum(
-                    1 for a, b in zip(prev_gold_board, gold_board) if a != b
-                )
+                action_g = sum(1 for a, b in zip(prev_gold_board, gold_board) if a != b)
                 log.update(
                     {
                         "precision_board": 0.0,

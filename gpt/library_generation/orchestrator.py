@@ -22,6 +22,7 @@ def main():
 
     # Initialize LLM client (supports local models via --base-url)
     from gpt.llm_wrapper import init_llm
+
     init_llm(cfg)
 
     # Create experiment directory (add ablation suffix if applicable)
@@ -66,9 +67,9 @@ def main():
 
     # Stage 0: Minimal foundation library
     if "0" in stages_to_run:
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("STAGE 0: Minimal Foundation Library")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
         print("TODO: Extract minimal library from hexagen")
         print("This stage will create a stripped-down version with only:")
         print("  - Game (context manager, board_state, plot)")
@@ -89,10 +90,12 @@ def main():
         if "singleshot" in cfg.ablation:
             # Use single-shot variant
             from stage1_discovery_ablation_singleshot import run_stage1_singleshot
+
             results[1] = run_stage1_singleshot(cfg, stage1_dir)
         else:
             # Use standard hierarchical batching
             from stage1_discovery import run_stage1
+
             results[1] = run_stage1(cfg, stage1_dir)
 
     # Stage 2: API Refinement
@@ -101,6 +104,7 @@ def main():
         if 1 not in results:
             # Try to load Stage 1 results from disk
             import json
+
             stage1_summary = exp_dir / "stage1" / "stage1_summary.json"
             if stage1_summary.exists():
                 print("Loading Stage 1 results from disk...")
@@ -112,6 +116,7 @@ def main():
 
         if 1 in results:
             from stage2_refinement import run_stage2
+
             stage2_dir = exp_dir / "stage2"
             stage2_dir.mkdir(parents=True, exist_ok=True)
             results[2] = run_stage2(cfg, stage2_dir, results[1])
@@ -125,9 +130,12 @@ def main():
             if 1 not in results:
                 # Try to load Stage 1 results from disk
                 import json
+
                 stage1_summary = exp_dir / "stage1" / "stage1_summary.json"
                 if stage1_summary.exists():
-                    print("Loading Stage 1 results from disk (no-refinement ablation)...")
+                    print(
+                        "Loading Stage 1 results from disk (no-refinement ablation)..."
+                    )
                     with open(stage1_summary) as f:
                         results[1] = json.load(f)
                 else:
@@ -135,22 +143,23 @@ def main():
                     print(f"  Expected: {stage1_summary}")
 
             if 1 in results:
-                print("\n" + "="*80)
-                print("STAGE 3: IMPLEMENTATION (using Stage 1 API directly - no refinement)")
-                print("="*80 + "\n")
+                print("\n" + "=" * 80)
+                print(
+                    "STAGE 3: IMPLEMENTATION (using Stage 1 API directly - no refinement)"
+                )
+                print("=" * 80 + "\n")
 
                 # Create fake stage2 result pointing to stage1 API
                 stage2_result = {
                     "stage": 1,
-                    "outputs": {
-                        "final_api": results[1]["outputs"]["api_proposal"]
-                    }
+                    "outputs": {"final_api": results[1]["outputs"]["api_proposal"]},
                 }
         else:
             # Standard flow: check for Stage 2 results
             if 2 not in results:
                 # Try to load Stage 2 results from disk
                 import json
+
                 stage2_summary = exp_dir / "stage2" / "stage2_summary.json"
                 if stage2_summary.exists():
                     print("Loading Stage 2 results from disk...")
@@ -166,6 +175,7 @@ def main():
         # Run Stage 3 if we have input (either from Stage 2 or Stage 1)
         if stage2_result:
             from stage3_implementation import run_stage3
+
             stage3_dir = exp_dir / "stage3"
             stage3_dir.mkdir(parents=True, exist_ok=True)
             results[3] = run_stage3(cfg, stage3_dir, stage2_result)
@@ -176,6 +186,7 @@ def main():
         if 3 not in results:
             # Try to load Stage 3 results from disk
             import json
+
             stage3_summary = exp_dir / "stage3" / "stage3_summary.json"
             if stage3_summary.exists():
                 print("Loading Stage 3 results from disk...")
@@ -187,16 +198,17 @@ def main():
 
         if 3 in results:
             from stage4_documentation import run_stage4
+
             stage4_dir = exp_dir / "stage4"
             stage4_dir.mkdir(parents=True, exist_ok=True)
             results[4] = run_stage4(cfg, stage4_dir, results[3])
 
     # Final summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("EXPERIMENT COMPLETE")
     if cfg.ablation:
         print(f"(ABLATIONS: {', '.join(cfg.ablation)})")
-    print("="*80 + "\n")
+    print("=" * 80 + "\n")
     print(f"Results saved to: {exp_dir}")
     print(f"Stages completed: {list(results.keys())}")
     if "singleshot" in cfg.ablation:

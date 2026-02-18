@@ -19,12 +19,14 @@ _OPENAI_CLIENT: Optional[Any] = None
 _GEMINI_CONFIGURED: bool = False
 _VERTEX_CONFIGURED: bool = False
 
+
 def init_llm(cfg: argparse.Namespace) -> None:
     """Initialize LLM clients based on configuration."""
     global _OPENAI_CLIENT, _GEMINI_CONFIGURED, _VERTEX_CONFIGURED
-    
+
     # OpenAI / Local OpenAI-compatible
     from openai import OpenAI
+
     client_kwargs = {}
     if hasattr(cfg, "base_url") and cfg.base_url:
         client_kwargs["base_url"] = cfg.base_url
@@ -32,23 +34,29 @@ def init_llm(cfg: argparse.Namespace) -> None:
         client_kwargs["api_key"] = cfg.api_key
     elif hasattr(cfg, "base_url") and cfg.base_url:
         client_kwargs["api_key"] = "EMPTY"
-        
+
     _OPENAI_CLIENT = OpenAI(**client_kwargs)
 
     # Gemini / Vertex AI
     if _is_gemini_model(cfg.model):
-        project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get("VERTEX_PROJECT_ID")
-        
+        project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get(
+            "VERTEX_PROJECT_ID"
+        )
+
         if project_id:
             import vertexai
+
             location = os.environ.get("VERTEX_LOCATION", "global")
             vertexai.init(project=project_id, location=location)
             _VERTEX_CONFIGURED = True
         else:
             import google.generativeai as genai
-            api_key = (getattr(cfg, "api_key", None) or 
-                       os.environ.get("GOOGLE_API_KEY") or 
-                       os.environ.get("GEMINI_API_KEY"))
+
+            api_key = (
+                getattr(cfg, "api_key", None)
+                or os.environ.get("GOOGLE_API_KEY")
+                or os.environ.get("GEMINI_API_KEY")
+            )
             if api_key:
                 genai.configure(api_key=api_key)
                 _GEMINI_CONFIGURED = True
@@ -155,6 +163,7 @@ def _call_openai(
     global _OPENAI_CLIENT
     if _OPENAI_CLIENT is None:
         from openai import OpenAI
+
         _OPENAI_CLIENT = OpenAI()
 
     # Build messages
@@ -206,7 +215,7 @@ def _call_gemini(
 ) -> Dict[str, Any]:
     """Call Google Gemini API or Vertex AI."""
     import os
-    
+
     global _VERTEX_CONFIGURED, _GEMINI_CONFIGURED
 
     # Check for Vertex preference first
@@ -340,7 +349,7 @@ def _call_vertex_ai(
     import vertexai
     from vertexai.preview.generative_models import GenerativeModel, Part
     import os
-    
+
     global _VERTEX_CONFIGURED
     if not _VERTEX_CONFIGURED:
         # Fallback initialization if init_llm wasn't called or didn't find the project_id

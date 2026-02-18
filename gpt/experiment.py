@@ -3,9 +3,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
-sys.path.append(str(Path(__file__).parent.parent))
-
 import argparse
 import random
 from typing import Dict, List, Optional
@@ -48,18 +45,34 @@ def _gold_failed_runs(task: Dict, mode: str) -> List[Dict]:
     if is_full:
         final = gold_boards[-1]
         bg = sum(1 for t in final if t != 0)
-        return [{"valid": False,
-                 "board_tp": 0, "board_p": 0, "board_g": bg,
-                 "action_tp": 0, "action_p": 0, "action_g": bg}]
+        return [
+            {
+                "valid": False,
+                "board_tp": 0,
+                "board_p": 0,
+                "board_g": bg,
+                "action_tp": 0,
+                "action_p": 0,
+                "action_g": bg,
+            }
+        ]
     blank = [0] * (WIDTH * HEIGHT)
     runs: List[Dict] = []
     for i, gb in enumerate(gold_boards):
         prev = gold_boards[i - 1] if i > 0 else blank
         bg = sum(1 for t in gb if t != 0)
         ag = sum(1 for a, b in zip(prev, gb) if a != b)
-        runs.append({"valid": False,
-                      "board_tp": 0, "board_p": 0, "board_g": bg,
-                      "action_tp": 0, "action_p": 0, "action_g": ag})
+        runs.append(
+            {
+                "valid": False,
+                "board_tp": 0,
+                "board_p": 0,
+                "board_g": bg,
+                "action_tp": 0,
+                "action_p": 0,
+                "action_g": ag,
+            }
+        )
     return runs
 
 
@@ -467,7 +480,7 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
     single_path = out_dir / f"all_{ts}.json"
     save_json(single_payload, single_path)
     print(f"\nSingle JSON written to: {single_path}")
-    
+
     single_payload["file_path"] = str(single_path)
     return single_payload
 
@@ -480,25 +493,29 @@ def main() -> None:
     init_llm(cfg)
 
     modes = cfg.mode if isinstance(cfg.mode, list) else [cfg.mode]
-    
+
     all_results = []
-    
+
     for mode in modes:
         for r in range(cfg.repeats):
-            print(f"\n\n>>> STARTING RUN: Mode={mode}, Repeat={r+1}/{cfg.repeats} <<<\n")
-            
+            print(
+                f"\n\n>>> STARTING RUN: Mode={mode}, Repeat={r+1}/{cfg.repeats} <<<\n"
+            )
+
             # Create a run-specific config
             run_cfg = argparse.Namespace(**vars(cfg))
             run_cfg.mode = mode
-            
+
             if cfg.set:
                 res = _run_set(run_cfg)
-                all_results.append({
-                    "mode": mode,
-                    "repeat": r + 1,
-                    "summary": res["aggregate"],
-                    "file": res.get("file_path")
-                })
+                all_results.append(
+                    {
+                        "mode": mode,
+                        "repeat": r + 1,
+                        "summary": res["aggregate"],
+                        "file": res.get("file_path"),
+                    }
+                )
             else:
                 _ = run_task(run_cfg, cfg.task, read_task(cfg.task))
 
@@ -506,14 +523,11 @@ def main() -> None:
         out_dir = get_results_dir_path(cfg.experiment_name) / cfg.set
         out_dir.mkdir(parents=True, exist_ok=True)
         ts = timestamp()
-        
+
         batch_summary_path = out_dir / f"batch_summary_{ts}.json"
-        
-        batch_payload = {
-            "config": vars(cfg),
-            "runs": all_results
-        }
-        
+
+        batch_payload = {"config": vars(cfg), "runs": all_results}
+
         save_json(batch_payload, batch_summary_path)
         print(f"\nBatch summary JSON written to: {batch_summary_path}")
 
