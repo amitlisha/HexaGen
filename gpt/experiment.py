@@ -35,6 +35,34 @@ from metrics import f1_score
 
 matplotlib.use("Agg")
 
+
+def _gold_failed_runs(task: Dict, mode: str) -> List[Dict]:
+    """Build synthetic failed-run entries carrying gold counts.
+
+    When a task crashes before any runner executes, we still need the gold
+    tile counts (board_g, action_g) so aggregate micro-F1 penalises recall
+    correctly instead of silently ignoring the task.
+    """
+    gold_boards = task["gold_boards"]
+    is_full = mode in ("code-full", "tiles-full", "python-full")
+    if is_full:
+        final = gold_boards[-1]
+        bg = sum(1 for t in final if t != 0)
+        return [{"valid": False,
+                 "board_tp": 0, "board_p": 0, "board_g": bg,
+                 "action_tp": 0, "action_p": 0, "action_g": bg}]
+    blank = [0] * (WIDTH * HEIGHT)
+    runs: List[Dict] = []
+    for i, gb in enumerate(gold_boards):
+        prev = gold_boards[i - 1] if i > 0 else blank
+        bg = sum(1 for t in gb if t != 0)
+        ag = sum(1 for a, b in zip(prev, gb) if a != b)
+        runs.append({"valid": False,
+                      "board_tp": 0, "board_p": 0, "board_g": bg,
+                      "action_tp": 0, "action_p": 0, "action_g": ag})
+    return runs
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Dataset helpers
 # ──────────────────────────────────────────────────────────────────────────────
@@ -347,7 +375,7 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
                 try:
                     per_task_payloads[idx] = fut.result()
                 except Exception as exc:
-                    tid = tasks[idx][0]
+                    tid, tsk = tasks[idx]
                     print(f"Task {tid} failed: {exc}")
                     per_task_payloads[idx] = {
                         "stats": {
@@ -363,7 +391,7 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
                             "successful_steps": [],
                             "failed_steps": [],
                         },
-                        "runs": [],
+                        "runs": _gold_failed_runs(tsk, cfg.mode),
                         "run_dir": None,
                         "run_log_path": None,
                     }

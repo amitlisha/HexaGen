@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import mimetypes
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import os
@@ -65,6 +66,21 @@ def _file_to_data_url(p: str | Path) -> str:
 def _file_to_bytes(p: str | Path) -> bytes:
     """Read file as bytes for Gemini."""
     return Path(p).read_bytes()
+
+
+def _strip_thinking_tokens(text: str) -> str:
+    """Strip <think>...</think> blocks from model output (e.g. Qwen3 thinking).
+
+    Handles three cases:
+    1. Complete <think>...</think> blocks
+    2. Missing opening <think> (vLLM may consume it as a special token) -
+       strips everything up to and including </think>
+    """
+    # Strip complete <think>...</think> blocks
+    text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL)
+    # Handle missing opening <think> tag
+    text = re.sub(r"^.*?</think>\s*", "", text, flags=re.DOTALL)
+    return text.strip()
 
 
 def _is_gemini_model(model: str) -> bool:
@@ -171,8 +187,10 @@ def _call_openai(
 
     resp = _OPENAI_CLIENT.chat.completions.create(**api_params)
     choice = resp.choices[0]
+    text = choice.message.content.strip()
+    text = _strip_thinking_tokens(text)
     return {
-        "text": choice.message.content.strip(),
+        "text": text,
         "usage": resp.usage.model_dump(exclude_none=True),
         "raw": resp.model_dump(exclude_none=True),
     }

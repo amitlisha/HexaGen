@@ -120,6 +120,12 @@ def run_step_code(
             last_exc = err
             log["traceback"] = last_exc
             if cfg.retries and attempt >= cfg.retries:
+                # Compute gold counts so failed runs still contribute to
+                # aggregate recall (board_g / action_g).
+                board_g = sum(1 for t in gold_board if t != 0)
+                action_g = sum(
+                    1 for a, b in zip(prev_gold_board, gold_board) if a != b
+                )
                 log.update(
                     {
                         "precision_board": 0.0,
@@ -130,6 +136,12 @@ def run_step_code(
                         "recall_action": 0.0,
                         "f1_action": 0.0,
                         "exact_action": False,
+                        "board_tp": 0,
+                        "board_p": 0,
+                        "board_g": board_g,
+                        "action_tp": 0,
+                        "action_p": 0,
+                        "action_g": action_g,
                     }
                 )
                 return log, False, code, image_path  # keep previous image

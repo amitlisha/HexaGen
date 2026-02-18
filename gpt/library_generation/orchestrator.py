@@ -20,6 +20,10 @@ def main():
     """Run library generation pipeline."""
     cfg = parse_args()
 
+    # Initialize LLM client (supports local models via --base-url)
+    from gpt.llm_wrapper import init_llm
+    init_llm(cfg)
+
     # Create experiment directory (add ablation suffix if applicable)
     exp_name = cfg.experiment_name
     if cfg.ablation:
@@ -38,6 +42,8 @@ def main():
     print(f"Training data: {cfg.train_data}")
     print(f"Validation data: {cfg.validation_data if cfg.validation_data else 'None'}")
     print(f"Model: {cfg.model}")
+    if cfg.base_url:
+        print(f"Base URL: {cfg.base_url}")
     print(f"Stages to run: {cfg.stage}")
     if cfg.ablation:
         print(f"Ablation: {', '.join(cfg.ablation)}")
