@@ -8,9 +8,6 @@
 # Colors
   - Allowed colors: ['white','black','yellow','green','red','blue','purple','orange'].
 
-# Directions (for neighbor / shift logic)
-  - ['up','down','left','right','up_left','up_right','down_left','down_right'].
-
 # Game flow
   - A human **Instructor** writes natural-language steps.
   - You are the **Executor** who must ground each step on the board.

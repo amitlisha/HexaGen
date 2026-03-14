@@ -1,3 +1,5 @@
+{API_SPEC}
+
 # --------------------------------------------------------------------------------------
 # INSTRUCTIONS
 {NEXT_STEP}
@@ -5,4 +7,4 @@
 # INPUT GRID
 input_grid = {INPUT_GRID}
 
-# TODO: Write the solve(input_grid) function that computes the output grid.
+# TODO: Write the solve(input_grid) function using the DSL

@@ -21,3 +21,12 @@
   5. Never overwrite previously defined variables and add **no** extra comments, prints, or plots.
   6. Columns and rows are **1-indexed**.
   7. Use only the functions, classes, and parameters explicitly defined in the provided library API; do not invent or call any additional methods, arguments, or attributes.
+
+# Common pitfalls
+  1. `Tile.neighbor(direction)` and `Line(direction=)` ONLY accept DIRECTIONS
+     ('up','down','up_right','down_left','up_left','down_right') — never 'left' or 'right'.
+     Some other methods like `copy_paste`, `neighbors`, `edge` DO accept 'left'/'right'.
+  2. `Line(start_tile, end_tile)` requires tiles colinear on a hex axis.
+     Tiles on the same visual row are NOT necessarily colinear on a hex grid.
+  3. `Shape.polygon()` connects consecutive vertices with Lines, so each pair
+     of consecutive vertices must also be colinear on a hex axis.

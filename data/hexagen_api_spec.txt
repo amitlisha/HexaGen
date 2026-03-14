@@ -30,10 +30,14 @@ Class: Shape           # Base class for collections of tiles
 
   # ── Painting helpers (ALL mutate active board **and** return the new Shape) ──
   Method: draw(color:str) -> Shape                                       # auto-paints
+    Notes: draw() overwrites the tile's previous color. To find where two shapes overlap,
+    compute the intersection BEFORE drawing: overlap = shape_a * shape_b (or shape_a.intersection(shape_b)).
   Method: copy_paste(shift_direction:str | None = None,                   # auto-paints
                      spacing:int = 0, reference_shape:Shape | None = None,
                      source:Tile | None = None, destination:Tile | None = None,
                      shift:_Vec | None = None) -> Shape
+    Notes: Returns a NEW Shape at the destination. To chain multiple copies,
+    call copy_paste on the RETURNED shape. For repeated copies in one direction, use grid() instead.
     Param options: shift_direction ∈ {'left','right'} ∪ DIRECTIONS ∪ None
   Method: reflect(axis_line:Line | None = None, column:int | None = None,  # auto-paints
                   axis_direction:str | None = None, tile_on_axis:Tile | None = None) -> Shape
@@ -55,7 +59,13 @@ Class: Shape           # Base class for collections of tiles
   Method: extreme(direction:str) -> Shape                 # direction ∈ DIRECTIONS
   Method: is_empty() -> bool
   Method: overlaps(other:Shape) -> bool
+  Method: intersection(other:Shape) -> Shape              # same as shape_a * shape_b
   Method: center() -> Tile                                # center of mass (rounded)
+
+  # ── Set operators ──────────────────────────────────────────────────
+  Operator: shape_a + shape_b -> Shape                    # union
+  Operator: shape_a * shape_b -> Shape                    # intersection
+  Operator: shape_a - shape_b -> Shape                    # difference
 
   # ── Utilities (static) ────────────────────────────────────────────────
   Static: get_entire_board(game:Game | None = None) -> Shape
@@ -63,12 +73,15 @@ Class: Shape           # Base class for collections of tiles
   Static: get_color(color:str | {'all','any'}, game:Game | None = None) -> Shape
   Static: get_column(column:int, game:Game | None = None) -> Shape
   Static: polygon(vertices:Shape | list[Tile] | Tile, *extra_vertices:Tile) -> Shape
+    # CRITICAL: polygon() connects consecutive vertices with Line(), so every
+    # consecutive vertex pair must be colinear on a hex axis. If vertices are
+    # not hex-colinear, draw each edge as a separate Line(start, direction=..., length=...).
 
 # -------------------------------------------------------------------------------------
 Class: Tile (inherits Shape)
   Method: __init__(row:int, column:int, game:Game | None = None)
     Notes: negative indices wrap from opposite edge.
-  Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS - unlike Shape.neighbors which accepts more options
+  Method: neighbor(direction:str) -> Tile                # direction ∈ DIRECTIONS only — 'left'/'right' are NOT valid here
   Method: on_board() -> bool
   Property: color:str
   Property: column:int
@@ -81,7 +94,12 @@ Class: Line (inherits Shape)                                      # Note creatin
                    direction:str | None = None, length:int | None = None,
                    end_tiles:Shape | None = None,
                    include_start_tile:bool = True, include_end_tile:bool = True)
-    Param options: direction ∈ DIRECTIONS; if end_tile supplied, direction/length ignored.
+    Param options: direction ∈ DIRECTIONS only ('left'/'right' NOT valid here); if end_tile supplied, direction/length ignored.
+    Notes: If direction is given but length is omitted (None), the line extends to the board edge.
+    Only specify length when you need a shorter line.
+    # CRITICAL: Line(start, end) raises an error if the two tiles are not colinear
+    # on a hex axis (i.e. do NOT share the same q, r, or s cube coordinate).
+    # Prefer Line(start, direction=..., length=...) for reliable line creation.
   Method: parallel(shift_direction:str, spacing:int) -> Line      # shift_direction ∈ {'left','right'} ∪ DIRECTIONS ∪ None
   Method: draw(color:str) -> Line                                # inherited auto-paints
 
@@ -94,4 +112,5 @@ Class: Circle (inherits Shape)            # The created Circle has a hollow cent
 Class: Triangle (inherits Shape)           # The created triangle has only sides with the center beign hollow
   Method: __init__(start_tile:Tile, point:str, start_tile_type:str, side_length:int = 2)
     Param options: point ∈ {'left','right'}; start_tile_type ∈ {'side','top','bottom'}.
+    # CRITICAL: side_length must be >= 2. For a single-tile annotation, use Tile.draw() instead.
   Method: draw(color:str) -> Triangle      # inherited auto-paints
