@@ -115,7 +115,9 @@ def generate_code_with_llm(
     system_prompt: str,
     model: str,
     temperature: float,
-    max_tokens: int
+    max_tokens: int,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> str:
     """Generate code for instructions using the LLM.
 
@@ -155,6 +157,8 @@ Provide ONLY the Python code, no explanation."""
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
+        reasoning_effort=thinking_effort,
+        thinking_level=thinking_level,
     )
 
     code = response["text"]
@@ -208,7 +212,9 @@ def validate_task(
     system_prompt: str,
     model: str,
     temperature: float,
-    max_tokens: int
+    max_tokens: int,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> Dict:
     """Validate a single task.
 
@@ -245,7 +251,9 @@ def validate_task(
             system_prompt=system_prompt,
             model=model,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            thinking_effort=thinking_effort,
+            thinking_level=thinking_level,
         )
 
         result["generated_code"] = code
@@ -393,27 +401,64 @@ def run_stage5(cfg: argparse.Namespace, output_dir: Path, stage4_result: Dict, s
     print("-" * 70)
 
     validation_results = []
-    for i, task in enumerate(validation_tasks):
-        print(f"Task {i+1}/{len(validation_tasks)}: {task['task_id']}", end=" ")
 
-        result = validate_task(
-            task=task,
-            library_path=library_path,
-            user_message=user_message,
-            system_prompt=system_prompt,
-            model=cfg.model,
-            temperature=cfg.temperature,
-            max_tokens=cfg.max_tokens * 2
-        )
+    if cfg.workers <= 1:
+        for i, task in enumerate(validation_tasks):
+            print(f"Task {i+1}/{len(validation_tasks)}: {task['task_id']}", end=" ")
 
-        validation_results.append(result)
+            result = validate_task(
+                task=task,
+                library_path=library_path,
+                user_message=user_message,
+                system_prompt=system_prompt,
+                model=cfg.model,
+                temperature=cfg.temperature,
+                max_tokens=cfg.max_tokens,
+                thinking_effort=getattr(cfg, "thinking_effort", None),
+                thinking_level=getattr(cfg, "thinking_level", None),
+            )
 
-        if result["success"]:
-            print("✓")
-        elif result.get("similarity", 0) > 0.8:
-            print(f"~ ({result['similarity']:.2f})")
-        else:
-            print("✗")
+            validation_results.append(result)
+
+            if result["success"]:
+                print("✓")
+            elif result.get("similarity", 0) > 0.8:
+                print(f"~ ({result['similarity']:.2f})")
+            else:
+                print("✗")
+    else:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        print(f"Using {cfg.workers} parallel workers...")
+        indexed_results = []
+        with ThreadPoolExecutor(max_workers=cfg.workers) as executor:
+            futures = {
+                executor.submit(
+                    validate_task,
+                    task=task,
+                    library_path=library_path,
+                    user_message=user_message,
+                    system_prompt=system_prompt,
+                    model=cfg.model,
+                    temperature=cfg.temperature,
+                    max_tokens=cfg.max_tokens,
+                    thinking_effort=getattr(cfg, "thinking_effort", None),
+                    thinking_level=getattr(cfg, "thinking_level", None),
+                ): i
+                for i, task in enumerate(validation_tasks)
+            }
+
+            for future in as_completed(futures):
+                i = futures[future]
+                result = future.result()
+                indexed_results.append((i, result))
+                task_id = validation_tasks[i]["task_id"]
+                status = "✓" if result["success"] else (
+                    f"~ ({result['similarity']:.2f})" if result.get("similarity", 0) > 0.8 else "✗"
+                )
+                print(f"  [{len(indexed_results)}/{len(validation_tasks)}] Task {task_id} {status}")
+
+        validation_results = [r for _, r in sorted(indexed_results)]
 
     # Compute metrics
     print("\nComputing metrics...")

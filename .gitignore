@@ -13,3 +13,7 @@ generated_libs/
 analyze_failures.py
 recalc_metrics.py
 suite_results/
+analyses-images/
+*.sh
+.cache/
+data/

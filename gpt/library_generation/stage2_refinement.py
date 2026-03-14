@@ -58,7 +58,9 @@ def refine_api(
     iteration: int,
     model: str,
     temperature: float,
-    max_tokens: int
+    max_tokens: int,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> str:
     """Refine the API proposal based on a sample of instructions.
 
@@ -131,6 +133,8 @@ Quality > Quantity. Focus on minimal, powerful API."""
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
+        reasoning_effort=thinking_effort,
+        thinking_level=thinking_level,
     )
 
     return response["text"]
@@ -201,7 +205,9 @@ def run_stage2(cfg: argparse.Namespace, output_dir: Path, stage1_result: Dict) -
             iteration=i,
             model=cfg.model,
             temperature=cfg.temperature,
-            max_tokens=cfg.max_tokens * 2  # Give more tokens for refinement
+            max_tokens=cfg.max_tokens,
+            thinking_effort=getattr(cfg, "thinking_effort", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
 
         # Save refined version

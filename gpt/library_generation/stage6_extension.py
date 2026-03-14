@@ -33,7 +33,9 @@ def analyze_error_patterns(
     user_message: str,
     model: str,
     temperature: float,
-    max_tokens: int
+    max_tokens: int,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> str:
     """Analyze validation failures to identify API gaps.
 
@@ -122,6 +124,8 @@ Be specific and actionable."""
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
+        reasoning_effort=thinking_effort,
+        thinking_level=thinking_level,
     )
 
     return response["text"]
@@ -133,7 +137,9 @@ def extend_implementation(
     base_lib_docs: str,
     model: str,
     temperature: float,
-    max_tokens: int
+    max_tokens: int,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> str:
     """Generate improved implementation based on error analysis.
 
@@ -189,6 +195,8 @@ Start with the module docstring and end with the last class definition."""
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
+        reasoning_effort=thinking_effort,
+        thinking_level=thinking_level,
     )
 
     return response["text"]
@@ -307,7 +315,9 @@ def run_stage6(
             user_message=user_message,
             model=cfg.model,
             temperature=cfg.temperature,
-            max_tokens=cfg.max_tokens * 2
+            max_tokens=cfg.max_tokens,
+            thinking_effort=getattr(cfg, "thinking_effort", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
 
         # Save analysis
@@ -323,7 +333,9 @@ def run_stage6(
             base_lib_docs=base_lib_docs,
             model=cfg.model,
             temperature=cfg.temperature,
-            max_tokens=cfg.max_tokens * 3
+            max_tokens=cfg.max_tokens,
+            thinking_effort=getattr(cfg, "thinking_effort", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
 
         improved_code = extract_code_from_response(improved_impl)

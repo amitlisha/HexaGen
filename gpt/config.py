@@ -122,4 +122,61 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="API key for the LLM provider (overrides environment variables)",
     )
+    p.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Resume from a previous results directory. Completed tasks are "
+        "loaded from existing run_*.json files and skipped. "
+        "Example: --resume results-my-experiment-{uuid}",
+    )
+    p.add_argument(
+        "--reasoning-effort",
+        type=str,
+        default=None,
+        choices=["low", "medium", "high"],
+        help="Reasoning effort for OpenAI reasoning models (o1/o3/gpt-5.x). "
+        "Default: None (use model default)",
+    )
+    p.add_argument(
+        "--thinking-budget",
+        type=int,
+        default=None,
+        help="Thinking budget (max tokens) for Gemini 2.5 thinking models. "
+        "Default: None (no thinking config)",
+    )
+    p.add_argument(
+        "--thinking-level",
+        type=str,
+        default=None,
+        choices=["minimal", "low", "medium", "high"],
+        help="Thinking level for Gemini 2.5/3.x models (minimal/low/medium/high). "
+        "Default: None (use model default)",
+    )
+    p.add_argument(
+        "--batch",
+        action="store_true",
+        default=False,
+        help="Use OpenAI Batch API for 50%% cost savings on supported modes "
+        "(tiles-full, code-full, python-full with OpenAI models only).",
+    )
+    p.add_argument(
+        "--batch-poll-interval",
+        type=int,
+        default=60,
+        help="Seconds between Batch API status polls (default: 60).",
+    )
+    p.add_argument(
+        "--batch-timeout",
+        type=int,
+        default=86400,
+        help="Maximum seconds to wait for a batch to complete (default: 86400 = 24h).",
+    )
+    p.add_argument(
+        "--batch-resume",
+        type=str,
+        default=None,
+        help="Resume polling an existing OpenAI batch by ID (skips prompt building "
+        "and submission). Example: --batch-resume batch_abc123",
+    )
     return p.parse_args()

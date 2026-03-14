@@ -7,6 +7,7 @@ from .hexagen import (
     Line,
     Circle,
     Triangle,
+    HexagenWarning,
 )
 from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 
@@ -17,6 +18,7 @@ __all__ = [
     "Line",
     "Circle",
     "Triangle",
+    "HexagenWarning",
     "COLORS",
     "WIDTH",
     "HEIGHT",

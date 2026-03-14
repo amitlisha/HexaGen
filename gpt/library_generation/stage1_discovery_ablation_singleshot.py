@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 import argparse
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Union, Any, Optional
 
 
 def load_base_library_docs(docs_path: str) -> str:
@@ -30,9 +30,9 @@ def load_base_library_docs(docs_path: str) -> str:
     return docs_file.read_text(encoding="utf-8")
 
 
-def load_all_instructions(data_path: str) -> List[str]:
+def load_all_instructions(data_path: str, include_io: bool = False) -> List[Union[str, Dict[str, Any]]]:
     """Load all instructions from a standardized JSONL dataset."""
-    instructions = []
+    instructions: List[Union[str, Dict[str, Any]]] = []
     data_file = Path(data_path)
 
     if not data_file.exists():
@@ -52,7 +52,13 @@ def load_all_instructions(data_path: str) -> List[str]:
                         continue
                     instruction = step["instruction"]
                     if instruction:
-                        instructions.append(instruction)
+                        if include_io:
+                            instructions.append({
+                                "instruction": instruction,
+                                "output_state": step.get("output_state", []),
+                            })
+                        else:
+                            instructions.append(instruction)
 
             except json.JSONDecodeError as e:
                 print(f"Warning: Invalid JSON on line {line_num}: {e}")
@@ -62,31 +68,53 @@ def load_all_instructions(data_path: str) -> List[str]:
     return instructions
 
 
-def format_instructions(instructions: List[str], max_display: int = None) -> str:
+def _format_state(state: List[Any]) -> str:
+    """Format a board state compactly, showing only non-zero (colored) tiles."""
+    if not state:
+        return "[]"
+    non_zero = [(idx, val) for idx, val in enumerate(state) if val != 0]
+    if not non_zero:
+        return "[all blank]"
+    return str(non_zero)
+
+
+def format_instructions(instructions: List[Union[str, Dict[str, Any]]], max_display: Optional[int] = None) -> str:
     """Format instructions for display.
 
+    Handles both plain strings and dicts with instruction and output_state.
+
     Args:
-        instructions: List of instruction strings
+        instructions: List of instruction strings or dicts
         max_display: Maximum number to display (None = all)
 
     Returns:
         Formatted string
     """
-    to_display = instructions[:max_display] if max_display else instructions
-    formatted = "\n".join(f"{i+1}. {instr}" for i, instr in enumerate(to_display))
+    to_display = instructions[:max_display] if max_display is not None else instructions
+    lines = []
+    for i, item in enumerate(to_display):
+        if isinstance(item, dict):
+            line = f"{i+1}. Instruction: {item['instruction']}"
+            line += f"\n   Output state: {_format_state(item.get('output_state', []))}"
+        else:
+            line = f"{i+1}. {item}"
+        lines.append(line)
+    formatted = "\n".join(lines)
 
-    if max_display and len(instructions) > max_display:
+    if max_display is not None and len(instructions) > max_display:
         formatted += f"\n... ({len(instructions) - max_display} more instructions)"
 
     return formatted
 
 
 def analyze_all_instructions_single_shot(
-    instructions: List[str],
+    instructions: List[Union[str, Dict[str, Any]]],
     base_lib_docs: str,
     model: str,
     temperature: float,
-    max_tokens: int,
+    max_tokens: int | None,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> str:
     """Analyze ALL instructions in a single LLM call.
 
@@ -118,12 +146,17 @@ def analyze_all_instructions_single_shot(
     else:
         sampled = instructions
 
+    io_note = ""
+    if sampled and isinstance(sampled[0], dict):
+        io_note = ("\nEach instruction includes its output state (board after). "
+                   "Non-zero values represent colored tiles. Use these to understand the transformations.\n")
+
     prompt = f"""You have a minimal base library:
 
 {base_lib_docs}
 
 Analyze ALL {len(sampled)} instructions to find patterns that justify new abstractions:
-
+{io_note}
 {format_instructions(sampled)}
 
 Provide a comprehensive analysis of patterns. Be thorough since you're seeing the entire dataset at once.
@@ -158,7 +191,9 @@ Be comprehensive - you're seeing the ENTIRE dataset at once."""
         system_prompt=system_prompt,
         model=model,
         temperature=temperature,
-        max_tokens=max_tokens * 4,  # 4x tokens for comprehensive single-shot analysis
+        max_tokens=max_tokens,
+        reasoning_effort=thinking_effort,
+        thinking_level=thinking_level,
     )
 
     return response["text"]
@@ -169,7 +204,9 @@ def generate_api_proposal(
     base_lib_docs: str,
     model: str,
     temperature: float,
-    max_tokens: int,
+    max_tokens: int | None,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> str:
     """Generate API proposal from pattern summary.
 
@@ -222,13 +259,15 @@ Quality > Quantity. Propose only methods meeting all criteria."""
         system_prompt=system_prompt,
         model=model,
         temperature=temperature,
-        max_tokens=max_tokens * 2,
+        max_tokens=max_tokens,
+        reasoning_effort=thinking_effort,
+        thinking_level=thinking_level,
     )
 
     return response["text"]
 
 
-def save_json(data: Dict, path: Path):
+def save_json(data: Dict[str, Any], path: Path):
     """Save JSON data to file."""
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
@@ -241,13 +280,12 @@ def timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
 
-def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict:
+def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
     """Run Stage 1 Ablation: Single-shot API Discovery.
 
     Args:
         cfg: Configuration namespace
         output_dir: Directory to save outputs
-
     Returns:
         Dictionary with stage results
     """
@@ -262,8 +300,11 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict:
     print(f"✓ Loaded {len(base_lib_docs)} characters\n")
 
     # Load all instructions
+    include_io = getattr(cfg, 'include_io', False)
     print(f"Loading instructions from {cfg.train_data}...")
-    all_instructions = load_all_instructions(cfg.train_data)
+    if include_io:
+        print("  (including input/output states)")
+    all_instructions = load_all_instructions(cfg.train_data, include_io=include_io)
     print(f"✓ Loaded {len(all_instructions)} instructions\n")
 
     # Single-shot pattern analysis
@@ -276,6 +317,8 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict:
         model=cfg.model,
         temperature=cfg.temperature,
         max_tokens=cfg.max_tokens,
+        thinking_effort=getattr(cfg, "thinking_effort", None),
+        thinking_level=getattr(cfg, "thinking_level", None),
     )
 
     # Save pattern summary
@@ -293,6 +336,8 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict:
         model=cfg.model,
         temperature=cfg.temperature,
         max_tokens=cfg.max_tokens,
+        thinking_effort=getattr(cfg, "thinking_effort", None),
+        thinking_level=getattr(cfg, "thinking_level", None),
     )
 
     # Save API proposal
@@ -310,6 +355,7 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict:
             "base_lib_docs": cfg.base_lib_docs,
             "total_instructions": len(all_instructions),
             "model": cfg.model,
+            "include_io": include_io,
             "hierarchical_batching": False,
         },
         "outputs": {

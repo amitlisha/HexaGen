@@ -14,9 +14,9 @@ def parse_args() -> argparse.Namespace:
     # Stage control
     p.add_argument(
         "--stage",
-        choices=["0", "1", "2", "3", "4", "all"],
+        choices=["0", "1", "3", "4", "all"],
         default="all",
-        help="Which stage to run (0=minimal lib, 1=discovery, 2=refine, 3=implement, "
+        help="Which stage to run (0=minimal lib, 1=discovery, 3=implement, "
         "4=docs, all=run all stages)",
     )
 
@@ -55,8 +55,33 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--domain-description",
         type=str,
-        default="",
+        default="drawing colored shapes and patterns on a hexagonal tiled board.",
         help="Brief description of the domain (e.g., 'hexagonal board drawing', 'robot control', 'data visualization')",
+    )
+
+    # Batch API processing
+    p.add_argument(
+        "--batch",
+        action="store_true",
+        help="Use LLM Batch API instead of synchronous calls",
+    )
+    p.add_argument(
+        "--batch-resume",
+        type=str,
+        default=None,
+        help="Resume a previously submitted batch using its job ID",
+    )
+    p.add_argument(
+        "--batch-poll-interval",
+        type=int,
+        default=60,
+        help="Polling interval in seconds for the Batch API",
+    )
+    p.add_argument(
+        "--batch-timeout",
+        type=int,
+        default=86400,
+        help="Timeout in seconds for the Batch API polling",
     )
 
     # Batch processing
@@ -77,7 +102,21 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--model", default="gpt-4o", help="LLM model to use")
     p.add_argument("--temperature", type=float, default=0.7, help="LLM temperature")
     p.add_argument(
-        "--max-tokens", type=int, default=2000, help="Max tokens for LLM responses"
+        "--max-tokens", type=int, default=None, help="Max tokens for LLM responses (default: no limit)"
+    )
+    p.add_argument(
+        "--thinking-effort",
+        type=str,
+        default=None,
+        choices=["low", "medium", "high"],
+        help="Reasoning effort for OpenAI models",
+    )
+    p.add_argument(
+        "--thinking-level",
+        type=str,
+        default=None,
+        choices=["low", "medium", "high"],
+        help="Thinking level for Gemini reasoning models",
     )
     p.add_argument(
         "--base-url",
@@ -121,6 +160,26 @@ def parse_args() -> argparse.Namespace:
         help="Base directory for generated libraries",
     )
 
+    # Input/Output inclusion
+    p.add_argument(
+        "--include-io",
+        action="store_true",
+        help="Include input/output states alongside instructions in Stage 1 analysis",
+    )
+
+    # Semantic batching
+    p.add_argument(
+        "--semantic-batching",
+        action="store_true",
+        help="Use embedding-based clustering for Stage 1 batching instead of random chunking",
+    )
+    p.add_argument(
+        "--embedding-model",
+        type=str,
+        default="BAAI/bge-m3",
+        help="Sentence-transformers model for semantic batching (default: BAAI/bge-m3)",
+    )
+
     # Ablation controls
     p.add_argument(
         "--ablation",
@@ -129,6 +188,15 @@ def parse_args() -> argparse.Namespace:
         choices=["singleshot", "no-refinement"],
         default=[],
         help="Ablation mode(s): 'singleshot' (no hierarchical batching in Stage 1), 'no-refinement' (skip Stage 2). Can specify multiple.",
+    )
+
+    # Timeouts
+    p.add_argument(
+        "--request-timeout",
+        type=int,
+        default=300,
+        help="Timeout in seconds for individual LLM API requests (default: 300). "
+        "Lower for local models to avoid retry storms with many workers.",
     )
 
     # Misc

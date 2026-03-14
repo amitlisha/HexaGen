@@ -433,29 +433,8 @@ def run_suite(
                 "evaluation": None,
             }
 
-            # --- Phase A: DSL Generation ---
+            # --- Phase A + B in retry loop ---
             gen_exp_name = f"{suite_name}__{setup_name}__r{repeat_idx}"
-
-            if not skip_gen:
-                gen_cmd = build_orchestrator_cmd(merged_dsl, gen_exp_name)
-                gen_ok = run_subprocess(
-                    gen_cmd, label=f"DSL-GEN [{run_key}]", dry_run=dry_run
-                )
-
-                if not gen_ok:
-                    result_entry["dsl_generation"] = {"status": "FAILED"}
-                    result_entry["evaluation"] = {
-                        "status": "SKIPPED",
-                        "reason": "DSL generation failed",
-                    }
-                    all_results.append(result_entry)
-                    continue
-
-                result_entry["dsl_generation"] = {"status": "OK"}
-            else:
-                result_entry["dsl_generation"] = {"status": "SKIPPED (--skip-generation)"}
-
-            # --- Locate generated library ---
             ablation = merged_dsl.get("ablation", [])
             output_dir = merged_dsl.get("output_dir", "generated_libs")
             effective_name = compute_effective_exp_name(gen_exp_name, ablation)
@@ -463,52 +442,115 @@ def run_suite(
             lib_file = PROJECT_ROOT / output_dir / effective_name / "stage3" / "generated_library.py"
             api_spec_file = PROJECT_ROOT / output_dir / effective_name / "stage4" / "api_spec.txt"
 
-            if not dry_run and (not lib_file.exists() or not api_spec_file.exists()):
-                result_entry["dsl_generation"] = {
-                    "status": "INCOMPLETE",
-                    "lib_file_exists": lib_file.exists(),
-                    "api_spec_exists": api_spec_file.exists(),
-                    "expected_lib": str(lib_file),
-                    "expected_spec": str(api_spec_file),
-                }
-                result_entry["evaluation"] = {
-                    "status": "SKIPPED",
-                    "reason": "Library files not found after generation",
-                }
-                all_results.append(result_entry)
-                continue
+            attempt = 0
+            run_succeeded = False
 
-            if result_entry["dsl_generation"].get("status") == "OK":
-                result_entry["dsl_generation"]["lib_file"] = str(lib_file)
-                result_entry["dsl_generation"]["api_spec_file"] = str(api_spec_file)
+            while not run_succeeded:
+                attempt += 1
 
-            # --- Phase B: Evaluation ---
-            if not skip_eval:
-                eval_exp_name = f"{suite_name}__eval__{setup_name}__r{repeat_idx}"
-                eval_cmd = build_eval_cmd(
-                    eval_config, eval_exp_name, str(lib_file), str(api_spec_file)
-                )
-                eval_ok = run_subprocess(
-                    eval_cmd, label=f"EVAL [{run_key}]", dry_run=dry_run
-                )
+                if attempt > 1:
+                    print(
+                        f"\n[RETRY {attempt - 1}] Retrying full pipeline "
+                        f"for {run_key}..."
+                    )
 
-                if not eval_ok:
-                    result_entry["evaluation"] = {"status": "FAILED"}
-                    all_results.append(result_entry)
+                # --- Phase A: DSL Generation ---
+                if not skip_gen:
+                    gen_label = (
+                        f"DSL-GEN [{run_key}]"
+                        if attempt == 1
+                        else f"DSL-GEN-RETRY-{attempt - 1} [{run_key}]"
+                    )
+                    gen_cmd = build_orchestrator_cmd(merged_dsl, gen_exp_name)
+                    gen_ok = run_subprocess(
+                        gen_cmd, label=gen_label, dry_run=dry_run
+                    )
+
+                    if not gen_ok:
+                        print(
+                            f"[attempt {attempt}] DSL generation failed, "
+                            f"retrying..."
+                        )
+                        continue
+
+                    result_entry["dsl_generation"] = {"status": "OK"}
+                else:
+                    result_entry["dsl_generation"] = {
+                        "status": "SKIPPED (--skip-generation)"
+                    }
+
+                # --- Locate generated library ---
+                if not dry_run and (
+                    not lib_file.exists() or not api_spec_file.exists()
+                ):
+                    print(
+                        f"[attempt {attempt}] Library files not found "
+                        f"after generation, retrying..."
+                    )
                     continue
 
-                if dry_run:
-                    result_entry["evaluation"] = {"status": "OK (dry-run)"}
-                else:
-                    eval_agg = collect_eval_results(
-                        eval_exp_name, eval_config["set"]
+                if result_entry["dsl_generation"].get("status") == "OK":
+                    result_entry["dsl_generation"]["lib_file"] = str(lib_file)
+                    result_entry["dsl_generation"]["api_spec_file"] = str(
+                        api_spec_file
                     )
+
+                # --- Phase B: Evaluation ---
+                if not skip_eval:
+                    eval_suffix = (
+                        f"__retry{attempt - 1}" if attempt > 1 else ""
+                    )
+                    eval_exp_name = (
+                        f"{suite_name}__eval__{setup_name}"
+                        f"__r{repeat_idx}{eval_suffix}"
+                    )
+                    eval_cmd = build_eval_cmd(
+                        eval_config,
+                        eval_exp_name,
+                        str(lib_file),
+                        str(api_spec_file),
+                    )
+                    eval_label = (
+                        f"EVAL [{run_key}]"
+                        if attempt == 1
+                        else f"EVAL-RETRY-{attempt - 1} [{run_key}]"
+                    )
+                    eval_ok = run_subprocess(
+                        eval_cmd, label=eval_label, dry_run=dry_run
+                    )
+
+                    if not eval_ok:
+                        print(
+                            f"[attempt {attempt}] Evaluation subprocess "
+                            f"failed, retrying..."
+                        )
+                        continue
+
+                    if dry_run:
+                        result_entry["evaluation"] = {"status": "OK (dry-run)"}
+                        run_succeeded = True
+                    else:
+                        eval_agg = collect_eval_results(
+                            eval_exp_name, eval_config["set"]
+                        )
+                        if eval_agg and eval_agg.get("total_steps", 0) > 0:
+                            result_entry["evaluation"] = {
+                                "status": "OK",
+                                "aggregate": eval_agg,
+                            }
+                            run_succeeded = True
+                        else:
+                            print(
+                                f"[attempt {attempt}] Evaluation produced "
+                                f"no valid results (total_steps=0), "
+                                f"retrying..."
+                            )
+                            continue
+                else:
                     result_entry["evaluation"] = {
-                        "status": "OK",
-                        "aggregate": eval_agg,
+                        "status": "SKIPPED (--skip-evaluation)"
                     }
-            else:
-                result_entry["evaluation"] = {"status": "SKIPPED (--skip-evaluation)"}
+                    run_succeeded = True
 
             all_results.append(result_entry)
 

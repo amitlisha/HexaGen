@@ -95,17 +95,29 @@ def _inject_custom_lib(lib_file: str):
 
 
 def _timeout_worker(code: str, q, lib_file: str = None):
-    """Executes `code` and returns ('ok', board_state) or ('err', traceback)."""
+    """Executes `code` and returns ('ok', board_state, warnings) or ('err', traceback, warnings)."""
+    import warnings as _warnings
+
     try:
         # Inject custom library if provided
         if lib_file:
             _inject_custom_lib(lib_file)
 
         ns = {}
-        exec_snippet(code, ns)
-        q.put(("ok", ns.get("board_state")))
+        with _warnings.catch_warnings(record=True) as caught:
+            _warnings.simplefilter("always")
+            exec_snippet(code, ns)
+
+        # Filter to only warnings originating from the hexagen library
+        hexagen_warnings = [
+            str(w.message)
+            for w in caught
+            if w.category.__name__ == "HexagenWarning"
+        ]
+
+        q.put(("ok", ns.get("board_state"), hexagen_warnings))
     except Exception as exc:
-        q.put(("err", format_user_tb(exc)))
+        q.put(("err", format_user_tb(exc), []))
 
 
 def timestamp() -> str:
@@ -237,6 +249,36 @@ def format_user_tb(exc: BaseException, user_file: str = USER_FILE) -> str:
     return "".join(traceback.format_exception(type(exc), exc, tb))
 
 
+def simplify_traceback(raw_tb: str) -> str:
+    """Trim internal library stack frames, keeping user code lines + the final error.
+
+    This makes retry error feedback more readable for the LLM by removing
+    hexagen-internal frames while preserving the user snippet context and the
+    actual exception message.
+    """
+    lines = raw_tb.strip().splitlines()
+    result = []
+    keep_next_code = False
+    for line in lines:
+        if line.startswith("Traceback"):
+            result.append(line)
+            keep_next_code = False
+        elif "user_snippet.py" in line:
+            result.append(line)
+            keep_next_code = True
+        elif keep_next_code and line.startswith("    "):
+            # Code context line right after the user_snippet frame
+            result.append(line)
+            keep_next_code = False
+        elif not line.startswith("  "):
+            # Final error line (e.g. "TypeError: ...")
+            result.append(line)
+            keep_next_code = False
+        else:
+            keep_next_code = False
+    return "\n".join(result) if result else raw_tb
+
+
 def exec_snippet(src: str, globals_ns: dict, filename: str = "user_snippet.py"):
     """Execute `src` so that tracebacks include the actual source lines."""
     linecache.cache[filename] = (
@@ -256,6 +298,13 @@ def run_with_timeout(
     timeout_sec: int = 10,
     lib_file: str = None,
 ):
+    """Execute *src* in a subprocess with a timeout.
+
+    Returns
+    -------
+    (board_state | None, error_msg | None, list[str])
+        A 3-tuple of (board_state, error, hexagen_warnings).
+    """
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
     p = ctx.Process(target=_timeout_worker, args=(src, q, lib_file), daemon=True)
@@ -265,13 +314,16 @@ def run_with_timeout(
     if p.is_alive():
         p.terminate()
         p.join()
-        return None, "TIMEOUT"
+        return None, "TIMEOUT", []
 
     try:
-        status, payload = q.get(timeout=10)
+        status, payload, hexagen_warnings = q.get(timeout=10)
     except Exception:
-        return None, "Worker process died without returning result"
-    return (payload, None) if status == "ok" else (None, payload)
+        return None, "Worker process died without returning result", []
+    if status == "ok":
+        return payload, None, hexagen_warnings
+    else:
+        return None, payload, hexagen_warnings
 
 
 def save_script(
@@ -310,5 +362,16 @@ def fix_missing_tail_indent(
     return "\n".join(lines)
 
 
+_RESULTS_DIR_OVERRIDE: Path | None = None
+
+
+def set_results_dir(path: Path | str) -> None:
+    """Override the results directory (used by --resume)."""
+    global _RESULTS_DIR_OVERRIDE
+    _RESULTS_DIR_OVERRIDE = Path(path)
+
+
 def get_results_dir_path(experiment_name: str):
+    if _RESULTS_DIR_OVERRIDE is not None:
+        return _RESULTS_DIR_OVERRIDE
     return ROOT_DIR / f"results-{experiment_name}-{RUN_UID}"

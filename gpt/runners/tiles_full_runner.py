@@ -16,6 +16,23 @@ from prompts import make_larc_tile_prompt
 from metrics import evaluate_prediction
 
 
+def build_tiles_full_prompt(
+    cfg: argparse.Namespace,
+    user_tmpl: str,
+    instructions: List[str],
+    input_grid_2d: Optional[List[List[int]]] = None,
+) -> str:
+    """Build the first-attempt prompt for tiles-full mode."""
+    instructions_block = "\n".join(f"{i+1}. {txt}" for i, txt in enumerate(instructions))
+    if cfg.dataset == "larc":
+        return make_larc_tile_prompt(instructions_block, input_grid_2d, user_tmpl)
+    else:
+        return (
+            user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
+            .replace("{NEXT_STEP}", instructions_block)
+        )
+
+
 def run_tiles_full(
     cfg: argparse.Namespace,
     sys_prompt: str,
@@ -29,6 +46,7 @@ def run_tiles_full(
     width: int = None,
     height: int = None,
     input_grid_2d: List[List[int]] = None,
+    prefetched_response: Optional[Dict] = None,
 ) -> Dict:
     """
     Single-shot prompt that passes ALL instructions as one block.
@@ -46,29 +64,23 @@ def run_tiles_full(
     if initial_board is None:
         initial_board = [0] * (width * height)
 
-    # Format all instructions as a numbered block
-    instructions_block = "\n".join(f"{i+1}. {txt}" for i, txt in enumerate(instructions))
-
-    # Build the prompt based on dataset
-    if cfg.dataset == "larc":
-        # For LARC, single instruction with input board (LARC tasks have only 1 instruction)
-        prompt = make_larc_tile_prompt(instructions_block, input_grid_2d, user_tmpl)
+    # Build prompt and get response (or use prefetched from batch)
+    if prefetched_response is not None:
+        resp = prefetched_response
     else:
-        # For Hexagons, use standard format
-        prompt = (
-            user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
-            .replace("{NEXT_STEP}", instructions_block)
+        prompt = build_tiles_full_prompt(cfg, user_tmpl, instructions, input_grid_2d)
+        resp = call_llm(
+            prompt=prompt,
+            system_prompt=sys_prompt,
+            model=cfg.model,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
+            seed=cfg.seed,
+            images=[str(image_path)] if image_path else None,
+            reasoning_effort=getattr(cfg, "reasoning_effort", None),
+            thinking_budget=getattr(cfg, "thinking_budget", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
-
-    resp = call_llm(
-        prompt=prompt,
-        system_prompt=sys_prompt,
-        model=cfg.model,
-        temperature=cfg.temperature,
-        max_tokens=cfg.max_tokens,
-        seed=cfg.seed,
-        images=[str(image_path)] if image_path else None,
-    )
 
     # Parse tile predictions
     predicted_dims, tiles = parse_tile_actions(resp["text"])
@@ -108,10 +120,14 @@ def run_tiles_full(
                     board[idx] = COLORS.index(col)
 
     # Evaluate against gold final board
+    # In full mode the model predicts the entire output board from scratch,
+    # so the "previous" state is blank for both pred and gold.  This ensures
+    # action metrics == board metrics (every non-zero tile is a "change").
+    blank_board = [0] * (width * height)
     metrics = evaluate_prediction(
-        initial_board,
+        blank_board,
         board,
-        initial_board,
+        blank_board,
         gold_final,
     )
 

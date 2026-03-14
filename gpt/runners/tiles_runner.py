@@ -64,6 +64,9 @@ def run_tile_step(
             max_tokens=cfg.max_tokens,
             seed=cfg.seed,
             images=[str(image_path)] if image_path else None,
+            reasoning_effort=getattr(cfg, "reasoning_effort", None),
+            thinking_budget=getattr(cfg, "thinking_budget", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
 
         predicted_dims, tiles = parse_tile_actions(resp["text"])

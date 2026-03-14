@@ -17,6 +17,7 @@ Contains the main classes:
 
 from copy import copy
 import logging
+import warnings
 import numpy as np
 from scipy.spatial.transform import Rotation
 from typing import Optional, List, Iterable
@@ -25,6 +26,13 @@ from constants.constants import COLORS, WIDTH, HEIGHT, DIRECTIONS
 import hexagen.plot_board as pb
 
 logger = logging.getLogger(__name__)
+
+
+class HexagenWarning(UserWarning):
+    """Warning category for hexagen library API misuse."""
+
+    pass
+
 
 _game_context = []
 
@@ -102,6 +110,22 @@ class Game:
 
         if not isinstance(step_names, list):
             step_names = [step_names]
+        for step_name in step_names:
+            if step_name not in self._step_drawn_hexagons:
+                if step_name in COLORS:
+                    raise KeyError(
+                        f"'{step_name}' is a color name, not a recording step. "
+                        f"To get all tiles of a given color use Shape.get_color('{step_name}'). "
+                        f"Use 'with g.record(step_name):' around drawing operations to create named recordings."
+                    )
+                available = list(self._step_drawn_hexagons.keys()) or [
+                    "none recorded yet"
+                ]
+                raise KeyError(
+                    f"'{step_name}' is not a recorded step name. "
+                    f"Available steps: {available}. "
+                    f"Use 'with g.record(step_name):' before drawing to record steps."
+                )
         drawn_hexagons = [
             h for step_name in step_names for h in self._step_drawn_hexagons[step_name]
         ]
@@ -496,7 +520,12 @@ class Shape:
     including an empty set and a single tile"""
 
     def __init__(
-        self, tiles, from_linds: bool = False, from_hexagons: bool = False, game=None
+        self,
+        tiles=None,
+        *extra_tiles,
+        from_linds: bool = False,
+        from_hexagons: bool = False,
+        game=None,
     ):
         """
         Construct a new Shape from tiles, shapes, or any mixture of them.
@@ -510,7 +539,12 @@ class Shape:
                 Shape(other_shape)                       # copy‐constructor
                 Shape([Tile(1,1), Tile(2,1)])            # list of tiles
                 Shape([shape_a, Tile(3,3), shape_b])     # **mixed tiles & shapes**
+                Shape(shape_a, Tile(3,3), shape_b)       # varargs — same as list above
         """
+        # Support varargs: Shape(a, b, c) is treated as Shape([a, b, c])
+        if extra_tiles and not from_linds and not from_hexagons:
+            tiles = [tiles] + list(extra_tiles)
+
         self.game = game or _active_game()
 
         # ── Handle the three special constructor modes ───────────────────────────
@@ -524,7 +558,9 @@ class Shape:
         # ── Normal mode: accept Tile, Shape, or Iterable containing them ─────────
         else:
             # Wrap single objects so that we can iterate uniformly
-            if isinstance(tiles, (Tile, Shape)):
+            if tiles is None:
+                tiles = []
+            elif isinstance(tiles, (Tile, Shape)):
                 tiles = [tiles]
 
             # Flatten whatever mixture we were given
@@ -645,6 +681,12 @@ class Shape:
         hexs = [_Hexagon(cube=cube) for cube in cubes]
         return Shape(hexs, from_hexagons=True)
 
+    def intersection(self, other):
+        """Return the intersection of self and other (tiles that belong to both shapes).
+        Equivalent to: self * other
+        """
+        return self * other
+
     def _compute_shift_from_spacing(self, direction, spacing, reference_shape=None):
         """Compute how much to shift a shape, to create a copy with a desired spacing from self
         For internal use only"""
@@ -750,7 +792,10 @@ class Shape:
         """
 
         if not self._linds:
-            raise Exception("Cannot use copy_paste on an empty shape")
+            warnings.warn(
+                "Cannot use copy_paste on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         if shift is None:
             if shift_direction is None:
@@ -789,7 +834,10 @@ class Shape:
         """
 
         if not self._linds:
-            raise Exception("Cannot use grid on an empty shape")
+            warnings.warn(
+                "Cannot use grid on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         shift = self._compute_shift_from_spacing(shift_direction, spacing, None)
 
@@ -832,7 +880,10 @@ class Shape:
         """
 
         if not self._linds:
-            raise Exception("Cannot use reflect on an empty shape")
+            warnings.warn(
+                "Cannot use reflect on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         new_hexagons = []
         hexagon_on_axis = None if tile_on_axis is None else tile_on_axis._hexagon
@@ -866,7 +917,10 @@ class Shape:
         """
 
         if not self._linds:
-            raise Exception("Cannot use rotate on an empty shape")
+            warnings.warn(
+                "Cannot use rotate on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         new_hexagons = []
         for hexagon in self._hexagons:
@@ -881,6 +935,12 @@ class Shape:
         re-color each tile in the shape
         color_map describes a mapping from colors to colors, e.g. {'red': 'blue', 'green': 'black'}
         """
+        if not self._linds:
+            warnings.warn(
+                "Cannot use recolor on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
+
         for hexagon in self._hexagons:
             if hexagon._on_board():
                 hexagon._draw(color_map[hexagon._color])
@@ -1012,7 +1072,7 @@ class Shape:
         if self._size == 0:
             warnings.warn(
                 f"Applying criterion '{criterion}' to empty shape - result will be empty",
-                UserWarning,
+                HexagenWarning,
                 stacklevel=3,
             )
             return
@@ -1021,13 +1081,13 @@ class Shape:
             if criterion in ["corners", "endpoints"]:
                 warnings.warn(
                     f"Applying '{criterion}' to single tile - result will be empty",
-                    UserWarning,
+                    HexagenWarning,
                     stacklevel=3,
                 )
             elif criterion in ["inside", "outside"]:
                 warnings.warn(
                     f"Applying '{criterion}' to single tile - conceptually meaningless",
-                    UserWarning,
+                    HexagenWarning,
                     stacklevel=3,
                 )
 
@@ -1035,14 +1095,14 @@ class Shape:
         if criterion == "inside" and self._size <= 3:
             warnings.warn(
                 f"Applying 'inside' to small shape (size {self._size}) - may have no interior",
-                UserWarning,
+                HexagenWarning,
                 stacklevel=3,
             )
 
         if criterion in ["endpoints"] and self._is_likely_closed_shape():
             warnings.warn(
                 f"Applying 'endpoints' to likely closed shape - may not be meaningful",
-                UserWarning,
+                HexagenWarning,
                 stacklevel=3,
             )
 
@@ -1102,26 +1162,50 @@ class Shape:
                     ends.append(hexagon)
             return Shape(ends, from_hexagons=True)
 
-    def get(self, criterion, _allow_open=False):
+    def get(self, criterion, *extra_args, _allow_open=False):
         """
         Return a new shape according to some geometrical relation with self, described by ‘criterion’
         Options:
-        - 'outside' / 'inside': the tiles outside/inside self
-        - 'above' / 'below': tiles that lie above/below self
-        - 'top' / 'bottom': to topmost/bottommost tiles of self
-        - 'corners': the corners of self. If the shape is a polygon, these will be the polygon’s vertices
-        - 'endpoints': the endpoints of self. If the shape is a line, these will be the ends of the line
-        - COLORS: get the tiles with provided color
+        - ‘outside’ / ‘inside’: the tiles outside/inside self
+        - ‘above’ / ‘below’: tiles that lie above/below self
+        - ‘top’ / ‘bottom’: to topmost/bottommost tiles of self
+        - ‘corners’: the corners of self. If the shape is a polygon, these will be the polygon’s vertices
+        - ‘endpoints’: the endpoints of self. If the shape is a line, these will be the ends of the line
+        - COLORS: get the tiles with provided color (e.g. get(‘red’))
         """
 
+        if extra_args:
+            raise TypeError(
+                f"Shape.get() takes exactly one criterion argument, "
+                f"but {1 + len(extra_args)} positional arguments were given. "
+                f"Correct usage: shape.get('criterion') where criterion is one of: "
+                f"outside, inside, above, below, top, bottom, corners, endpoints, "
+                f"or a color name."
+            )
+
+        if callable(criterion):
+            raise ValueError(
+                "Shape.get() does not accept functions or lambdas as a criterion. "
+                "To filter tiles by a custom condition, use a list comprehension: "
+                "Shape([t for t in my_shape if your_condition(t)])"
+            )
+
         if not self._linds:
-            raise Exception("Cannot use get on an empty shape")
+            warnings.warn(
+                f"Applying criterion '{criterion}' to empty shape - result will be empty",
+                HexagenWarning,
+                stacklevel=2,
+            )
+            return Shape([], game=self.game)
 
         if criterion in ["outside", "inside"]:
             if self.is_open() and not _allow_open:
-                raise Exception(
-                    "Cannot use get('outside') or get('inside') on an open shape"
+                warnings.warn(
+                    f"Cannot use get('{criterion}') on an open shape - returning empty shape",
+                    HexagenWarning,
+                    stacklevel=2,
                 )
+                return Shape([], game=self.game)
 
         if criterion in COLORS:
             return self._get_color(criterion)
@@ -1154,7 +1238,10 @@ class Shape:
             return self._get_extreme_tiles("endpoints")
 
         raise ValueError(
-            f"Unrecognized criterion: {criterion} use one of the following: outside, inside, above, below, top, bottom. corners"
+            f"Unrecognized criterion: '{criterion}'. "
+            f"Valid options: outside, inside, above, below, top, bottom, corners, endpoints, "
+            f"or a color name (e.g. 'red', 'blue'). "
+            f"To get tiles by color use get('red') or Shape.get_color('red')."
         )
 
     def boundary(self, criterion="all"):
@@ -1176,14 +1263,22 @@ class Shape:
         """
 
         if not self._linds:
-            raise Exception("Cannot use boundary on an empty shape")
+            warnings.warn(
+                "Cannot use boundary on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         if criterion == "outer":
             return self.get("outside", _allow_open=True).neighbors("all") * self
 
         if criterion == "inner":
             if self.is_open():
-                raise Exception("Cannot use boundary('inner') on an open shape")
+                warnings.warn(
+                    "Cannot use boundary('inner') on an open shape - returning empty shape",
+                    HexagenWarning,
+                    stacklevel=2,
+                )
+                return Shape([], game=self.game)
             return self.get("inside").neighbors("all") * self
 
         return self.boundary("outer") + self.boundary("inner")
@@ -1221,6 +1316,12 @@ class Shape:
     def is_open(self):
         """Return True if the shape does not enclose any area."""
 
+        if not self._linds:
+            warnings.warn(
+                "Cannot use is_open on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return True
+
         entire_board = Shape.get_entire_board(game=self.game)
         outside = Shape.get_board_perimeter(game=self.game) - self
         while True:
@@ -1238,7 +1339,10 @@ class Shape:
         """Returns a Shape object containing the extreme tiles of self in the given direction"""
 
         if not self._linds:
-            raise Exception("Cannot use extreme on an empty shape")
+            warnings.warn(
+                "Cannot use extreme on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         if direction not in DIRECTIONS:
             raise Exception(
@@ -1263,7 +1367,10 @@ class Shape:
         """Return the edge tiles of self according to some direction"""
 
         if not self._linds:
-            raise Exception("Cannot use neighbors on an empty shape")
+            warnings.warn(
+                "Cannot use edge on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         if direction in ["up", "top"]:
             return self._max("up")
@@ -1303,7 +1410,10 @@ class Shape:
         """
 
         if not self._linds:
-            raise Exception("Cannot use neighbors on an empty shape")
+            warnings.warn(
+                "Cannot use neighbors on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         if criterion == "all":
             return (
@@ -1328,11 +1438,21 @@ class Shape:
             return self.get("below") * self.neighbors()
         if criterion == "outside":
             if self.is_open():
-                raise Exception("Cannot use neighbors('outside') on an open shape")
+                warnings.warn(
+                    "Cannot use neighbors('outside') on an open shape - returning empty shape",
+                    HexagenWarning,
+                    stacklevel=2,
+                )
+                return Shape([], game=self.game)
             return self.neighbors("all") * self.get("outside")
         if criterion == "inside":
             if self.is_open():
-                raise Exception("Cannot use neighbors('inside') on an open shape")
+                warnings.warn(
+                    "Cannot use neighbors('inside') on an open shape - returning empty shape",
+                    HexagenWarning,
+                    stacklevel=2,
+                )
+                return Shape([], game=self.game)
             return self.neighbors("all") * self.get("inside")
         if criterion == "white":
             return (
@@ -1353,11 +1473,17 @@ class Shape:
         """Return self's neighbor(s) in a given direction"""
 
         if not self._linds:
-            raise Exception("Cannot use neighbor on an empty shape")
+            warnings.warn(
+                "Cannot use neighbor on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         if direction not in DIRECTIONS:
             raise Exception(
-                f"Can't get neighbor of Shape - {direction} is not in - {list(DIRECTIONS.keys())}"
+                f"Can't get neighbor of Shape - '{direction}' is not a valid hex direction. "
+                f"Valid directions: {list(DIRECTIONS.keys())}. "
+                f"Note: 'left'/'right' are NOT hex directions. "
+                f"To get neighbors in those directions, use Shape.neighbors('left') or Shape.neighbors('right') instead."
             )
 
         return Shape([tile.neighbor(direction) for tile in self.tiles]) - self
@@ -1371,6 +1497,15 @@ class Shape:
             tiles = vertices
         else:
             tiles = [vertices] + args
+
+        if not tiles:
+            warnings.warn(
+                "Cannot create polygon from empty vertices",
+                HexagenWarning,
+                stacklevel=2,
+            )
+            return Shape([])
+
         com = Shape(tiles)._center_of_mass()
         hexagons = Shape(tiles)._hexagons
 
@@ -1398,9 +1533,14 @@ class Shape:
         sorted_tiles = [tile for angle, tile in sorted(zip(angles, tiles))]
         polygon = Shape([])
         for i in range(len(sorted_tiles)):
+            start = sorted_tiles[i]
+            end = sorted_tiles[(i + 1) % len(sorted_tiles)]
+            # Skip degenerate edges where start and end resolve to the same tile
+            if start.row == end.row and start.column == end.column:
+                continue
             polygon += Line(
-                start_tile=sorted_tiles[i],
-                end_tile=sorted_tiles[(i + 1) % len(sorted_tiles)],
+                start_tile=start,
+                end_tile=end,
             )
 
         return polygon
@@ -1411,7 +1551,10 @@ class Shape:
         """
 
         if not self._linds:
-            raise Exception("Cannot use center on an empty shape")
+            warnings.warn(
+                "Cannot use center on an empty shape", HexagenWarning, stacklevel=2
+            )
+            return self
 
         hexagon_mean = _Hexagon(cube=self._center_of_mass()._round()._cube)
         return Tile(hexagon_mean._offset[0], hexagon_mean._offset[1])
@@ -1506,7 +1649,11 @@ class Tile(Shape):
 
         if direction not in DIRECTIONS:
             raise Exception(
-                f"Can't get neighbor of Tile - {direction} is not in - {list(DIRECTIONS.keys())}"
+                f"Can't get neighbor of Tile - '{direction}' is not a valid hex direction. "
+                f"Valid directions: {list(DIRECTIONS.keys())}. "
+                f"Note: 'left'/'right' are NOT hex directions. "
+                f"To move left use 'up_left' or 'down_left', to move right use 'up_right' or 'down_right'. "
+                f"Some Shape methods like neighbors() and copy_paste() do accept 'left'/'right'."
             )
 
         return Tile._to_tile(self._hexagon._neighbor(direction))
@@ -1571,12 +1718,16 @@ class Line(Shape):
 
         shexagon = start_tile._hexagon
         g = start_tile.game
+
         if end_tiles is None:
             end_tiles = Shape([], game=g)
+
         if length is None:
             length = max(g.height, g.width)
+
         if length <= 0:
             raise Exception(f"Cannot draw Line with non-positive length {length}")
+
         if end_tile is not None:
             if start_tile.row == end_tile.row and start_tile.column == end_tile.column:
                 raise Exception(
@@ -1588,23 +1739,60 @@ class Line(Shape):
             direction_vec = v._normalize()
 
             if direction_vec is None:
-                raise Exception(
-                    f"Cannot create Line: tiles ({start_tile.row}, {start_tile.column}) and ({end_tile.row}, {end_tile.column}) are not colinear on any of the three hex-grid axes"
+                # NEW: warn + snap to nearest valid straight-line endpoint
+                snapped_dir, snapped_hex = Line._snap_end_to_nearest_colinear(
+                    start_hex=shexagon,
+                    target_hex=ehexagon,
+                    game=g,
                 )
+
+                if snapped_dir is None or snapped_hex is None:
+                    # Fallback: keep the old hard fail if something is deeply wrong.
+                    raise Exception(
+                        f"Cannot create Line: tiles ({start_tile.row}, {start_tile.column}) and "
+                        f"({end_tile.row}, {end_tile.column}) are not colinear on any of the three hex-grid axes. "
+                        f"On a hex grid, two tiles are colinear only if they share the same q, r, or s cube coordinate. "
+                        f"Tiles on the same visual row are NOT necessarily colinear. "
+                        f"To connect non-colinear tiles, use multiple Lines or specify direction and length instead."
+                    )
+
+                snapped_tile = Tile._to_tile(snapped_hex)
+
+                warnings.warn(
+                    f"Cannot create Line exactly: start_tile ({start_tile.row}, {start_tile.column}) and "
+                    f"end_tile ({end_tile.row}, {end_tile.column}) are not colinear on a hex-grid axis. "
+                    f"Snapping end_tile to ({snapped_tile.row}, {snapped_tile.column}) "
+                    f"using direction '{snapped_dir._direction_str()}'.",
+                    HexagenWarning,
+                    stacklevel=2,
+                )
+
+                # Replace the requested end with the snapped one
+                direction_vec = snapped_dir
+                end_tile = snapped_tile
+                ehexagon = snapped_hex
+                v = ehexagon - shexagon
 
             distance = v._norm()
             length = distance - 1 + 1 * include_start_tile + 1 * include_end_tile
+
         else:
             if direction not in DIRECTIONS:
                 raise Exception(
-                    f"Cannot create Line: direction {direction} is not in {list(DIRECTIONS.keys())}"
+                    f"Cannot create Line: direction '{direction}' is not a valid hex direction. "
+                    f"Valid directions: {list(DIRECTIONS.keys())}. "
+                    f"Note: 'left'/'right' are NOT hex directions. "
+                    f"To draw a line left use 'up_left' or 'down_left', right use 'up_right' or 'down_right'."
                 )
             direction_vec = _Vec(direction)
+
         if not include_start_tile:
             shexagon = shexagon._shift(direction_vec)
+
         count = 0
         hexagons = []
         hexagon = shexagon
+
         while (
             count < length
             and hexagon._on_board()
@@ -1613,17 +1801,63 @@ class Line(Shape):
             hexagons.append(hexagon)
             hexagon = hexagon._shift(direction_vec)
             count += 1
+
         super().__init__(hexagons, from_hexagons=True, game=g)
         self.game = g
         self.length = len(hexagons)
-        # self.color = None
         self._direction_vec = direction_vec
         self.direction = direction_vec._direction_str()
+
         if len(hexagons) > 1:
             self.start_tile = Tile._to_tile(hexagons[0])
             self.end_tile = Tile._to_tile(hexagons[-1])
             qrs_ind = direction_vec._cube.index(0)
             self.constant_value = hexagons[0]._cube[qrs_ind]
+
+    def _snap_end_to_nearest_colinear(start_hex, target_hex, game):
+        """
+        Pick a straight hex-ray (one of DIRECTIONS) from start_hex, and choose the on-board
+        point on that ray that is closest (in hex distance) to target_hex.
+
+        Tie-breakers:
+          1) keep step count k close to the original start->target distance
+          2) smaller k
+
+        Returns:
+          (direction_vec, snapped_hex) or (None, None) if nothing is found.
+        """
+        v = target_hex - start_hex
+        orig_dist = v._norm()
+
+        # Upper bound; we'll stop early when we hit the board edge anyway.
+        max_steps = max(game.height, game.width) * 2
+
+        best_score = None  # tuple(dist_to_target, abs(k-orig_dist), k)
+        best_dir = None
+        best_hex = None
+
+        for dir_name in DIRECTIONS.keys():
+            dvec = _Vec(dir_name)
+            h = start_hex
+
+            for k in range(1, max_steps + 1):
+                h = h._shift(dvec)
+                if not h._on_board():
+                    break
+
+                dist_to_target = (target_hex - h)._norm()
+                score = (dist_to_target, abs(k - orig_dist), k)
+
+                if best_score is None or score < best_score:
+                    best_score = score
+                    best_dir = dvec
+                    best_hex = h
+
+                if dist_to_target == 0:
+                    # exact hit on this ray; can't improve for this direction
+                    break
+
+        return best_dir, best_hex
 
     def _show(self):
         logger.debug(
@@ -1827,7 +2061,10 @@ class Triangle(Shape):
         """
 
         if side_length < 2:
-            raise Exception("side_length parameter cannot be smaller than 2")
+            raise Exception(
+                f"Triangle side_length={side_length} is invalid — must be >= 2. "
+                f"A 1-tile shape cannot be a Triangle; use Tile.draw(color) instead."
+            )
 
         tiles = []
         d_directions = {

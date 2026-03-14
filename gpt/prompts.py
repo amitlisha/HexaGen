@@ -67,7 +67,7 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
     system_tmpl = f"{shared_sys_p.read_text()}\n\n{sys_p.read_text()}"
     user_tmpl = user_p.read_text()
 
-    # Inject API spec if we're in code mode (but not python-full)
+    # Inject API spec into system prompt for code modes (not tiles or python-full)
     if mode not in ("tiles-step", "tiles-full", "tiles-step-full", "python-full"):
         # Load API spec (either custom or default)
         if api_spec_file:
@@ -82,10 +82,10 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
             raise FileNotFoundError(f"API spec file not found: {api_spec_path}")
 
         api_spec = api_spec_path.read_text()
-        user_tmpl = user_tmpl.replace("{API_SPEC}", api_spec)
+        system_tmpl += f"\n\n{api_spec}"
 
     # Validate required placeholders
-    if dataset == "larc" and mode == "code-full":
+    if dataset == "larc" and mode in ("code-full", "python-full"):
         tags = ["{INPUT_GRID}", "{NEXT_STEP}"]
     else:
         tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]

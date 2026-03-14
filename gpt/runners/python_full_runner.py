@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import textwrap
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import re
@@ -14,16 +15,87 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from llm_wrapper import call_llm
 from runner_utils import save_plot, save_script
 from constants.constants import COLORS, WIDTH, HEIGHT
-from prompts import make_larc_tile_prompt
 from metrics import evaluate_prediction
 
 
-def _python_exec_worker(code_str: str, queue, input_grid=None):
+# ── LARC worker & execution ──────────────────────────────────────────────────
+
+
+def _larc_python_worker(code_str: str, queue, input_grid_tuple):
+    """Execute Python code for LARC: solve(input_grid) -> 2D grid -> flat list."""
+    try:
+        namespace = {}
+        exec(code_str, namespace)
+
+        if 'solve' not in namespace:
+            queue.put(("error", "Generated code must define a solve(input_grid) function"))
+            return
+
+        solve_func = namespace['solve']
+        if not callable(solve_func):
+            queue.put(("error", "solve must be a callable function"))
+            return
+
+        result = solve_func(input_grid_tuple)
+
+        # Expect 2D iterable (tuple of tuples or list of lists) -> flatten
+        if isinstance(result, (tuple, list)):
+            if len(result) == 0:
+                flat_grid = []
+            elif isinstance(result[0], (tuple, list)):
+                flat_grid = [int(cell) for row in result for cell in row]
+            else:
+                queue.put(("error", f"solve() must return a 2D grid (list/tuple of rows), got 1D {type(result).__name__}"))
+                return
+        else:
+            queue.put(("error", f"solve() must return a 2D grid, got {type(result).__name__}"))
+            return
+
+        queue.put(("ok", flat_grid))
+    except Exception as e:
+        queue.put(("error", f"Failed to execute generated code: {e}"))
+
+
+def execute_larc_python(code: str, timeout: int, input_grid_2d) -> List[int]:
+    """Execute LARC Python code with timeout, return flat grid."""
+    code = re.sub(r'^```python\s*\n', '', code, flags=re.MULTILINE)
+    code = re.sub(r'\n```\s*$', '', code, flags=re.MULTILINE)
+    code = code.strip()
+
+    # Convert to tuple of tuples of ints (immutable) to prevent in-place mutation
+    if input_grid_2d is not None:
+        input_grid_tuple = tuple(tuple(int(c) for c in row) for row in input_grid_2d)
+    else:
+        input_grid_tuple = ()
+
+    ctx = mp.get_context("spawn")
+    q = ctx.Queue()
+    p = ctx.Process(target=_larc_python_worker, args=(code, q, input_grid_tuple), daemon=True)
+    p.start()
+    p.join(timeout)
+
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        raise TimeoutError(f"Code execution timed out after {timeout} seconds")
+
+    try:
+        status, result = q.get(timeout=10)
+    except Exception:
+        raise RuntimeError("Worker process died without returning result")
+    if status == "error":
+        raise RuntimeError(result)
+
+    return result  # flat_grid
+
+
+# ── Hexagons worker & execution (unchanged) ──────────────────────────────────
+
+
+def _python_exec_worker(code_str: str, queue):
     """Execute code in separate process and return tiles (module-level for pickling)."""
     try:
         namespace = {}
-        if input_grid is not None:
-            namespace['input_grid'] = input_grid
         exec(code_str, namespace)
 
         # Extract result from get_tiles() function
@@ -43,49 +115,31 @@ def _python_exec_worker(code_str: str, queue, input_grid=None):
             queue.put(("error", f"get_tiles() must return a list, got {type(result)}"))
             return
 
-        # Detect format: LARC (first element is 2-tuple) vs Hexagons (all 3-tuples)
-        dimensions = None
         tiles = []
-
-        if len(result) > 0:
-            first = result[0]
-            if isinstance(first, (list, tuple)) and len(first) == 2:
-                # LARC format: first element is (height, width)
-                dimensions = (int(first[0]), int(first[1]))
-                remaining = result[1:]
+        for item in result:
+            if not (isinstance(item, (list, tuple)) and len(item) == 3):
+                queue.put(("error", f"Each tile must be a (row, col, color) tuple, got {item}"))
+                return
+            r, c, col = item
+            if isinstance(col, int):
+                tiles.append((int(r), int(c), col))
             else:
-                remaining = result
+                tiles.append((int(r), int(c), str(col).lower()))
 
-            for item in remaining:
-                if not (isinstance(item, (list, tuple)) and len(item) == 3):
-                    queue.put(("error", f"Each tile must be a (row, col, color) tuple, got {item}"))
-                    return
-                r, c, col = item
-                if isinstance(col, int):
-                    tiles.append((int(r), int(c), col))
-                else:
-                    tiles.append((int(r), int(c), str(col).lower()))
-
-        queue.put(("ok", (dimensions, tiles)))
+        queue.put(("ok", tiles))
     except Exception as e:
         queue.put(("error", f"Failed to execute generated code: {e}"))
 
 
 def extract_and_execute_python(
-    code: str, timeout: int = 10, input_grid=None,
-) -> Tuple[Optional[Tuple[int, int]], List[tuple]]:
+    code: str, timeout: int = 10,
+) -> List[tuple]:
     """
     Extract Python code, execute it with timeout, and return the result from get_tiles().
-
-    Args:
-        code: Raw LLM output containing Python code
-        timeout: Execution timeout in seconds
-        input_grid: Optional 2D input grid (for LARC tasks)
+    Used for Hexagons dataset only.
 
     Returns:
-        Tuple of (dimensions, tiles)
-        - dimensions: (height, width) if present, else None
-        - tiles: List of (row, col, color) tuples
+        List of (row, col, color) tuples
     """
     # Remove markdown code blocks if present
     code = re.sub(r'^```python\s*\n', '', code, flags=re.MULTILINE)
@@ -95,7 +149,7 @@ def extract_and_execute_python(
     # Execute with timeout
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
-    p = ctx.Process(target=_python_exec_worker, args=(code, q, input_grid), daemon=True)
+    p = ctx.Process(target=_python_exec_worker, args=(code, q), daemon=True)
     p.start()
     p.join(timeout)
 
@@ -111,7 +165,31 @@ def extract_and_execute_python(
     if status == "error":
         raise RuntimeError(result)
 
-    return result
+    return result  # tiles list
+
+
+# ── Main runner ──────────────────────────────────────────────────────────────
+
+
+def build_python_full_prompt(
+    cfg: argparse.Namespace,
+    user_tmpl: str,
+    instructions: List[str],
+    input_grid_2d: Optional[List[List[int]]] = None,
+) -> str:
+    """Build the first-attempt prompt for python-full mode (no error feedback)."""
+    instructions_block = "\n".join(f"{i+1}. {txt}" for i, txt in enumerate(instructions))
+    if cfg.dataset == "larc":
+        input_grid_str = repr(tuple(tuple(row) for row in input_grid_2d)) if input_grid_2d else "()"
+        return (
+            user_tmpl.replace("{INPUT_GRID}", input_grid_str)
+            .replace("{NEXT_STEP}", instructions_block)
+        )
+    else:
+        return (
+            user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
+            .replace("{NEXT_STEP}", instructions_block)
+        )
 
 
 def run_python_full(
@@ -127,17 +205,20 @@ def run_python_full(
     width: int = None,
     height: int = None,
     input_grid_2d: List[List[int]] = None,
+    prefetched_response: Optional[Dict] = None,
 ) -> Dict:
     """
     Single-shot prompt that passes ALL instructions as one block.
     Model generates Python code that computes tiles for all instructions.
-
-    Args:
-        initial_board: Initial board state (for LARC only)
-        width: Board width (defaults to constants.WIDTH if None)
-        height: Board height (defaults to constants.HEIGHT if None)
-        input_grid_2d: 2D input grid for LARC tasks
     """
+    if cfg.dataset == "larc":
+        return _run_python_full_larc(
+            cfg, sys_prompt, user_tmpl, instructions, gold_final,
+            image_path, task_dir, run_ts, input_grid_2d, width, height,
+            prefetched_response=prefetched_response,
+        )
+
+    # ── Hexagons path (unchanged) ────────────────────────────────────────
     if width is None or height is None:
         width = WIDTH if width is None else width
         height = HEIGHT if height is None else height
@@ -145,107 +226,233 @@ def run_python_full(
     if initial_board is None:
         initial_board = [0] * (width * height)
 
-    # Format all instructions as a numbered block
     instructions_block = "\n".join(f"{i+1}. {txt}" for i, txt in enumerate(instructions))
 
-    # Build the prompt based on dataset
-    if cfg.dataset == "larc":
-        prompt = make_larc_tile_prompt(instructions_block, input_grid_2d, user_tmpl)
-    else:
+    attempt = 0
+    last_exc: Optional[str] = None
+    last_code: Optional[str] = None
+
+    while True:
+        attempt += 1
+
         prompt = (
             user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
             .replace("{NEXT_STEP}", instructions_block)
         )
 
-    resp = call_llm(
-        prompt=prompt,
-        system_prompt=sys_prompt,
-        model=cfg.model,
-        temperature=cfg.temperature,
-        max_tokens=cfg.max_tokens,
-        seed=cfg.seed,
-        images=[str(image_path)] if image_path else None,
-    )
+        if last_exc:
+            prompt += (
+                "\n\n"
+                "### Your previous code\n"
+                "```python\n"
+                f"{last_code.strip()}\n"
+                "```\n\n"
+                "### Previous execution error\n"
+                f"{textwrap.indent(last_exc.strip(), '    ')}\n\n"
+                "### Fix instructions\n"
+                "    Analyze the error in your previous code and fix it. Do NOT repeat the same mistake.\n"
+            )
 
-    # Extract and execute Python code with timeout
-    try:
-        dimensions, tiles = extract_and_execute_python(
-            resp["text"],
-            timeout=cfg.exec_timeout,
-            input_grid=input_grid_2d if cfg.dataset == "larc" else None,
-        )
-        valid = True
-        error_msg = None
-    except Exception as e:
-        dimensions = None
-        tiles = []
-        valid = False
-        error_msg = str(e)
-
-    # Save the generated Python script
-    save_script(task_dir, run_ts, step=0, attempt=1, code=resp["text"], kind="python_full")
-
-    # For LARC: validate dimensions
-    dimension_match = True
-    if cfg.dataset == "larc":
-        if dimensions is None:
-            dimension_match = False
-            predicted_height, predicted_width = 0, 0
+        if prefetched_response is not None and attempt == 1:
+            resp = prefetched_response
         else:
-            predicted_height, predicted_width = dimensions
-            if predicted_height != height or predicted_width != width:
-                dimension_match = False
-            else:
-                width, height = predicted_width, predicted_height
+            resp = call_llm(
+                prompt=prompt,
+                system_prompt=sys_prompt,
+                model=cfg.model,
+                temperature=cfg.temperature,
+                max_tokens=cfg.max_tokens,
+                seed=cfg.seed,
+                images=[str(image_path)] if image_path else None,
+                reasoning_effort=getattr(cfg, "reasoning_effort", None),
+                thinking_budget=getattr(cfg, "thinking_budget", None),
+                thinking_level=getattr(cfg, "thinking_level", None),
+            )
 
-    # Create board with appropriate dimensions
-    board = [0] * (width * height)
+        try:
+            tiles = extract_and_execute_python(
+                resp["text"],
+                timeout=cfg.exec_timeout,
+            )
+            valid = True
+            error_msg = None
+        except Exception as e:
+            tiles = []
+            valid = False
+            error_msg = str(e)
 
-    # Apply tiles (only if dimensions match for LARC)
-    if cfg.dataset != "larc" or dimension_match:
+        save_script(task_dir, run_ts, step=0, attempt=attempt, code=resp["text"], kind="python_full")
+
+        if not valid:
+            last_exc = error_msg
+            last_code = resp["text"]
+
+            if cfg.retries and attempt >= cfg.retries:
+                blank_board = [0] * (width * height)
+                metrics = evaluate_prediction(
+                    blank_board,
+                    blank_board,
+                    blank_board,
+                    gold_final,
+                )
+                return {
+                    "attempt": attempt,
+                    "code": resp["text"],
+                    "tiles": [],
+                    "valid": False,
+                    "usage": resp["usage"],
+                    "error": error_msg,
+                    **metrics,
+                }
+
+            continue
+
+        # Build board from tiles
+        board = [0] * (width * height)
         for r, c, col in tiles:
-            if cfg.dataset == "larc":
-                if 1 <= r <= height and 1 <= c <= width and isinstance(col, int) and 0 <= col <= 9:
-                    idx = (r - 1) * width + (c - 1)
-                    board[idx] = col
-            else:
-                if 1 <= r <= HEIGHT and 1 <= c <= WIDTH and col in COLORS:
-                    idx = (r - 1) * WIDTH + (c - 1)
-                    board[idx] = COLORS.index(col)
+            if 1 <= r <= HEIGHT and 1 <= c <= WIDTH and col in COLORS:
+                idx = (r - 1) * WIDTH + (c - 1)
+                board[idx] = COLORS.index(col)
 
-    # Evaluate against gold final board
-    metrics = evaluate_prediction(
-        initial_board,
-        board,
-        initial_board,
-        gold_final,
-    )
+        blank_board = [0] * (width * height)
+        metrics = evaluate_prediction(blank_board, board, blank_board, gold_final)
 
-    log = {
-        "attempt": 1,
-        "code": resp["text"],
-        "tiles": tiles,
-        "valid": valid,
-        "usage": resp["usage"],
-        **metrics,
-    }
+        log = {
+            "attempt": attempt,
+            "code": resp["text"],
+            "tiles": tiles,
+            "valid": valid,
+            "usage": resp["usage"],
+            **metrics,
+        }
 
-    if error_msg:
-        log["error"] = error_msg
-
-    # Add LARC-specific dimension tracking
-    if cfg.dataset == "larc":
-        log["dimension_match"] = dimension_match
-        log["predicted_dimensions"] = dimensions if dimensions else (0, 0)
-        log["gold_dimensions"] = (height, width)
-
-    # Save plots
-    plot_path = task_dir / f"{run_ts}_plot_python_full_01.png"
-    if cfg.dataset == "larc":
-        from larc_plot import save_larc_plot
-
-        save_larc_plot(board, gold_final, plot_path, width, height)
-    else:
+        plot_path = task_dir / f"{run_ts}_plot_python_full_{attempt:02}.png"
         save_plot(board, gold_final, plot_path)
 
-    return log
+        return log
+
+
+def _run_python_full_larc(
+    cfg: argparse.Namespace,
+    sys_prompt: str,
+    user_tmpl: str,
+    instructions: List[str],
+    gold_final: List[int],
+    image_path: Optional[Path],
+    task_dir: Path,
+    run_ts: str,
+    input_grid_2d: List[List[int]],
+    width: int = None,
+    height: int = None,
+    prefetched_response: Optional[Dict] = None,
+) -> Dict:
+    """LARC variant of python-full: solve(input_grid) -> 2D grid."""
+    # Gold dimensions for plotting
+    gold_h = height if height else (len(input_grid_2d) if input_grid_2d else 1)
+    gold_w = width if width else (len(input_grid_2d[0]) if input_grid_2d and input_grid_2d[0] else 1)
+
+    instructions_block = "\n".join(f"{i+1}. {txt}" for i, txt in enumerate(instructions))
+    input_grid_str = repr(tuple(tuple(row) for row in input_grid_2d)) if input_grid_2d else "()"
+
+    attempt = 0
+    last_exc: Optional[str] = None
+    last_code: Optional[str] = None
+
+    while True:
+        attempt += 1
+
+        prompt = (
+            user_tmpl.replace("{INPUT_GRID}", input_grid_str)
+            .replace("{NEXT_STEP}", instructions_block)
+        )
+
+        if last_exc:
+            prompt += (
+                "\n\n"
+                "### Your previous code\n"
+                "```python\n"
+                f"{last_code.strip()}\n"
+                "```\n\n"
+                "### Previous execution error\n"
+                f"{textwrap.indent(last_exc.strip(), '    ')}\n\n"
+                "### Fix instructions\n"
+                "    Analyze the error in your previous code and fix it. Do NOT repeat the same mistake.\n"
+            )
+
+        if prefetched_response is not None and attempt == 1:
+            resp = prefetched_response
+        else:
+            resp = call_llm(
+                prompt=prompt,
+                system_prompt=sys_prompt,
+                model=cfg.model,
+                temperature=cfg.temperature,
+                max_tokens=cfg.max_tokens,
+                seed=cfg.seed,
+                images=[str(image_path)] if image_path else None,
+                reasoning_effort=getattr(cfg, "reasoning_effort", None),
+                thinking_budget=getattr(cfg, "thinking_budget", None),
+                thinking_level=getattr(cfg, "thinking_level", None),
+            )
+
+        try:
+            pred_board = execute_larc_python(
+                resp["text"],
+                timeout=cfg.exec_timeout,
+                input_grid_2d=input_grid_2d,
+            )
+            valid = True
+            error_msg = None
+        except Exception as e:
+            pred_board = []
+            valid = False
+            error_msg = str(e)
+
+        save_script(task_dir, run_ts, step=0, attempt=attempt, code=resp["text"], kind="python_full")
+
+        if not valid:
+            last_exc = error_msg
+            last_code = resp["text"]
+
+            if cfg.retries and attempt >= cfg.retries:
+                blank = [0] * len(gold_final)
+                metrics = evaluate_prediction(blank, blank, blank, gold_final)
+                return {
+                    "attempt": attempt,
+                    "code": resp["text"],
+                    "valid": False,
+                    "usage": resp["usage"],
+                    "error": error_msg,
+                    **metrics,
+                }
+
+            continue
+
+        # If prediction length doesn't match gold, zero it out for metrics
+        if len(pred_board) != len(gold_final):
+            eval_board = [0] * len(gold_final)
+        else:
+            eval_board = pred_board
+
+        blank = [0] * len(gold_final)
+        metrics = evaluate_prediction(blank, eval_board, blank, gold_final)
+
+        log = {
+            "attempt": attempt,
+            "code": resp["text"],
+            "valid": valid,
+            "usage": resp["usage"],
+            **metrics,
+        }
+
+        # Save plot
+        plot_path = task_dir / f"{run_ts}_plot_python_full_{attempt:02}.png"
+        try:
+            from larc_plot import save_larc_plot
+            save_larc_plot(eval_board, gold_final, plot_path, gold_w, gold_h)
+        except ImportError:
+            pass
+        except Exception as e:
+            print(f"Warning: could not save LARC plot: {e}")
+
+        return log

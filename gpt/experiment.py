@@ -25,6 +25,7 @@ from runner_utils import (
     generate_import_statement,
     DATA_DIR,
     get_results_dir_path,
+    set_results_dir,
     ensure_task_dir,
     save_json,
     timestamp,
@@ -81,6 +82,57 @@ def _gold_failed_runs(task: Dict, mode: str) -> List[Dict]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Resume helpers
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def _load_cached_results(resume_dir: str, mode: str) -> Dict:
+    """Scan a results directory for per-task run_*.json files.
+
+    Returns a dict mapping task_id (str) -> payload dict that matches the
+    format produced by run_task().  Only results whose mode matches are
+    returned, so resuming a multi-mode run picks the right ones.
+    """
+    import json
+
+    base = Path(resume_dir)
+    if not base.is_dir():
+        print(f"Warning: resume directory does not exist: {resume_dir}")
+        return {}
+
+    cached: Dict = {}
+    for task_dir in sorted(base.iterdir()):
+        if not task_dir.is_dir() or not task_dir.name.startswith("task_"):
+            continue
+        # task_id is everything after "task_"
+        tid = task_dir.name[len("task_"):]
+
+        # Find the latest run_*.json inside any timestamp subdirectory
+        run_files = sorted(task_dir.glob("*/run_*.json"), key=lambda p: p.stat().st_mtime)
+        if not run_files:
+            continue
+
+        # Take the newest run file and check if mode matches
+        latest = run_files[-1]
+        try:
+            data = json.loads(latest.read_text())
+            stats = data.get("stats", {})
+            if stats.get("mode") != mode:
+                continue
+            cached[tid] = {
+                "stats": stats,
+                "runs": data.get("runs", []),
+                "run_dir": str(latest.parent),
+                "run_log_path": str(latest),
+            }
+        except Exception as e:
+            print(f"Warning: failed to load {latest}: {e}")
+            continue
+
+    return cached
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Result summarization
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -120,7 +172,12 @@ def summarize_logs(logs: List[Dict], mode: str, task_id: int) -> Dict:
     }
 
 
-def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
+def run_task(
+    cfg: argparse.Namespace,
+    task_id,
+    task_data: Dict,
+    prefetched_response: Optional[Dict] = None,
+) -> Dict:
     """
     Execute ONE task (Hexagons or LARC) and return its stats dictionary.
 
@@ -128,6 +185,8 @@ def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
         cfg: Configuration namespace
         task_id: Task identifier (int for Hexagons, str for LARC)
         task_data: Task data from dataset
+        prefetched_response: Pre-fetched LLM response (from batch API) to use
+            instead of calling call_llm() on the first attempt
     """
     dataset = get_dataset(cfg.dataset)
 
@@ -156,7 +215,7 @@ def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
         else:
             code_so_far = (
                 f"{generate_import_statement(cfg.lib_file)}\n"
-                "from constants import HEIGHT, WIDTH\n"
+                "from constants import HEIGHT, WIDTH, COLORS, DIRECTIONS\n"
                 "with Game() as g:\n"
             )
 
@@ -210,6 +269,7 @@ def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
             input_grid_2d=input_grid_2d,
             width=board_width,
             height=board_height,
+            prefetched_response=prefetched_response,
         )
         logs = [log]
         print(
@@ -262,6 +322,7 @@ def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
             board_width,
             board_height,
             input_grid_2d,
+            prefetched_response=prefetched_response,
         )
         logs = [log]
         print(
@@ -283,6 +344,7 @@ def run_task(cfg: argparse.Namespace, task_id, task_data: Dict) -> Dict:
             board_width,
             board_height,
             input_grid_2d,
+            prefetched_response=prefetched_response,
         )
         logs = [log]
         print(
@@ -396,10 +458,46 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
     dataset = get_dataset(cfg.dataset)
     tasks = list(dataset.iter_tasks(cfg.set))
 
+    # ── Resume: load cached results ──────────────────────────────────────
+    cached: Dict = {}
+    if getattr(cfg, "resume", None):
+        cached = _load_cached_results(cfg.resume, cfg.mode)
+        print(f"Resume: found {len(cached)} cached task results for mode={cfg.mode}")
+
     per_task_payloads: List[Dict] = [None] * len(tasks)
 
+    # Separate tasks into cached vs to-run
+    tasks_to_run = []
+    for idx, (tid, task_data) in enumerate(tasks):
+        tid_str = str(tid)
+        if tid_str in cached:
+            per_task_payloads[idx] = cached[tid_str]
+        else:
+            tasks_to_run.append((idx, tid, task_data))
+
+    if cached:
+        print(f"Skipping {len(tasks) - len(tasks_to_run)} cached tasks, "
+              f"running {len(tasks_to_run)} remaining")
+
+    # ── Batch API path ───────────────────────────────────────────────
+    # --batch-resume implies --batch
+    use_batch = (getattr(cfg, "batch", False) or getattr(cfg, "batch_resume", None)) and tasks_to_run
+    if use_batch:
+        from batch_runner import is_batch_compatible, run_set_batch
+
+        if is_batch_compatible(cfg):
+            batch_payloads = run_set_batch(cfg, tasks_to_run)
+            for list_idx, payload in batch_payloads.items():
+                per_task_payloads[list_idx] = payload
+            tasks_to_run = []  # all handled
+        else:
+            print(
+                f"Warning: --batch is incompatible with model={cfg.model!r} "
+                f"or mode={cfg.mode!r}. Falling back to sync execution."
+            )
+
     if cfg.workers <= 1:
-        for idx, (tid, task_data) in enumerate(tasks):
+        for idx, tid, task_data in tasks_to_run:
             print(f"\n=== TASK {tid} ===")
             payload = run_task(cfg, tid, task_data)
             per_task_payloads[idx] = payload
@@ -408,16 +506,24 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
 
         with ThreadPoolExecutor(max_workers=cfg.workers) as ex:
             futures = {
-                ex.submit(run_task, cfg, tid, task_data): i
-                for i, (tid, task_data) in enumerate(tasks)
+                ex.submit(run_task, cfg, tid, task_data): idx
+                for idx, tid, task_data in tasks_to_run
             }
             for fut in as_completed(futures):
                 idx = futures[fut]
                 try:
                     per_task_payloads[idx] = fut.result()
                 except Exception as exc:
-                    tid, tsk = tasks[idx]
+                    tid = tasks[idx][0]
+                    tsk = tasks[idx][1]
                     print(f"Task {tid} failed: {exc}")
+                    try:
+                        gold_boards = dataset.get_gold_boards(tsk)
+                        failed_runs = _gold_failed_runs(
+                            {"gold_boards": gold_boards}, cfg.mode
+                        )
+                    except Exception:
+                        failed_runs = []
                     per_task_payloads[idx] = {
                         "stats": {
                             "task_id": tid,
@@ -432,7 +538,7 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
                             "successful_steps": [],
                             "failed_steps": [],
                         },
-                        "runs": _gold_failed_runs(tsk, cfg.mode),
+                        "runs": failed_runs,
                         "run_dir": None,
                         "run_log_path": None,
                     }
@@ -516,6 +622,14 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
 def main() -> None:
     cfg = parse_args()
     random.seed(cfg.seed)
+
+    # If resuming, point results dir at the existing directory
+    if cfg.resume:
+        resume_path = Path(cfg.resume)
+        if not resume_path.is_absolute():
+            resume_path = Path.cwd() / resume_path
+        set_results_dir(resume_path)
+        print(f"Resuming from: {resume_path}")
 
     # Initialize LLM clients globally for persistence
     init_llm(cfg)

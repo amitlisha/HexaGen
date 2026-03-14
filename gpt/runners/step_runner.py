@@ -44,6 +44,8 @@ def run_step_code(
 
     attempt = 0
     last_exc: Optional[str] = None
+    last_code: Optional[str] = None
+    last_warning: Optional[str] = None
     prev_pred_board: List[int]
     try:
         # Inject custom library if provided
@@ -69,8 +71,28 @@ def run_step_code(
         if last_exc:
             prompt += (
                 "\n\n"
+                "   ### Your previous code\n"
+                "   ```python\n"
+                f"{textwrap.indent(last_code.strip(), '    ')}\n"
+                "   ```\n\n"
                 "   ### Previous execution error\n"
-                f"{textwrap.indent(last_exc.strip(), '    ')}"
+                f"{textwrap.indent(last_exc.strip(), '    ')}\n\n"
+                "   ### Fix instructions\n"
+                "   Analyze the error in your previous code and fix it. Do NOT repeat the same mistake.\n"
+            )
+        if last_warning:
+            prompt += (
+                "\n\n"
+                "   ### Your previous code\n"
+                "   ```python\n"
+                f"{textwrap.indent(last_code.strip(), '    ')}\n"
+                "   ```\n\n"
+                "   ### Hexagen library warnings\n"
+                "   Your code executed but the hexagen library raised the following warnings,\n"
+                "   indicating incorrect API usage that may produce wrong results:\n"
+                f"{textwrap.indent(last_warning.strip(), '    ')}\n\n"
+                "   ### Fix instructions\n"
+                "   Fix your code to avoid these warnings. Do NOT repeat the same mistake.\n"
             )
 
         resp = call_llm(
@@ -81,6 +103,9 @@ def run_step_code(
             max_tokens=cfg.max_tokens,
             seed=cfg.seed,
             images=[str(image_path)] if image_path else None,
+            reasoning_effort=getattr(cfg, "reasoning_effort", None),
+            thinking_budget=getattr(cfg, "thinking_budget", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
 
         append = extract_code(resp["text"])
@@ -101,9 +126,20 @@ def run_step_code(
         }
 
         # execute with timeout
-        board_pred, err = run_with_timeout(new_script, cfg.exec_timeout, cfg.lib_file)
+        board_pred, err, hexagen_warnings = run_with_timeout(new_script, cfg.exec_timeout, cfg.lib_file)
 
         if err is None:
+            # Code executed — check for hexagen warnings
+            if hexagen_warnings and (not cfg.retries or attempt < cfg.retries):
+                last_exc = None
+                last_warning = "\n".join(f"- {w}" for w in hexagen_warnings)
+                last_code = append
+                log["warnings"] = hexagen_warnings
+                continue
+
+            # Accept result (no warnings, or last retry with warnings)
+            if hexagen_warnings:
+                log["warnings"] = hexagen_warnings
             log["valid"] = True
             log.update(
                 evaluate_prediction(
@@ -119,6 +155,8 @@ def run_step_code(
             return log, True, new_script, plot_path
         else:
             last_exc = err
+            last_code = append
+            last_warning = None
             log["traceback"] = last_exc
             if cfg.retries and attempt >= cfg.retries:
                 # Compute gold counts so failed runs still contribute to

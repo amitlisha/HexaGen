@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 import textwrap
+import traceback as tb
 import multiprocessing as mp
 import re
 from pathlib import Path
@@ -19,13 +20,14 @@ from runner_utils import (
     save_plot,
     run_with_timeout,
     _inject_custom_lib,
+    simplify_traceback,
 )
 from constants.constants import WIDTH, HEIGHT
 from metrics import evaluate_prediction
 
 
-def _dsl_exec_worker(code_str: str, queue, input_grid_tuple):
-    """Execute DSL code in separate process."""
+def _dsl_exec_worker(code_str: str, queue, input_grid_tuple, output_height=None, output_width=None):
+    """Execute DSL code in separate process. Returns flat grid."""
     try:
         # Prepare namespace with all DSL functions
         namespace = {}
@@ -61,88 +63,86 @@ def _dsl_exec_worker(code_str: str, queue, input_grid_tuple):
             return
 
         # Execute solve
-        result = solve_func(input_grid_tuple)
+        try:
+            result = solve_func(input_grid_tuple)
+        except Exception as e:
+            queue.put(("error", f"solve(input_grid) raised {type(e).__name__}: {e}\n{tb.format_exc()}"))
+            return
 
-        # Convert result to standard format (height, width, flat_list)
-        h_out, w_out = 0, 0
+        # Convert result to flat list of ints
         flat_grid = []
 
         if isinstance(result, tuple):
-            # Assumed to be Grid (tuple of tuples)
-            h_out = len(result)
-            w_out = len(result[0]) if h_out > 0 else 0
-            flat_grid = [col for row in result for col in row]
+            # Grid (tuple of tuples)
+            if len(result) == 0:
+                flat_grid = []
+            else:
+                flat_grid = [int(col) for row in result for col in row]
 
         elif isinstance(result, (set, frozenset)):
-            # Assumed to be Object
-            h_in = len(input_grid_tuple)
-            w_in = len(input_grid_tuple[0]) if h_in > 0 else 0
+            # Object (frozenset of (value, (r, c)) tuples)
+            # Use output dimensions if provided, else fall back to input dims
+            h = output_height if output_height is not None else len(input_grid_tuple)
+            w = output_width if output_width is not None else (len(input_grid_tuple[0]) if len(input_grid_tuple) > 0 else 0)
+            grid_list = [[0 for _ in range(w)] for _ in range(h)]
 
-            # Create a blank grid
-            grid_list = [[0 for _ in range(w_in)] for _ in range(h_in)]
-
-            # Paint object
             for item in result:
-                # item is (value, (r, c))
                 if isinstance(item, tuple) and len(item) == 2:
                     val, coords = item
                     if isinstance(coords, tuple) and len(coords) == 2:
                         r, c = coords
-                        if 0 <= r < h_in and 0 <= c < w_in:
+                        if 0 <= r < h and 0 <= c < w:
                             grid_list[r][c] = val
 
-            h_out, w_out = h_in, w_in
-            flat_grid = [col for row in grid_list for col in row]
+            flat_grid = [int(col) for row in grid_list for col in row]
 
         elif isinstance(result, list):
-            # List of tuples format
-            h_in = len(input_grid_tuple)
-            w_in = len(input_grid_tuple[0]) if h_in > 0 else 0
-            grid_list = [[0 for _ in range(w_in)] for _ in range(h_in)]
-
-            for item in result:
-                if len(item) == 3:
-                    r, c, val = item
-                    if 0 <= r < h_in and 0 <= c < w_in:
-                        grid_list[r][c] = val
-
-            h_out, w_out = h_in, w_in
-            flat_grid = [col for row in grid_list for col in row]
+            # list of lists (2D grid)
+            if len(result) == 0:
+                flat_grid = []
+            elif isinstance(result[0], (tuple, list)):
+                flat_grid = [int(col) for row in result for col in row]
+            else:
+                queue.put(
+                    ("error", f"Unknown list format. Expected 2D grid (list of rows), got 1D list.")
+                )
+                return
 
         else:
             queue.put(
                 (
                     "error",
-                    f"Unknown return type: {type(result)}. Expected Grid (tuple of tuples) or Object.",
+                    f"Unknown return type: {type(result)}. Expected Grid (tuple of tuples), Object, or list of lists.",
                 )
             )
             return
 
-        queue.put(("ok", (h_out, w_out, flat_grid)))
+        queue.put(("ok", flat_grid))
 
     except Exception as e:
-        queue.put(("error", f"Execution failed: {e}"))
+        queue.put(("error", f"Execution failed: {e}\n{tb.format_exc()}"))
 
 
 def extract_and_execute_dsl(
-    code: str, timeout: int, input_grid_2d: List[List[int]]
-) -> Tuple[Optional[Tuple[int, int]], List[int]]:
-    """Extract code, execute with timeout, return (dimensions, flat_board)."""
+    code: str, timeout: int, input_grid_2d: List[List[int]],
+    output_width: int = None, output_height: int = None,
+) -> List[int]:
+    """Extract code, execute with timeout, return flat_board."""
     # Remove markdown
     code = re.sub(r"^```python\s*\n", "", code, flags=re.MULTILINE)
     code = re.sub(r"\n```\s*$", "", code, flags=re.MULTILINE)
     code = code.strip()
 
-    # Convert input list-of-lists to tuple-of-tuples (DSL Grid)
+    # Convert input list-of-lists to tuple-of-tuples-of-ints (immutable DSL Grid)
     if input_grid_2d is None:
         input_grid_tuple = ()
     else:
-        input_grid_tuple = tuple(tuple(row) for row in input_grid_2d)
+        input_grid_tuple = tuple(tuple(int(c) for c in row) for row in input_grid_2d)
 
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
     p = ctx.Process(
-        target=_dsl_exec_worker, args=(code, q, input_grid_tuple), daemon=True
+        target=_dsl_exec_worker, args=(code, q, input_grid_tuple, output_height, output_width), daemon=True
     )
     p.start()
     p.join(timeout)
@@ -159,8 +159,31 @@ def extract_and_execute_dsl(
     if status == "error":
         raise RuntimeError(result)
 
-    h, w, flat_grid = result
-    return (h, w), flat_grid
+    return result  # flat_grid
+
+
+def build_code_full_prompt(
+    cfg: argparse.Namespace,
+    user_tmpl: str,
+    instructions: List[str],
+    code_so_far: str,
+    input_grid_2d: Optional[List[List[int]]] = None,
+) -> str:
+    """Build the first-attempt prompt for code-full mode (no error feedback)."""
+    if cfg.dataset == "larc":
+        input_tuple_str = repr(tuple(tuple(r) for r in input_grid_2d)) if input_grid_2d else "()"
+        full_instruction = "\n".join(instructions)
+        return (
+            user_tmpl.replace("{INPUT_GRID}", input_tuple_str)
+            .replace("{NEXT_STEP}", full_instruction)
+        )
+    else:
+        todo_block = "\n".join(f"    # TODO: {txt}" for txt in instructions)
+        return (
+            user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
+            .replace("{CODE_SO_FAR}", code_so_far.rstrip())
+            .replace("{NEXT_STEP}", todo_block)
+        )
 
 
 def run_full(
@@ -176,6 +199,7 @@ def run_full(
     input_grid_2d: List[List[int]] = None,
     width: int = None,
     height: int = None,
+    prefetched_response: Optional[Dict] = None,
 ) -> Dict:
     """
     Single-shot prompt that passes ALL instructions as one indented block.
@@ -194,95 +218,111 @@ def run_full(
 
         full_instruction = "\n".join(instructions)
 
-        prompt = user_tmpl.replace("{INPUT_GRID}", input_tuple_str).replace(
-            "{NEXT_STEP}", full_instruction
-        )
+        attempt = 0
+        last_exc: Optional[str] = None
+        last_code: Optional[str] = None
 
-        resp = call_llm(
-            prompt=prompt,
-            system_prompt=sys_prompt,
-            model=cfg.model,
-            temperature=cfg.temperature,
-            max_tokens=cfg.max_tokens,
-            seed=cfg.seed,
-            images=[str(image_path)] if image_path else None,
-        )
+        while True:
+            attempt += 1
 
-        try:
-            (pred_h, pred_w), pred_board = extract_and_execute_dsl(
-                resp["text"], cfg.exec_timeout, input_grid_2d
-            )
-            valid = True
-            error_msg = None
-
-            # LARC validation: dimensions must match
-            target_h = height if height is not None else len(input_grid_2d)
-            target_w = (
-                width
-                if width is not None
-                else (len(input_grid_2d[0]) if input_grid_2d else 0)
+            prompt = user_tmpl.replace("{INPUT_GRID}", input_tuple_str).replace(
+                "{NEXT_STEP}", full_instruction
             )
 
-            dimension_match = pred_h == target_h and pred_w == target_w
-
-        except Exception as e:
-            target_len = len(gold_final)
-            pred_board = [0] * target_len
-            valid = False
-            error_msg = str(e)
-            dimension_match = False
-            pred_h, pred_w = 0, 0
-
-        # If dimensions don't match, the prediction is entirely wrong –
-        # use a zeroed board so metrics reflect a complete miss.
-        if not dimension_match:
-            eval_pred = [0] * len(gold_final)
-        else:
-            eval_pred = pred_board
-
-        metrics = evaluate_prediction(
-            [0] * len(gold_final),
-            eval_pred,
-            [0] * len(gold_final),
-            gold_final,
-        )
-
-        log = {
-            "attempt": 1,
-            "code": resp["text"],
-            "valid": valid,
-            "usage": resp["usage"],
-            "dimension_match": dimension_match,
-            "predicted_dimensions": (pred_h, pred_w),
-            **metrics,
-        }
-
-        if error_msg:
-            log["error"] = error_msg
-            log["traceback"] = error_msg
-
-        save_script(task_dir, run_ts, step=0, attempt=1, code=resp["text"], kind="full")
-
-        plot_path = task_dir / f"{run_ts}_plot_full_01.png"
-
-        try:
-            from larc_plot import save_larc_plot
-
-            if dimension_match:
-                save_larc_plot(
-                    pred_board, gold_final, plot_path, width or pred_w, height or pred_h
+            if last_exc:
+                prompt += (
+                    "\n\n"
+                    "### Your previous code\n"
+                    "```python\n"
+                    f"{last_code.strip()}\n"
+                    "```\n\n"
+                    "### Previous execution error\n"
+                    f"{textwrap.indent(last_exc.strip(), '    ')}\n\n"
+                    "### Fix instructions\n"
+                    "    Analyze the error in your previous code and fix it. Do NOT repeat the same mistake.\n"
                 )
-            else:
-                # Dimensions differ – plot pred with its own shape, gold with its own
-                plot_w = pred_w or (width or 1)
-                plot_h = pred_h or (height or 1)
-                save_larc_plot(pred_board, None, plot_path, plot_w, plot_h)
-        except ImportError:
-            save_plot(pred_board, gold_final, plot_path)
-        except Exception as e:
-            print(f"Warning: could not save LARC plot: {e}")
 
-        return log
+            if prefetched_response is not None and attempt == 1:
+                resp = prefetched_response
+            else:
+                resp = call_llm(
+                    prompt=prompt,
+                    system_prompt=sys_prompt,
+                    model=cfg.model,
+                    temperature=cfg.temperature,
+                    max_tokens=cfg.max_tokens,
+                    seed=cfg.seed,
+                    images=[str(image_path)] if image_path else None,
+                    reasoning_effort=getattr(cfg, "reasoning_effort", None),
+                    thinking_budget=getattr(cfg, "thinking_budget", None),
+                    thinking_level=getattr(cfg, "thinking_level", None),
+                )
+
+            try:
+                pred_board = extract_and_execute_dsl(
+                    resp["text"], cfg.exec_timeout, input_grid_2d,
+                    output_width=width, output_height=height,
+                )
+                valid = True
+                error_msg = None
+            except Exception as e:
+                pred_board = []
+                valid = False
+                error_msg = str(e)
+
+            save_script(task_dir, run_ts, step=0, attempt=attempt, code=resp["text"], kind="full")
+
+            # If execution failed, retry with error feedback
+            if not valid:
+                last_exc = error_msg
+                last_code = resp["text"]
+
+                if cfg.retries and attempt >= cfg.retries:
+                    blank = [0] * len(gold_final)
+                    metrics = evaluate_prediction(blank, blank, blank, gold_final)
+                    return {
+                        "attempt": attempt,
+                        "code": resp["text"],
+                        "valid": False,
+                        "usage": resp["usage"],
+                        "error": error_msg,
+                        "traceback": error_msg,
+                        **metrics,
+                    }
+
+                continue
+
+            # If prediction length doesn't match gold, zero it out for metrics
+            if len(pred_board) != len(gold_final):
+                eval_board = [0] * len(gold_final)
+            else:
+                eval_board = pred_board
+
+            blank = [0] * len(gold_final)
+            metrics = evaluate_prediction(blank, eval_board, blank, gold_final)
+
+            log = {
+                "attempt": attempt,
+                "code": resp["text"],
+                "valid": valid,
+                "usage": resp["usage"],
+                **metrics,
+            }
+
+            # Save plot
+            gold_h = height if height else (len(input_grid_2d) if input_grid_2d else 1)
+            gold_w = width if width else (len(input_grid_2d[0]) if input_grid_2d and input_grid_2d[0] else 1)
+            plot_path = task_dir / f"{run_ts}_plot_full_{attempt:02}.png"
+
+            try:
+                from larc_plot import save_larc_plot
+                save_larc_plot(eval_board, gold_final, plot_path, gold_w, gold_h)
+            except ImportError:
+                save_plot(eval_board, gold_final, plot_path)
+            except Exception as e:
+                print(f"Warning: could not save LARC plot: {e}")
+
+            return log
 
     # --- HEXAGEN DATASET LOGIC (Original) ---
     else:
@@ -290,6 +330,8 @@ def run_full(
 
         attempt = 0
         last_exc: Optional[str] = None
+        last_code: Optional[str] = None
+        last_warning: Optional[str] = None
 
         while True:
             attempt += 1
@@ -303,19 +345,45 @@ def run_full(
             if last_exc:
                 prompt += (
                     "\n\n"
+                    "   ### Your previous code\n"
+                    "   ```python\n"
+                    f"{textwrap.indent(last_code.strip(), '    ')}\n"
+                    "   ```\n\n"
                     "   ### Previous execution error\n"
-                    f"{textwrap.indent(last_exc.strip(), '    ')}"
+                    f"{textwrap.indent(last_exc.strip(), '    ')}\n\n"
+                    "   ### Fix instructions\n"
+                    "   Analyze the error in your previous code and fix it. Do NOT repeat the same mistake.\n"
+                )
+            if last_warning:
+                prompt += (
+                    "\n\n"
+                    "   ### Your previous code\n"
+                    "   ```python\n"
+                    f"{textwrap.indent(last_code.strip(), '    ')}\n"
+                    "   ```\n\n"
+                    "   ### Hexagen library warnings\n"
+                    "   Your code executed but the hexagen library raised the following warnings,\n"
+                    "   indicating incorrect API usage that may produce wrong results:\n"
+                    f"{textwrap.indent(last_warning.strip(), '    ')}\n\n"
+                    "   ### Fix instructions\n"
+                    "   Fix your code to avoid these warnings. Do NOT repeat the same mistake.\n"
                 )
 
-            resp = call_llm(
-                prompt=prompt,
-                system_prompt=sys_prompt,
-                model=cfg.model,
-                temperature=cfg.temperature,
-                max_tokens=cfg.max_tokens,
-                seed=cfg.seed,
-                images=[str(image_path)] if image_path else None,
-            )
+            if prefetched_response is not None and attempt == 1:
+                resp = prefetched_response
+            else:
+                resp = call_llm(
+                    prompt=prompt,
+                    system_prompt=sys_prompt,
+                    model=cfg.model,
+                    temperature=cfg.temperature,
+                    max_tokens=cfg.max_tokens,
+                    seed=cfg.seed,
+                    images=[str(image_path)] if image_path else None,
+                    reasoning_effort=getattr(cfg, "reasoning_effort", None),
+                    thinking_budget=getattr(cfg, "thinking_budget", None),
+                    thinking_level=getattr(cfg, "thinking_level", None),
+                )
 
             append = extract_code(resp["text"])
             new_code = f"{code_so_far.rstrip()}\n    {append}"
@@ -336,9 +404,21 @@ def run_full(
             }
 
             # Execute with timeout
-            board_pred, err = run_with_timeout(new_code, cfg.exec_timeout, cfg.lib_file)
+            board_pred, err, hexagen_warnings = run_with_timeout(new_code, cfg.exec_timeout, cfg.lib_file)
 
             if err is None:
+                # Code executed — check for hexagen warnings
+                if hexagen_warnings and (not cfg.retries or attempt < cfg.retries):
+                    # Warnings present and retries remain — retry with warning feedback
+                    last_exc = None
+                    last_warning = "\n".join(f"- {w}" for w in hexagen_warnings)
+                    last_code = append
+                    log["warnings"] = hexagen_warnings
+                    continue
+
+                # Accept result (no warnings, or last retry with warnings)
+                if hexagen_warnings:
+                    log["warnings"] = hexagen_warnings
                 log["valid"] = True
                 log.update(
                     evaluate_prediction(
@@ -355,7 +435,9 @@ def run_full(
                 )
                 return log
             else:
-                last_exc = err
+                last_exc = simplify_traceback(err)
+                last_code = append
+                last_warning = None
                 log["traceback"] = last_exc
 
                 # Check if we should retry

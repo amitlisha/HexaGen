@@ -1,1524 +1,1046 @@
-from arc_types import *
+"""
+ARC DSL — LLM-ready version.
 
+This module provides grid and patch manipulation primitives for solving ARC tasks.
+All names are exported flat at module level (see bottom of file) so that
+``from dsl import *`` or namespace-injection via ``dir()`` works as expected.
 
-def identity(
-    x: Any
-) -> Any:
-    """ identity function """
-    return x
+The classes (GridOps, PatchOps, ColorOps, SearchOps, GeoOps) are used purely as
+internal namespaces; LLM-generated code should call the module-level aliases.
 
+─── Core Type Conventions ──────────────────────────────────────────────────────
+  Grid     = list[list[int]]
+             A 2-D grid of color integers, accessed as grid[row][col].
+             Rows are 0-indexed top-to-bottom; columns 0-indexed left-to-right.
 
-def add(
-    a: Numerical,
-    b: Numerical
-) -> Numerical:
-    """ addition """
-    if isinstance(a, int) and isinstance(b, int):
-        return a + b
-    elif isinstance(a, tuple) and isinstance(b, tuple):
-        return (a[0] + b[0], a[1] + b[1])
-    elif isinstance(a, int) and isinstance(b, tuple):
-        return (a + b[0], a + b[1])
-    return (a[0] + b, a[1] + b)
+  Object   = dict[tuple[int, int], int]
+             A mapping from (row, col) -> color for colored cells.
+             Access a cell's color with obj[(r, c)] or obj.get((r, c)).
 
+  Indices  = set[tuple[int, int]]
+             A set of (row, col) positions with no color information.
 
-def subtract(
-    a: Numerical,
-    b: Numerical
-) -> Numerical:
-    """ subtraction """
-    if isinstance(a, int) and isinstance(b, int):
-        return a - b
-    elif isinstance(a, tuple) and isinstance(b, tuple):
-        return (a[0] - b[0], a[1] - b[1])
-    elif isinstance(a, int) and isinstance(b, tuple):
-        return (a - b[0], a - b[1])
-    return (a[0] - b, a[1] - b)
+  Patch    = Object | Indices
+             Either an Object (dict) or Indices (set) — any collection of positions.
 
+  Element  = Grid | Object
+             Anything that contains color values (grid or object).
 
-def multiply(
-    a: Numerical,
-    b: Numerical
-) -> Numerical:
-    """ multiplication """
-    if isinstance(a, int) and isinstance(b, int):
-        return a * b
-    elif isinstance(a, tuple) and isinstance(b, tuple):
-        return (a[0] * b[0], a[1] * b[1])
-    elif isinstance(a, int) and isinstance(b, tuple):
-        return (a * b[0], a * b[1])
-    return (a[0] * b, a[1] * b)
-    
+  Piece    = Grid | Patch
+             Anything with spatial extent (grid, object, or plain indices).
 
-def divide(
-    a: Numerical,
-    b: Numerical
-) -> Numerical:
-    """ floor division """
-    if isinstance(a, int) and isinstance(b, int):
-        return a // b
-    elif isinstance(a, tuple) and isinstance(b, tuple):
-        return (a[0] // b[0], a[1] // b[1])
-    elif isinstance(a, int) and isinstance(b, tuple):
-        return (a // b[0], a // b[1])
-    return (a[0] // b, a[1] // b)
+  Color    = int
+             Integer 0–9 representing a color (0 = background by convention).
 
+  Index    = tuple[int, int]
+             A single (row, col) grid coordinate.
 
-def invert(
-    n: Numerical
-) -> Numerical:
-    """ inversion with respect to addition """
-    return -n if isinstance(n, int) else (-n[0], -n[1])
+─── Color Mapping ──────────────────────────────────────────────────────────────
+  0=black  1=blue   2=red    3=green  4=yellow
+  5=grey   6=pink   7=orange 8=cyan   9=maroon
+  Background is typically the most common color in a grid (often 0).
+"""
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Private helpers (not exported)
+# ──────────────────────────────────────────────────────────────────────────────
 
-def even(
-    n: Integer
-) -> Boolean:
-    """ evenness """
-    return n % 2 == 0
-
-
-def double(
-    n: Numerical
-) -> Numerical:
-    """ scaling by two """
-    return n * 2 if isinstance(n, int) else (n[0] * 2, n[1] * 2)
-
-
-def halve(
-    n: Numerical
-) -> Numerical:
-    """ scaling by one half """
-    return n // 2 if isinstance(n, int) else (n[0] // 2, n[1] // 2)
-
-
-def flip(
-    b: Boolean
-) -> Boolean:
-    """ logical not """
-    return not b
-
-
-def equality(
-    a: Any,
-    b: Any
-) -> Boolean:
-    """ equality """
-    return a == b
-
-
-def contained(
-    value: Any,
-    container: Container
-) -> Boolean:
-    """ element of """
-    return value in container
-
-
-def combine(
-    a: Container,
-    b: Container
-) -> Container:
-    """ union """
-    return type(a)((*a, *b))
-
-
-def intersection(
-    a: FrozenSet,
-    b: FrozenSet
-) -> FrozenSet:
-    """ returns the intersection of two containers """
-    return a & b
-
-
-def difference(
-    a: FrozenSet,
-    b: FrozenSet
-) -> FrozenSet:
-    """ set difference """
-    return type(a)(e for e in a if e not in b)
-
-
-def dedupe(
-    tup: Tuple
-) -> Tuple:
-    """ remove duplicates """
-    return tuple(e for i, e in enumerate(tup) if tup.index(e) == i)
-
-
-def order(
-    container: Container,
-    compfunc: Callable
-) -> Tuple:
-    """ order container by custom key """
-    return tuple(sorted(container, key=compfunc))
-
-
-def repeat(
-    item: Any,
-    num: Integer
-) -> Tuple:
-    """ repetition of item within vector """
-    return tuple(item for i in range(num))
-
-
-def greater(
-    a: Integer,
-    b: Integer
-) -> Boolean:
-    """ greater """
-    return a > b
-
-
-def size(
-    container: Container
-) -> Integer:
-    """ cardinality """
-    return len(container)
-
-
-def merge(
-    containers: ContainerContainer
-) -> Container:
-    """ merging """
-    return type(containers)(e for c in containers for e in c)
-
-
-def maximum(
-    container: IntegerSet
-) -> Integer:
-    """ maximum """
-    return max(container, default=0)
-
-
-def minimum(
-    container: IntegerSet
-) -> Integer:
-    """ minimum """
-    return min(container, default=0)
-
-
-def valmax(
-    container: Container,
-    compfunc: Callable
-) -> Integer:
-    """ maximum by custom function """
-    return compfunc(max(container, key=compfunc, default=0))
-
-
-def valmin(
-    container: Container,
-    compfunc: Callable
-) -> Integer:
-    """ minimum by custom function """
-    return compfunc(min(container, key=compfunc, default=0))
-
-
-def argmax(
-    container: Container,
-    compfunc: Callable
-) -> Any:
-    """ largest item by custom order """
-    return max(container, key=compfunc)
-
-
-def argmin(
-    container: Container,
-    compfunc: Callable
-) -> Any:
-    """ smallest item by custom order """
-    return min(container, key=compfunc)
-
-
-def mostcommon(
-    container: Container
-) -> Any:
-    """ most common item """
-    return max(set(container), key=container.count)
-
-
-def leastcommon(
-    container: Container
-) -> Any:
-    """ least common item """
-    return min(set(container), key=container.count)
-
-
-def initset(
-    value: Any
-) -> FrozenSet:
-    """ initialize container """
-    return frozenset({value})
-
-
-def both(
-    a: Boolean,
-    b: Boolean
-) -> Boolean:
-    """ logical and """
-    return a and b
-
-
-def either(
-    a: Boolean,
-    b: Boolean
-) -> Boolean:
-    """ logical or """
-    return a or b
-
-
-def increment(
-    x: Numerical
-) -> Numerical:
-    """ incrementing """
-    return x + 1 if isinstance(x, int) else (x[0] + 1, x[1] + 1)
-
-
-def decrement(
-    x: Numerical
-) -> Numerical:
-    """ decrementing """
-    return x - 1 if isinstance(x, int) else (x[0] - 1, x[1] - 1)
-
-
-def crement(
-    x: Numerical
-) -> Numerical:
-    """ incrementing positive and decrementing negative """
-    if isinstance(x, int):
-        return 0 if x == 0 else (x + 1 if x > 0 else x - 1)
-    return (
-        0 if x[0] == 0 else (x[0] + 1 if x[0] > 0 else x[0] - 1),
-        0 if x[1] == 0 else (x[1] + 1 if x[1] > 0 else x[1] - 1)
-    )
-
-
-def sign(
-    x: Numerical
-) -> Numerical:
-    """ sign """
-    if isinstance(x, int):
-        return 0 if x == 0 else (1 if x > 0 else -1)
-    return (
-        0 if x[0] == 0 else (1 if x[0] > 0 else -1),
-        0 if x[1] == 0 else (1 if x[1] > 0 else -1)
-    )
-
-
-def positive(
-    x: Integer
-) -> Boolean:
-    """ positive """
-    return x > 0
-
-
-def toivec(
-    i: Integer
-) -> IntegerTuple:
-    """ vector pointing vertically """
-    return (i, 0)
-
-
-def tojvec(
-    j: Integer
-) -> IntegerTuple:
-    """ vector pointing horizontally """
-    return (0, j)
-
-
-def sfilter(
-    container: Container,
-    condition: Callable
-) -> Container:
-    """ keep elements in container that satisfy condition """
-    return type(container)(e for e in container if condition(e))
-
-
-def mfilter(
-    container: Container,
-    function: Callable
-) -> FrozenSet:
-    """ filter and merge """
-    return merge(sfilter(container, function))
-
-
-def extract(
-    container: Container,
-    condition: Callable
-) -> Any:
-    """ first element of container that satisfies condition """
-    return next(e for e in container if condition(e))
-
-
-def totuple(
-    container: FrozenSet
-) -> Tuple:
-    """ conversion to tuple """
-    return tuple(container)
-
-
-def first(
-    container: Container
-) -> Any:
-    """ first item of container """
-    return next(iter(container))
-
-
-def last(
-    container: Container
-) -> Any:
-    """ last item of container """
-    return max(enumerate(container))[1]
-
-
-def insert(
-    value: Any,
-    container: FrozenSet
-) -> FrozenSet:
-    """ insert item into container """
-    return container.union(frozenset({value}))
-
-
-def remove(
-    value: Any,
-    container: Container
-) -> Container:
-    """ remove item from container """
-    return type(container)(e for e in container if e != value)
-
-
-def other(
-    container: Container,
-    value: Any
-) -> Any:
-    """ other value in the container """
-    return first(remove(value, container))
-
-
-def interval(
-    start: Integer,
-    stop: Integer,
-    step: Integer
-) -> Tuple:
-    """ range """
-    return tuple(range(start, stop, step))
-
-
-def astuple(
-    a: Integer,
-    b: Integer
-) -> IntegerTuple:
-    """ constructs a tuple """
-    return (a, b)
-
-
-def product(
-    a: Container,
-    b: Container
-) -> FrozenSet:
-    """ cartesian product """
-    return frozenset((i, j) for j in b for i in a)
-
-
-def pair(
-    a: Tuple,
-    b: Tuple
-) -> TupleTuple:
-    """ zipping of two tuples """
-    return tuple(zip(a, b))
-
-
-def branch(
-    condition: Boolean,
-    a: Any,
-    b: Any
-) -> Any:
-    """ if else branching """
-    return a if condition else b
-
-
-def compose(
-    outer: Callable,
-    inner: Callable
-) -> Callable:
-    """ function composition """
-    return lambda x: outer(inner(x))
-
-
-def chain(
-    h: Callable,
-    g: Callable,
-    f: Callable,
-) -> Callable:
-    """ function composition with three functions """
-    return lambda x: h(g(f(x)))
-
-
-def matcher(
-    function: Callable,
-    target: Any
-) -> Callable:
-    """ construction of equality function """
-    return lambda x: function(x) == target
-
-
-def rbind(
-    function: Callable,
-    fixed: Any
-) -> Callable:
-    """ fix the rightmost argument """
-    n = function.__code__.co_argcount
-    if n == 2:
-        return lambda x: function(x, fixed)
-    elif n == 3:
-        return lambda x, y: function(x, y, fixed)
-    else:
-        return lambda x, y, z: function(x, y, z, fixed)
-
-
-def lbind(
-    function: Callable,
-    fixed: Any
-) -> Callable:
-    """ fix the leftmost argument """
-    n = function.__code__.co_argcount
-    if n == 2:
-        return lambda y: function(fixed, y)
-    elif n == 3:
-        return lambda y, z: function(fixed, y, z)
-    else:
-        return lambda y, z, a: function(fixed, y, z, a)
-
-
-def power(
-    function: Callable,
-    n: Integer
-) -> Callable:
-    """ power of function """
-    if n == 1:
-        return function
-    return compose(function, power(function, n - 1))
-
-
-def fork(
-    outer: Callable,
-    a: Callable,
-    b: Callable
-) -> Callable:
-    """ creates a wrapper function """
-    return lambda x: outer(a(x), b(x))
-
-
-def apply(
-    function: Callable,
-    container: Container
-) -> Container:
-    """ apply function to each item in container """
-    return type(container)(function(e) for e in container)
-
-
-def rapply(
-    functions: Container,
-    value: Any
-) -> Container:
-    """ apply each function in container to value """
-    return type(functions)(function(value) for function in functions)
-
-
-def mapply(
-    function: Callable,
-    container: ContainerContainer
-) -> FrozenSet:
-    """ apply and merge """
-    return merge(apply(function, container))
-
-
-def papply(
-    function: Callable,
-    a: Tuple,
-    b: Tuple
-) -> Tuple:
-    """ apply function on two vectors """
-    return tuple(function(i, j) for i, j in zip(a, b))
-
-
-def mpapply(
-    function: Callable,
-    a: Tuple,
-    b: Tuple
-) -> Tuple:
-    """ apply function on two vectors and merge """
-    return merge(papply(function, a, b))
-
-
-def prapply(
-    function,
-    a: Container,
-    b: Container
-) -> FrozenSet:
-    """ apply function on cartesian product """
-    return frozenset(function(i, j) for j in b for i in a)
-
-
-def mostcolor(
-    element: Element
-) -> Integer:
-    """ most common color """
-    values = [v for r in element for v in r] if isinstance(element, tuple) else [v for v, _ in element]
-    return max(set(values), key=values.count)
-    
-
-def leastcolor(
-    element: Element
-) -> Integer:
-    """ least common color """
-    values = [v for r in element for v in r] if isinstance(element, tuple) else [v for v, _ in element]
-    return min(set(values), key=values.count)
-
-
-def height(
-    piece: Piece
-) -> Integer:
-    """ height of grid or patch """
-    if len(piece) == 0:
-        return 0
-    if isinstance(piece, tuple):
-        return len(piece)
-    return lowermost(piece) - uppermost(piece) + 1
-
-
-def width(
-    piece: Piece
-) -> Integer:
-    """ width of grid or patch """
-    if len(piece) == 0:
-        return 0
-    if isinstance(piece, tuple):
-        return len(piece[0])
-    return rightmost(piece) - leftmost(piece) + 1
-
-
-def shape(
-    piece: Piece
-) -> IntegerTuple:
-    """ height and width of grid or patch """
-    return (height(piece), width(piece))
-
-
-def portrait(
-    piece: Piece
-) -> Boolean:
-    """ whether height is greater than width """
-    return height(piece) > width(piece)
-
-
-def colorcount(
-    element: Element,
-    value: Integer
-) -> Integer:
-    """ number of cells with color """
-    if isinstance(element, tuple):
-        return sum(row.count(value) for row in element)
-    return sum(v == value for v, _ in element)
-
-
-def colorfilter(
-    objs: Objects,
-    value: Integer
-) -> Objects:
-    """ filter objects by color """
-    return frozenset(obj for obj in objs if next(iter(obj))[0] == value)
-
-
-def sizefilter(
-    container: Container,
-    n: Integer
-) -> FrozenSet:
-    """ filter items by size """
-    return frozenset(item for item in container if len(item) == n)
-
-
-def asindices(
-    grid: Grid
-) -> Indices:
-    """ indices of all grid cells """
-    return frozenset((i, j) for i in range(len(grid)) for j in range(len(grid[0])))
-
-
-def ofcolor(
-    grid: Grid,
-    value: Integer
-) -> Indices:
-    """ indices of all grid cells with value """
-    return frozenset((i, j) for i, r in enumerate(grid) for j, v in enumerate(r) if v == value)
-
-
-def ulcorner(
-    patch: Patch
-) -> IntegerTuple:
-    """ index of upper left corner """
-    return tuple(map(min, zip(*toindices(patch))))
-
-
-def urcorner(
-    patch: Patch
-) -> IntegerTuple:
-    """ index of upper right corner """
-    return tuple(map(lambda ix: {0: min, 1: max}[ix[0]](ix[1]), enumerate(zip(*toindices(patch)))))
-
-
-def llcorner(
-    patch: Patch
-) -> IntegerTuple:
-    """ index of lower left corner """
-    return tuple(map(lambda ix: {0: max, 1: min}[ix[0]](ix[1]), enumerate(zip(*toindices(patch)))))
-
-
-def lrcorner(
-    patch: Patch
-) -> IntegerTuple:
-    """ index of lower right corner """
-    return tuple(map(max, zip(*toindices(patch))))
-
-
-def crop(
-    grid: Grid,
-    start: IntegerTuple,
-    dims: IntegerTuple
-) -> Grid:
-    """ subgrid specified by start and dimension """
-    return tuple(r[start[1]:start[1]+dims[1]] for r in grid[start[0]:start[0]+dims[0]])
-
-
-def toindices(
-    patch: Patch
-) -> Indices:
-    """ indices of object cells """
-    if len(patch) == 0:
-        return frozenset()
-    if isinstance(next(iter(patch))[1], tuple):
-        return frozenset(index for value, index in patch)
+def _to_indices(patch):
+    """Strip colors from an Object (dict) → set of keys; pass-through if already a set."""
+    if isinstance(patch, dict):
+        return set(patch.keys())
     return patch
 
 
-def recolor(
-    value: Integer,
-    patch: Patch
-) -> Object:
-    """ recolor patch """
-    return frozenset((value, index) for index in toindices(patch))
-
-
-def shift(
-    patch: Patch,
-    directions: IntegerTuple
-) -> Patch:
-    """ shift patch """
-    if len(patch) == 0:
-        return patch
-    di, dj = directions
-    if isinstance(next(iter(patch))[1], tuple):
-        return frozenset((value, (i + di, j + dj)) for value, (i, j) in patch)
-    return frozenset((i + di, j + dj) for i, j in patch)
-
-
-def normalize(
-    patch: Patch
-) -> Patch:
-    """ moves upper left corner to origin """
-    if len(patch) == 0:
-        return patch
-    return shift(patch, (-uppermost(patch), -leftmost(patch)))
-
-
-def dneighbors(
-    loc: IntegerTuple
-) -> Indices:
-    """ directly adjacent indices """
-    return frozenset({(loc[0] - 1, loc[1]), (loc[0] + 1, loc[1]), (loc[0], loc[1] - 1), (loc[0], loc[1] + 1)})
-
-
-def ineighbors(
-    loc: IntegerTuple
-) -> Indices:
-    """ diagonally adjacent indices """
-    return frozenset({(loc[0] - 1, loc[1] - 1), (loc[0] - 1, loc[1] + 1), (loc[0] + 1, loc[1] - 1), (loc[0] + 1, loc[1] + 1)})
-
-
-def neighbors(
-    loc: IntegerTuple
-) -> Indices:
-    """ adjacent indices """
-    return dneighbors(loc) | ineighbors(loc)
-
-
-def objects(
-    grid: Grid,
-    univalued: Boolean,
-    diagonal: Boolean,
-    without_bg: Boolean
-) -> Objects:
-    """ objects occurring on the grid """
-    bg = mostcolor(grid) if without_bg else None
-    objs = set()
-    occupied = set()
-    h, w = len(grid), len(grid[0])
-    unvisited = asindices(grid)
-    diagfun = neighbors if diagonal else dneighbors
-    for loc in unvisited:
-        if loc in occupied:
-            continue
-        val = grid[loc[0]][loc[1]]
-        if val == bg:
-            continue
-        obj = {(val, loc)}
-        cands = {loc}
-        while len(cands) > 0:
-            neighborhood = set()
-            for cand in cands:
-                v = grid[cand[0]][cand[1]]
-                if (val == v) if univalued else (v != bg):
-                    obj.add((v, cand))
-                    occupied.add(cand)
-                    neighborhood |= {
-                        (i, j) for i, j in diagfun(cand) if 0 <= i < h and 0 <= j < w
-                    }
-            cands = neighborhood - occupied
-        objs.add(frozenset(obj))
-    return frozenset(objs)
-
-
-def partition(
-    grid: Grid
-) -> Objects:
-    """ each cell with the same value part of the same object """
-    return frozenset(
-        frozenset(
-            (v, (i, j)) for i, r in enumerate(grid) for j, v in enumerate(r) if v == value
-        ) for value in palette(grid)
-    )
-
-
-def fgpartition(
-    grid: Grid
-) -> Objects:
-    """ each cell with the same value part of the same object without background """
-    return frozenset(
-        frozenset(
-            (v, (i, j)) for i, r in enumerate(grid) for j, v in enumerate(r) if v == value
-        ) for value in palette(grid) - {mostcolor(grid)}
-    )
-
-
-def uppermost(
-    patch: Patch
-) -> Integer:
-    """ row index of uppermost occupied cell """
-    return min(i for i, j in toindices(patch))
-
-
-def lowermost(
-    patch: Patch
-) -> Integer:
-    """ row index of lowermost occupied cell """
-    return max(i for i, j in toindices(patch))
-
-
-def leftmost(
-    patch: Patch
-) -> Integer:
-    """ column index of leftmost occupied cell """
-    return min(j for i, j in toindices(patch))
-
-
-def rightmost(
-    patch: Patch
-) -> Integer:
-    """ column index of rightmost occupied cell """
-    return max(j for i, j in toindices(patch))
-
-
-def square(
-    piece: Piece
-) -> Boolean:
-    """ whether the piece forms a square """
-    return len(piece) == len(piece[0]) if isinstance(piece, tuple) else height(piece) * width(piece) == len(piece) and height(piece) == width(piece)
-
-
-def vline(
-    patch: Patch
-) -> Boolean:
-    """ whether the piece forms a vertical line """
-    return height(patch) == len(patch) and width(patch) == 1
-
-
-def hline(
-    patch: Patch
-) -> Boolean:
-    """ whether the piece forms a horizontal line """
-    return width(patch) == len(patch) and height(patch) == 1
-
-
-def hmatching(
-    a: Patch,
-    b: Patch
-) -> Boolean:
-    """ whether there exists a row for which both patches have cells """
-    return len(set(i for i, j in toindices(a)) & set(i for i, j in toindices(b))) > 0
-
-
-def vmatching(
-    a: Patch,
-    b: Patch
-) -> Boolean:
-    """ whether there exists a column for which both patches have cells """
-    return len(set(j for i, j in toindices(a)) & set(j for i, j in toindices(b))) > 0
-
-
-def manhattan(
-    a: Patch,
-    b: Patch
-) -> Integer:
-    """ closest manhattan distance between two patches """
-    return min(abs(ai - bi) + abs(aj - bj) for ai, aj in toindices(a) for bi, bj in toindices(b))
-
-
-def adjacent(
-    a: Patch,
-    b: Patch
-) -> Boolean:
-    """ whether two patches are adjacent """
-    return manhattan(a, b) == 1
-
-
-def bordering(
-    patch: Patch,
-    grid: Grid
-) -> Boolean:
-    """ whether a patch is adjacent to a grid border """
-    return uppermost(patch) == 0 or leftmost(patch) == 0 or lowermost(patch) == len(grid) - 1 or rightmost(patch) == len(grid[0]) - 1
-
-
-def centerofmass(
-    patch: Patch
-) -> IntegerTuple:
-    """ center of mass """
-    return tuple(map(lambda x: sum(x) // len(patch), zip(*toindices(patch))))
-
-
-def palette(
-    element: Element
-) -> IntegerSet:
-    """ colors occurring in object or grid """
-    if isinstance(element, tuple):
-        return frozenset({v for r in element for v in r})
-    return frozenset({v for v, _ in element})
-
-
-def numcolors(
-    element: Element
-) -> IntegerSet:
-    """ number of colors occurring in object or grid """
-    return len(palette(element))
-
-
-def color(
-    obj: Object
-) -> Integer:
-    """ color of object """
-    return next(iter(obj))[0]
-
-
-def toobject(
-    patch: Patch,
-    grid: Grid
-) -> Object:
-    """ object from patch and grid """
-    h, w = len(grid), len(grid[0])
-    return frozenset((grid[i][j], (i, j)) for i, j in toindices(patch) if 0 <= i < h and 0 <= j < w)
-
-
-def asobject(
-    grid: Grid
-) -> Object:
-    """ conversion of grid to object """
-    return frozenset((v, (i, j)) for i, r in enumerate(grid) for j, v in enumerate(r))
-
-
-def rot90(
-    grid: Grid
-) -> Grid:
-    """ quarter clockwise rotation """
-    return tuple(row for row in zip(*grid[::-1]))
-
-
-def rot180(
-    grid: Grid
-) -> Grid:
-    """ half rotation """
-    return tuple(tuple(row[::-1]) for row in grid[::-1])
-
-
-def rot270(
-    grid: Grid
-) -> Grid:
-    """ quarter anticlockwise rotation """
-    return tuple(tuple(row[::-1]) for row in zip(*grid[::-1]))[::-1]
-
-
-def hmirror(
-    piece: Piece
-) -> Piece:
-    """ mirroring along horizontal """
-    if isinstance(piece, tuple):
-        return piece[::-1]
-    d = ulcorner(piece)[0] + lrcorner(piece)[0]
-    if isinstance(next(iter(piece))[1], tuple):
-        return frozenset((v, (d - i, j)) for v, (i, j) in piece)
-    return frozenset((d - i, j) for i, j in piece)
-
-
-def vmirror(
-    piece: Piece
-) -> Piece:
-    """ mirroring along vertical """
-    if isinstance(piece, tuple):
-        return tuple(row[::-1] for row in piece)
-    d = ulcorner(piece)[1] + lrcorner(piece)[1]
-    if isinstance(next(iter(piece))[1], tuple):
-        return frozenset((v, (i, d - j)) for v, (i, j) in piece)
-    return frozenset((i, d - j) for i, j in piece)
-
-
-def dmirror(
-    piece: Piece
-) -> Piece:
-    """ mirroring along diagonal """
-    if isinstance(piece, tuple):
-        return tuple(zip(*piece))
-    a, b = ulcorner(piece)
-    if isinstance(next(iter(piece))[1], tuple):
-        return frozenset((v, (j - b + a, i - a + b)) for v, (i, j) in piece)
-    return frozenset((j - b + a, i - a + b) for i, j in piece)
-
-
-def cmirror(
-    piece: Piece
-) -> Piece:
-    """ mirroring along counterdiagonal """
-    if isinstance(piece, tuple):
-        return tuple(zip(*(r[::-1] for r in piece[::-1])))
-    return vmirror(dmirror(vmirror(piece)))
-
-
-def fill(
-    grid: Grid,
-    value: Integer,
-    patch: Patch
-) -> Grid:
-    """ fill value at indices """
-    h, w = len(grid), len(grid[0])
-    grid_filled = list(list(row) for row in grid)
-    for i, j in toindices(patch):
-        if 0 <= i < h and 0 <= j < w:
-            grid_filled[i][j] = value
-    return tuple(tuple(row) for row in grid_filled)
-
-
-def paint(
-    grid: Grid,
-    obj: Object
-) -> Grid:
-    """ paint object to grid """
-    h, w = len(grid), len(grid[0])
-    grid_painted = list(list(row) for row in grid)
-    for value, (i, j) in obj:
-        if 0 <= i < h and 0 <= j < w:
-            grid_painted[i][j] = value
-    return tuple(tuple(row) for row in grid_painted)
-
-
-def underfill(
-    grid: Grid,
-    value: Integer,
-    patch: Patch
-) -> Grid:
-    """ fill value at indices that are background """
-    h, w = len(grid), len(grid[0])
-    bg = mostcolor(grid)
-    g = list(list(r) for r in grid)
-    for i, j in toindices(patch):
-        if 0 <= i < h and 0 <= j < w:
-            if g[i][j] == bg:
-                g[i][j] = value
-    return tuple(tuple(r) for r in g)
-
-
-def underpaint(
-    grid: Grid,
-    obj: Object
-) -> Grid:
-    """ paint object to grid where there is background """
-    h, w = len(grid), len(grid[0])
-    bg = mostcolor(grid)
-    g = list(list(r) for r in grid)
-    for value, (i, j) in obj:
-        if 0 <= i < h and 0 <= j < w:
-            if g[i][j] == bg:
-                g[i][j] = value
-    return tuple(tuple(r) for r in g)
-
-
-def hupscale(
-    grid: Grid,
-    factor: Integer
-) -> Grid:
-    """ upscale grid horizontally """
-    g = tuple()
-    for row in grid:
-        r = tuple()
-        for value in row:
-            r = r + tuple(value for num in range(factor))
-        g = g + (r,)
-    return g
-
-
-def vupscale(
-    grid: Grid,
-    factor: Integer
-) -> Grid:
-    """ upscale grid vertically """
-    g = tuple()
-    for row in grid:
-        g = g + tuple(row for num in range(factor))
-    return g
-
-
-def upscale(
-    element: Element,
-    factor: Integer
-) -> Element:
-    """ upscale object or grid """
-    if isinstance(element, tuple):
-        g = tuple()
+def _boundary(patch, side):
+    """Extreme row/col of a patch. side: 'top', 'bottom', 'left', 'right'."""
+    idxs = _to_indices(patch)
+    if side == 'top':    return min(i for i, j in idxs)
+    if side == 'bottom': return max(i for i, j in idxs)
+    if side == 'left':   return min(j for i, j in idxs)
+    if side == 'right':  return max(j for i, j in idxs)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Shared dimension functions — work on Grid or Patch (Piece)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def height(piece):
+    """Grid row count, or bounding-box height of a patch (0 if empty)."""
+    if isinstance(piece, list):
+        return len(piece)
+    if len(piece) == 0:
+        return 0
+    return _boundary(piece, 'bottom') - _boundary(piece, 'top') + 1
+
+
+def width(piece):
+    """Grid column count, or bounding-box width of a patch (0 if empty)."""
+    if isinstance(piece, list):
+        return len(piece[0]) if piece else 0
+    if len(piece) == 0:
+        return 0
+    return _boundary(piece, 'right') - _boundary(piece, 'left') + 1
+
+
+def dimensions(piece):
+    """Return (height, width) for a grid or patch bounding box."""
+    return (height(piece), width(piece))
+
+
+def is_portrait(piece):
+    """True iff height(piece) > width(piece)."""
+    return height(piece) > width(piece)
+
+
+def is_square(piece):
+    """
+    True iff:
+    - Grid: row count == column count.
+    - Patch: bounding box is square AND all bbox cells are occupied.
+    """
+    if isinstance(piece, list):
+        return len(piece) == len(piece[0]) if piece else True
+    return height(piece) == width(piece) and height(piece) * width(piece) == len(piece)
+
+
+def mirror(piece, axis='horizontal'):
+    """
+    Reflect a grid or patch across the specified axis.
+
+    axis (refers to the axis *of reflection*, not the direction of motion):
+      'horizontal'     — flip top-to-bottom (reflects across a horizontal line)
+      'vertical'       — flip left-to-right (reflects across a vertical line)
+      'diagonal'       — reflect across the main diagonal (top-left → bottom-right)
+      'counterdiagonal'— reflect across the anti-diagonal (top-right → bottom-left)
+
+    For patches, reflection is relative to the patch's own bounding box.
+    """
+    if axis == 'horizontal':
+        if isinstance(piece, list):
+            return piece[::-1]
+        d = _boundary(piece, 'top') + _boundary(piece, 'bottom')
+        if isinstance(piece, dict):
+            return {(d - i, j): v for (i, j), v in piece.items()}
+        return {(d - i, j) for i, j in piece}
+
+    elif axis == 'vertical':
+        if isinstance(piece, list):
+            return [row[::-1] for row in piece]
+        d = _boundary(piece, 'left') + _boundary(piece, 'right')
+        if isinstance(piece, dict):
+            return {(i, d - j): v for (i, j), v in piece.items()}
+        return {(i, d - j) for i, j in piece}
+
+    elif axis == 'diagonal':
+        if isinstance(piece, list):
+            return [list(row) for row in zip(*piece)]
+        a, b = _boundary(piece, 'top'), _boundary(piece, 'left')
+        if isinstance(piece, dict):
+            return {(j - b + a, i - a + b): v for (i, j), v in piece.items()}
+        return {(j - b + a, i - a + b) for i, j in piece}
+
+    elif axis == 'counterdiagonal':
+        if isinstance(piece, list):
+            return [list(row) for row in zip(*(r[::-1] for r in piece[::-1]))]
+        return mirror(mirror(mirror(piece, 'vertical'), 'diagonal'), 'vertical')
+
+    return piece
+
+
+def upscale(element, factor):
+    """
+    Scale a grid or colored Object by `factor` in both dimensions.
+
+    Grid:   each cell becomes a factor×factor block.
+    Object: each cell (row,col)->color becomes factor² cells covering
+            the factor×factor block starting at (i*factor, j*factor)
+            (positions are relative to the object's upper-left corner).
+    """
+    if isinstance(element, list):
+        g = []
         for row in element:
-            upscaled_row = tuple()
-            for value in row:
-                upscaled_row = upscaled_row + tuple(value for num in range(factor))
-            g = g + tuple(upscaled_row for num in range(factor))
+            upscaled_row = [v for v in row for _ in range(factor)]
+            for _ in range(factor):
+                g.append(list(upscaled_row))
         return g
     else:
         if len(element) == 0:
-            return frozenset()
-        di_inv, dj_inv = ulcorner(element)
-        di, dj = (-di_inv, -dj_inv)
-        normed_obj = shift(element, (di, dj))
-        o = set()
-        for value, (i, j) in normed_obj:
+            return {}
+        di_inv = _boundary(element, 'top')
+        dj_inv = _boundary(element, 'left')
+        normed = PatchOps.translate(element, (-di_inv, -dj_inv))
+        o = {}
+        for (i, j), value in normed.items():
             for io in range(factor):
                 for jo in range(factor):
-                    o.add((value, (i * factor + io, j * factor + jo)))
-        return shift(frozenset(o), (di_inv, dj_inv))
+                    o[(i * factor + io, j * factor + jo)] = value
+        return PatchOps.translate(o, (di_inv, dj_inv))
 
 
-def downscale(
-    grid: Grid,
-    factor: Integer
-) -> Grid:
-    """ downscale grid """
-    h, w = len(grid), len(grid[0])
-    g = tuple()
-    for i in range(h):
-        r = tuple()
-        for j in range(w):
-            if j % factor == 0:
-                r = r + (grid[i][j],)
-        g = g + (r, )
-    h = len(g)
-    dsg = tuple()
-    for i in range(h):
-        if i % factor == 0:
-            dsg = dsg + (g[i],)
-    return dsg
+def upscale_along_axis(grid, factor, axis='horizontal'):
+    """
+    Stretch a grid along one axis only.
 
-
-def hconcat(
-    a: Grid,
-    b: Grid
-) -> Grid:
-    """ concatenate two grids horizontally """
-    return tuple(i + j for i, j in zip(a, b))
-
-
-def vconcat(
-    a: Grid,
-    b: Grid
-) -> Grid:
-    """ concatenate two grids vertically """
-    return a + b
-
-
-def subgrid(
-    patch: Patch,
-    grid: Grid
-) -> Grid:
-    """ smallest subgrid containing object """
-    return crop(grid, ulcorner(patch), shape(patch))
-
-
-def hsplit(
-    grid: Grid,
-    n: Integer
-) -> Tuple:
-    """ split grid horizontally """
-    h, w = len(grid), len(grid[0]) // n
-    offset = len(grid[0]) % n != 0
-    return tuple(crop(grid, (0, w * i + i * offset), (h, w)) for i in range(n))
-
-
-def vsplit(
-    grid: Grid,
-    n: Integer
-) -> Tuple:
-    """ split grid vertically """
-    h, w = len(grid) // n, len(grid[0])
-    offset = len(grid) % n != 0
-    return tuple(crop(grid, (h * i + i * offset, 0), (h, w)) for i in range(n))
-
-
-def cellwise(
-    a: Grid,
-    b: Grid,
-    fallback: Integer
-) -> Grid:
-    """ cellwise match of two grids """
-    h, w = len(a), len(a[0])
-    resulting_grid = tuple()
-    for i in range(h):
-        row = tuple()
-        for j in range(w):
-            a_value = a[i][j]
-            value = a_value if a_value == b[i][j] else fallback
-            row = row + (value,)
-        resulting_grid = resulting_grid + (row, )
-    return resulting_grid
-
-
-def replace(
-    grid: Grid,
-    replacee: Integer,
-    replacer: Integer
-) -> Grid:
-    """ color substitution """
-    return tuple(tuple(replacer if v == replacee else v for v in r) for r in grid)
-
-
-def switch(
-    grid: Grid,
-    a: Integer,
-    b: Integer
-) -> Grid:
-    """ color switching """
-    return tuple(tuple(v if (v != a and v != b) else {a: b, b: a}[v] for v in r) for r in grid)
-
-
-def center(
-    patch: Patch
-) -> IntegerTuple:
-    """ center of the patch """
-    return (uppermost(patch) + height(patch) // 2, leftmost(patch) + width(patch) // 2)
-
-
-def position(
-    a: Patch,
-    b: Patch
-) -> IntegerTuple:
-    """ relative position between two patches """
-    ia, ja = center(toindices(a))
-    ib, jb = center(toindices(b))
-    if ia == ib:
-        return (0, 1 if ja < jb else -1)
-    elif ja == jb:
-        return (1 if ia < ib else -1, 0)
-    elif ia < ib:
-        return (1, 1 if ja < jb else -1)
-    elif ia > ib:
-        return (-1, 1 if ja < jb else -1)
-
-
-def index(
-    grid: Grid,
-    loc: IntegerTuple
-) -> Integer:
-    """ color at location """
-    i, j = loc
-    h, w = len(grid), len(grid[0])
-    if not (0 <= i < h and 0 <= j < w):
-        return None
-    return grid[loc[0]][loc[1]] 
-
-
-def canvas(
-    value: Integer,
-    dimensions: IntegerTuple
-) -> Grid:
-    """ grid construction """
-    return tuple(tuple(value for j in range(dimensions[1])) for i in range(dimensions[0]))
-
-
-def corners(
-    patch: Patch
-) -> Indices:
-    """ indices of corners """
-    return frozenset({ulcorner(patch), urcorner(patch), llcorner(patch), lrcorner(patch)})
-
-
-def connect(
-    a: IntegerTuple,
-    b: IntegerTuple
-) -> Indices:
-    """ line between two points """
-    ai, aj = a
-    bi, bj = b
-    si = min(ai, bi)
-    ei = max(ai, bi) + 1
-    sj = min(aj, bj)
-    ej = max(aj, bj) + 1
-    if ai == bi:
-        return frozenset((ai, j) for j in range(sj, ej))
-    elif aj == bj:
-        return frozenset((i, aj) for i in range(si, ei))
-    elif bi - ai == bj - aj:
-        return frozenset((i, j) for i, j in zip(range(si, ei), range(sj, ej)))
-    elif bi - ai == aj - bj:
-        return frozenset((i, j) for i, j in zip(range(si, ei), range(ej - 1, sj - 1, -1)))
-    return frozenset()
-
-
-def cover(
-    grid: Grid,
-    patch: Patch
-) -> Grid:
-    """ remove object from grid """
-    return fill(grid, mostcolor(grid), toindices(patch))
-
-
-def trim(
-    grid: Grid
-) -> Grid:
-    """ trim border of grid """
-    return tuple(r[1:-1] for r in grid[1:-1])
-
-
-def move(
-    grid: Grid,
-    obj: Object,
-    offset: IntegerTuple
-) -> Grid:
-    """ move object on grid """
-    return paint(cover(grid, obj), shift(obj, offset))
-
-
-def tophalf(
-    grid: Grid
-) -> Grid:
-    """ upper half of grid """
-    return grid[:len(grid) // 2]
-
-
-def bottomhalf(
-    grid: Grid
-) -> Grid:
-    """ lower half of grid """
-    return grid[len(grid) // 2 + len(grid) % 2:]
-
-
-def lefthalf(
-    grid: Grid
-) -> Grid:
-    """ left half of grid """
-    return rot270(tophalf(rot90(grid)))
-
-
-def righthalf(
-    grid: Grid
-) -> Grid:
-    """ right half of grid """
-    return rot270(bottomhalf(rot90(grid)))
-
-
-def vfrontier(
-    location: IntegerTuple
-) -> Indices:
-    """ vertical frontier """
-    return frozenset((i, location[1]) for i in range(30))
-
-
-def hfrontier(
-    location: IntegerTuple
-) -> Indices:
-    """ horizontal frontier """
-    return frozenset((location[0], j) for j in range(30))
-
-
-def backdrop(
-    patch: Patch
-) -> Indices:
-    """ indices in bounding box of patch """
-    if len(patch) == 0:
-        return frozenset({})
-    indices = toindices(patch)
-    si, sj = ulcorner(indices)
-    ei, ej = lrcorner(patch)
-    return frozenset((i, j) for i in range(si, ei + 1) for j in range(sj, ej + 1))
-
-
-def delta(
-    patch: Patch
-) -> Indices:
-    """ indices in bounding box but not part of patch """
-    if len(patch) == 0:
-        return frozenset({})
-    return backdrop(patch) - toindices(patch)
-
-
-def gravitate(
-    source: Patch,
-    destination: Patch
-) -> IntegerTuple:
-    """ direction to move source until adjacent to destination """
-    si, sj = center(source)
-    di, dj = center(destination)
-    i, j = 0, 0
-    if vmatching(source, destination):
-        i = 1 if si < di else -1
+    axis='horizontal': each column is repeated `factor` times (wider grid).
+    axis='vertical':   each row    is repeated `factor` times (taller grid).
+    """
+    if axis == 'horizontal':
+        return [
+            [v for v in row for _ in range(factor)]
+            for row in grid
+        ]
     else:
-        j = 1 if sj < dj else -1
-    gi, gj = i, j
-    c = 0
-    while not adjacent(source, destination) and c < 42:
-        c += 1
-        gi += i
-        gj += j
-        source = shift(source, (i, j))
-    return (gi - i, gj - j)
+        g = []
+        for row in grid:
+            for _ in range(factor):
+                g.append(list(row))
+        return g
 
 
-def inbox(
-    patch: Patch
-) -> Indices:
-    """ inbox for patch """
-    ai, aj = uppermost(patch) + 1, leftmost(patch) + 1
-    bi, bj = lowermost(patch) - 1, rightmost(patch) - 1
-    si, sj = min(ai, bi), min(aj, bj)
-    ei, ej = max(ai, bi), max(aj, bj)
-    vlines = {(i, sj) for i in range(si, ei + 1)} | {(i, ej) for i in range(si, ei + 1)}
-    hlines = {(si, j) for j in range(sj, ej + 1)} | {(ei, j) for j in range(sj, ej + 1)}
-    return frozenset(vlines | hlines)
+# ──────────────────────────────────────────────────────────────────────────────
+# class GridOps — operations whose primary output or subject is a Grid
+# ──────────────────────────────────────────────────────────────────────────────
+
+class GridOps:
+    """
+    Operations on Grids (list[list[int]]). Accessed as grid[row][col].
+    Methods here accept a Grid as their first or primary argument.
+    """
+
+    @staticmethod
+    def create_grid(color, size):
+        """
+        Create a uniform grid filled with `color`.
+        size = (num_rows, num_cols).
+        """
+        rows, cols = size
+        return [[color for _ in range(cols)] for _ in range(rows)]
+
+    @staticmethod
+    def color_at(grid, location):
+        """Return the color at (row, col), or None if out of bounds."""
+        i, j = location
+        if 0 <= i < len(grid) and 0 <= j < len(grid[0]):
+            return grid[i][j]
+        return None
+
+    @staticmethod
+    def crop(grid, start, size):
+        """
+        Extract a rectangular subgrid.
+        start = (row, col) top-left corner; size = (height, width).
+        """
+        r0, c0 = start
+        h, w = size
+        return [row[c0:c0 + w] for row in grid[r0:r0 + h]]
+
+    @staticmethod
+    def all_indices(grid):
+        """Return all (row, col) positions in the grid as Indices."""
+        return {
+            (i, j) for i in range(len(grid)) for j in range(len(grid[0]))
+        }
+
+    @staticmethod
+    def grid_to_object(grid):
+        """Convert the entire grid into an Object (dict mapping (row,col)->color)."""
+        return {
+            (i, j): v
+            for i, row in enumerate(grid)
+            for j, v in enumerate(row)
+        }
+
+    @staticmethod
+    def extract_subgrid(patch, grid):
+        """Return the smallest subgrid that contains the patch's bounding box."""
+        return GridOps.crop(
+            grid,
+            (_boundary(patch, 'top'), _boundary(patch, 'left')),
+            dimensions(patch),
+        )
+
+    @staticmethod
+    def fill(grid, color, patch, background_only=False):
+        """
+        Set all patch positions to `color`.
+        background_only=True: only overwrites cells currently equal to
+        dominant_color(grid).
+        """
+        h, w = len(grid), len(grid[0])
+        bg = ColorOps.dominant_color(grid) if background_only else None
+        g = [list(row) for row in grid]
+        for i, j in _to_indices(patch):
+            if 0 <= i < h and 0 <= j < w:
+                if bg is None or g[i][j] == bg:
+                    g[i][j] = color
+        return g
+
+    @staticmethod
+    def paint(grid, obj, background_only=False):
+        """
+        Stamp an Object (with its colors) onto the grid.
+        background_only=True: only overwrites background-colored cells.
+        """
+        h, w = len(grid), len(grid[0])
+        bg = ColorOps.dominant_color(grid) if background_only else None
+        g = [list(row) for row in grid]
+        for (i, j), color in obj.items():
+            if 0 <= i < h and 0 <= j < w:
+                if bg is None or g[i][j] == bg:
+                    g[i][j] = color
+        return g
+
+    @staticmethod
+    def erase(grid, patch):
+        """Fill patch positions with the dominant (background) color."""
+        return GridOps.fill(grid, ColorOps.dominant_color(grid), _to_indices(patch))
+
+    @staticmethod
+    def move_object(grid, obj, offset):
+        """Erase `obj` from `grid` then repaint it shifted by `offset`."""
+        return GridOps.paint(GridOps.erase(grid, obj), PatchOps.translate(obj, offset))
+
+    @staticmethod
+    def replace_color(grid, old_color, new_color):
+        """Replace every occurrence of `old_color` with `new_color`."""
+        return [
+            [new_color if v == old_color else v for v in row]
+            for row in grid
+        ]
+
+    @staticmethod
+    def swap_colors(grid, color_a, color_b):
+        """Swap `color_a` and `color_b` everywhere in the grid."""
+        swap = {color_a: color_b, color_b: color_a}
+        return [[swap.get(v, v) for v in row] for row in grid]
+
+    @staticmethod
+    def cellwise_combine(a, b, fallback_color):
+        """
+        Compare two same-sized grids cell by cell.
+        Keep the color where both grids agree; use `fallback_color` where they differ.
+        """
+        return [
+            [va if va == vb else fallback_color for va, vb in zip(ra, rb)]
+            for ra, rb in zip(a, b)
+        ]
+
+    @staticmethod
+    def rotate(grid, angle=90):
+        """
+        Rotate grid clockwise. angle must be 90, 180, or 270.
+        Other values return the grid unchanged.
+        """
+        if angle == 90:
+            return [list(row) for row in zip(*grid[::-1])]
+        elif angle == 180:
+            return [list(row[::-1]) for row in grid[::-1]]
+        elif angle == 270:
+            return [list(row) for row in zip(*grid[::-1])][::-1]
+        return grid
+
+    @staticmethod
+    def concatenate(a, b, axis='horizontal'):
+        """
+        Join two grids.
+        axis='horizontal': side by side (same height required).
+        axis='vertical':   stacked top-to-bottom (same width required).
+        """
+        if axis == 'horizontal':
+            return [ra + rb for ra, rb in zip(a, b)]
+        else:
+            return a + b
+
+    @staticmethod
+    def split_grid(grid, parts, axis='horizontal'):
+        """
+        Split grid into `parts` equal pieces.
+        axis='horizontal': left-to-right splits.
+        axis='vertical':   top-to-bottom splits.
+        Returns a list of sub-grids.
+        Note: if grid size is not divisible by parts, a 1-cell separator is assumed
+        between parts (implementation skips 1 row/col per boundary).
+        """
+        if axis == 'horizontal':
+            h, w = len(grid), len(grid[0]) // parts
+            offset = int(len(grid[0]) % parts != 0)
+            return [
+                GridOps.crop(grid, (0, w * i + i * offset), (h, w))
+                for i in range(parts)
+            ]
+        else:
+            h, w = len(grid) // parts, len(grid[0])
+            offset = int(len(grid) % parts != 0)
+            return [
+                GridOps.crop(grid, (h * i + i * offset, 0), (h, w))
+                for i in range(parts)
+            ]
+
+    @staticmethod
+    def get_half(grid, side='top'):
+        """
+        Return one half of the grid.
+        side: 'top', 'bottom', 'left', 'right'.
+        """
+        if side == 'top':
+            return grid[:len(grid) // 2]
+        elif side == 'bottom':
+            return grid[len(grid) // 2 + len(grid) % 2:]
+        elif side == 'left':
+            return GridOps.rotate(GridOps.get_half(GridOps.rotate(grid, 90), 'top'), 270)
+        elif side == 'right':
+            return GridOps.rotate(GridOps.get_half(GridOps.rotate(grid, 90), 'bottom'), 270)
+
+    @staticmethod
+    def downscale(grid, factor):
+        """
+        Shrink a grid by keeping every factor-th row and column.
+        Keeps cells where row_index % factor == 0 and col_index % factor == 0.
+        """
+        return [
+            [grid[i][j] for j in range(0, len(grid[0]), factor)]
+            for i in range(0, len(grid), factor)
+        ]
+
+    @staticmethod
+    def trim_border(grid):
+        """Remove the outermost 1-cell border on all four sides."""
+        return [row[1:-1] for row in grid[1:-1]]
+
+    @staticmethod
+    def find_frontiers(grid):
+        """
+        Return all 'frontier' objects: full rows or columns that are a single color.
+        Each frontier is returned as a colored Object (dict).
+        """
+        h, w = len(grid), len(grid[0])
+        uniform_rows = [i for i, row in enumerate(grid) if len(set(row)) == 1]
+        uniform_cols = [j for j, col in enumerate(zip(*grid)) if len(set(col)) == 1]
+        frontiers = []
+        for i in uniform_rows:
+            frontiers.append({(i, j): grid[i][j] for j in range(w)})
+        for j in uniform_cols:
+            frontiers.append({(i, j): grid[i][j] for i in range(h)})
+        return frontiers
+
+    @staticmethod
+    def remove_frontiers(grid):
+        """Remove all uniform-color full rows and columns from the grid."""
+        uniform_rows = {i for i, row in enumerate(grid) if len(set(row)) == 1}
+        uniform_cols = {j for j, col in enumerate(zip(*grid)) if len(set(col)) == 1}
+        return [
+            [v for j, v in enumerate(row) if j not in uniform_cols]
+            for i, row in enumerate(grid)
+            if i not in uniform_rows
+        ]
 
 
-def outbox(
-    patch: Patch
-) -> Indices:
-    """ outbox for patch """
-    ai, aj = uppermost(patch) - 1, leftmost(patch) - 1
-    bi, bj = lowermost(patch) + 1, rightmost(patch) + 1
-    si, sj = min(ai, bi), min(aj, bj)
-    ei, ej = max(ai, bi), max(aj, bj)
-    vlines = {(i, sj) for i in range(si, ei + 1)} | {(i, ej) for i in range(si, ei + 1)}
-    hlines = {(si, j) for j in range(sj, ej + 1)} | {(ei, j) for j in range(sj, ej + 1)}
-    return frozenset(vlines | hlines)
+# ──────────────────────────────────────────────────────────────────────────────
+# class PatchOps — operations whose primary subject is a Patch (Object/Indices)
+# ──────────────────────────────────────────────────────────────────────────────
+
+class PatchOps:
+    """
+    Operations on Patches.
+
+    Object  = dict[(row, col) -> color]  — colored cells
+    Indices = set[(row, col)]            — position-only cells
+    Patch   = Object | Indices
+    """
+
+    @staticmethod
+    def to_indices(patch):
+        """
+        Strip colors from an Object (dict) → plain set of (row, col).
+        Pass-through if patch is already a set.
+        """
+        return _to_indices(patch)
+
+    @staticmethod
+    def to_colored_object(patch, grid):
+        """
+        Look up the color for each position in `patch` from `grid`.
+        Out-of-bounds positions are silently dropped.
+        Returns an Object (dict).
+        """
+        h, w = len(grid), len(grid[0])
+        return {
+            (i, j): grid[i][j]
+            for i, j in _to_indices(patch)
+            if 0 <= i < h and 0 <= j < w
+        }
+
+    @staticmethod
+    def recolor(color, patch):
+        """Assign `color` to every position in `patch`, returning an Object (dict)."""
+        return {idx: color for idx in _to_indices(patch)}
+
+    @staticmethod
+    def translate(patch, offset):
+        """
+        Shift every position in `patch` by `offset` = (row_delta, col_delta).
+        Preserves whether the patch is a colored Object (dict) or plain Indices (set).
+        """
+        if len(patch) == 0:
+            return patch
+        di, dj = offset
+        if isinstance(patch, dict):
+            return {(i + di, j + dj): v for (i, j), v in patch.items()}
+        return {(i + di, j + dj) for i, j in patch}
+
+    @staticmethod
+    def normalize_to_origin(patch):
+        """Shift `patch` so its upper-left bounding-box corner is at (0, 0)."""
+        if len(patch) == 0:
+            return patch
+        return PatchOps.translate(
+            patch,
+            (-_boundary(patch, 'top'), -_boundary(patch, 'left')),
+        )
+
+    @staticmethod
+    def get_boundary(patch, side):
+        """
+        Boundary index of the patch's bounding box.
+        side: 'top' (min row), 'bottom' (max row), 'left' (min col), 'right' (max col).
+        Patch must be non-empty.
+        """
+        return _boundary(patch, side)
+
+    @staticmethod
+    def get_corner(patch, position='upper_left'):
+        """
+        One corner (row, col) of the patch's bounding box.
+        position: 'upper_left', 'upper_right', 'lower_left', 'lower_right'.
+        Patch must be non-empty.
+        """
+        idxs = _to_indices(patch)
+        rows = [i for i, j in idxs]
+        cols = [j for i, j in idxs]
+        row_fn = {'upper_left': min, 'upper_right': min,
+                  'lower_left': max, 'lower_right': max}
+        col_fn = {'upper_left': min, 'upper_right': max,
+                  'lower_left': min, 'lower_right': max}
+        return (row_fn[position](rows), col_fn[position](cols))
+
+    @staticmethod
+    def get_center(patch):
+        """Center (row, col) of the patch's bounding box (integer division)."""
+        return (
+            _boundary(patch, 'top') + height(patch) // 2,
+            _boundary(patch, 'left') + width(patch) // 2,
+        )
+
+    @staticmethod
+    def all_corners(patch):
+        """Return the four bounding-box corner indices as Indices (set)."""
+        return {
+            PatchOps.get_corner(patch, pos)
+            for pos in ('upper_left', 'upper_right', 'lower_left', 'lower_right')
+        }
+
+    @staticmethod
+    def filled_bounding_box(patch):
+        """All (row, col) positions within the patch's bounding box (filled rectangle)."""
+        if len(patch) == 0:
+            return set()
+        si, sj = PatchOps.get_corner(patch, 'upper_left')
+        ei, ej = PatchOps.get_corner(patch, 'lower_right')
+        return {(i, j) for i in range(si, ei + 1) for j in range(sj, ej + 1)}
+
+    @staticmethod
+    def bounding_box_complement(patch):
+        """Positions inside the bounding box that are NOT part of the patch (holes)."""
+        if len(patch) == 0:
+            return set()
+        return PatchOps.filled_bounding_box(patch) - _to_indices(patch)
+
+    @staticmethod
+    def bounding_box_outline(patch, offset=0):
+        """
+        Perimeter of the patch's bounding box, with optional offset.
+
+        offset=0:  exact bounding-box outline.
+        offset=1:  one cell inside (inbox — shrinks the outline by 1 on each side).
+        offset=-1: one cell outside (outbox — expands by 1 on each side).
+
+        Works even if the offset inverts corners (uses min/max to normalise).
+        """
+        if len(patch) == 0:
+            return set()
+        ai = _boundary(patch, 'top') + offset
+        aj = _boundary(patch, 'left') + offset
+        bi = _boundary(patch, 'bottom') - offset
+        bj = _boundary(patch, 'right') - offset
+        si, sj = min(ai, bi), min(aj, bj)
+        ei, ej = max(ai, bi), max(aj, bj)
+        top_row    = {(si, j) for j in range(sj, ej + 1)}
+        bottom_row = {(ei, j) for j in range(sj, ej + 1)}
+        left_col   = {(i, sj) for i in range(si, ei + 1)}
+        right_col  = {(i, ej) for i in range(si, ei + 1)}
+        return top_row | bottom_row | left_col | right_col
+
+    @staticmethod
+    def is_line(patch, axis='vertical'):
+        """
+        True iff `patch` forms a straight filled line.
+        axis='vertical':   single column (width==1, height==len(patch)).
+        axis='horizontal': single row    (height==1, width==len(patch)).
+        """
+        if axis == 'vertical':
+            return height(patch) == len(patch) and width(patch) == 1
+        else:
+            return width(patch) == len(patch) and height(patch) == 1
+
+    @staticmethod
+    def shares_axis(a, b, axis='row'):
+        """
+        True iff patches `a` and `b` share at least one row or column.
+        axis='row':    checks for a shared row index.
+        axis='column': checks for a shared column index.
+        """
+        if axis == 'row':
+            return bool(
+                {i for i, j in _to_indices(a)} & {i for i, j in _to_indices(b)}
+            )
+        else:
+            return bool(
+                {j for i, j in _to_indices(a)} & {j for i, j in _to_indices(b)}
+            )
+
+    @staticmethod
+    def manhattan_distance(a, b):
+        """Minimum Manhattan distance between any cell in `a` and any cell in `b`."""
+        return min(
+            abs(ai - bi) + abs(aj - bj)
+            for ai, aj in _to_indices(a)
+            for bi, bj in _to_indices(b)
+        )
+
+    @staticmethod
+    def are_adjacent(a, b):
+        """True iff manhattan_distance(a, b) == 1."""
+        return PatchOps.manhattan_distance(a, b) == 1
+
+    @staticmethod
+    def touches_border(patch, grid):
+        """True iff `patch` touches any edge of `grid`."""
+        return (
+            _boundary(patch, 'top') == 0
+            or _boundary(patch, 'left') == 0
+            or _boundary(patch, 'bottom') == len(grid) - 1
+            or _boundary(patch, 'right') == len(grid[0]) - 1
+        )
+
+    @staticmethod
+    def center_of_mass(patch):
+        """
+        Mean (row, col) of all patch cells (integer division).
+        Unlike get_center, this is the true centroid rather than the bbox midpoint.
+        """
+        idxs = list(_to_indices(patch))
+        n = len(idxs)
+        return (sum(i for i, j in idxs) // n, sum(j for i, j in idxs) // n)
+
+    @staticmethod
+    def relative_direction(a, b):
+        """
+        Direction from patch `a` to patch `b` as (row_sign, col_sign).
+        Each component is in {-1, 0, 1}.
+        Example: (1, -1) means `b` is below and to the left of `a`.
+        """
+        ia, ja = PatchOps.get_center(_to_indices(a))
+        ib, jb = PatchOps.get_center(_to_indices(b))
+        if ia == ib:
+            return (0, 1 if ja < jb else -1)
+        elif ja == jb:
+            return (1 if ia < ib else -1, 0)
+        elif ia < ib:
+            return (1, 1 if ja < jb else -1)
+        else:
+            return (-1, 1 if ja < jb else -1)
+
+    @staticmethod
+    def gravitate_toward(source, destination):
+        """
+        Compute the (row_delta, col_delta) offset to slide `source` step-by-step
+        until it is adjacent to `destination` (stops after 42 steps max).
+
+        Movement axis: along rows if the patches share a column; otherwise along columns.
+        Returns the accumulated offset at the last non-adjacent position.
+        """
+        si, sj = PatchOps.get_center(source)
+        di, dj = PatchOps.get_center(destination)
+        if PatchOps.shares_axis(source, destination, 'column'):
+            dr, dc = (1 if si < di else -1), 0
+        else:
+            dr, dc = 0, (1 if sj < dj else -1)
+
+        gi, gj = dr, dc
+        steps = 0
+        while not PatchOps.are_adjacent(source, destination) and steps < 42:
+            steps += 1
+            gi += dr
+            gj += dc
+            source = PatchOps.translate(source, (dr, dc))
+        return (gi - dr, gj - dc)
+
+    @staticmethod
+    def find_period(obj, axis='horizontal'):
+        """
+        Smallest repeating period of `obj` along the given axis.
+
+        Detects period p when shifting by -p (left for horizontal, up for vertical)
+        and pruning negative-coordinate cells yields a subset of the original.
+        Returns the full width/height if no smaller period exists.
+
+        axis: 'horizontal' (period along columns) or 'vertical' (period along rows).
+        """
+        normalized = PatchOps.normalize_to_origin(obj)
+        total = width(normalized) if axis == 'horizontal' else height(normalized)
+        for p in range(1, total):
+            if axis == 'horizontal':
+                shifted = PatchOps.translate(normalized, (0, -p))
+                pruned = {(i, j): c for (i, j), c in shifted.items() if j >= 0}
+            else:
+                shifted = PatchOps.translate(normalized, (-p, 0))
+                pruned = {(i, j): c for (i, j), c in shifted.items() if i >= 0}
+            if pruned.items() <= normalized.items():
+                return p
+        return total
 
 
-def box(
-    patch: Patch
-) -> Indices:
-    """ outline of patch """
-    if len(patch) == 0:
-        return patch
-    ai, aj = ulcorner(patch)
-    bi, bj = lrcorner(patch)
-    si, sj = min(ai, bi), min(aj, bj)
-    ei, ej = max(ai, bi), max(aj, bj)
-    vlines = {(i, sj) for i in range(si, ei + 1)} | {(i, ej) for i in range(si, ei + 1)}
-    hlines = {(si, j) for j in range(sj, ej + 1)} | {(ei, j) for j in range(sj, ej + 1)}
-    return frozenset(vlines | hlines)
+# ──────────────────────────────────────────────────────────────────────────────
+# class ColorOps — color analysis on grids and objects
+# ──────────────────────────────────────────────────────────────────────────────
+
+class ColorOps:
+    """Color queries on any Element (Grid or Object)."""
+
+    @staticmethod
+    def dominant_color(element, mode='most'):
+        """
+        Most or least common color in a grid or object.
+        mode='most'  → most common (background heuristic).
+        mode='least' → least common.
+        Tie-breaking is non-deterministic (iterates over a set).
+        """
+        values = (
+            [v for row in element for v in row]
+            if isinstance(element, list)
+            else list(element.values())
+        )
+        def tie_breaker(color):
+            # Prioritize color 0 (background), then sort by color value
+            return (values.count(color), color == 0, color)
+        
+        fn = max if mode == 'most' else min
+        # sorted(set) ensures deterministic tie breaks. fn uses tie_breaker key.
+        return fn(sorted(set(values)), key=tie_breaker)
+
+    @staticmethod
+    def count_color(element, color):
+        """Count how many cells equal `color` (works on grid or object)."""
+        if isinstance(element, list):
+            return sum(row.count(color) for row in element)
+        return sum(v == color for v in element.values())
+
+    @staticmethod
+    def unique_colors(element):
+        """Set of all distinct colors present in a grid or object."""
+        if isinstance(element, list):
+            return {v for row in element for v in row}
+        return set(element.values())
+
+    @staticmethod
+    def count_unique_colors(element):
+        """Number of distinct colors in a grid or object."""
+        return len(ColorOps.unique_colors(element))
+
+    @staticmethod
+    def get_color(obj):
+        """
+        Color of a (assumed) single-color object.
+        Returns the color of the first cell; behaviour undefined for multi-color objects.
+        """
+        return next(iter(obj.values()))
 
 
-def shoot(
-    start: IntegerTuple,
-    direction: IntegerTuple
-) -> Indices:
-    """ line from starting point and direction """
-    return connect(start, (start[0] + 42 * direction[0], start[1] + 42 * direction[1]))
+# ──────────────────────────────────────────────────────────────────────────────
+# class SearchOps — finding objects and patterns in grids
+# ──────────────────────────────────────────────────────────────────────────────
+
+class SearchOps:
+    """Finding connected components, color regions, and pattern occurrences."""
+
+    @staticmethod
+    def find_objects(grid, univalued, diagonal, without_background):
+        """
+        Connected-component extraction from a grid.
+
+        univalued=True:          only group cells of the same color together.
+        univalued=False:         group any non-background cells together.
+        diagonal=True:           use 8-connectivity (includes diagonals).
+        diagonal=False:          use 4-connectivity (orthogonal only).
+        without_background=True: ignore cells with dominant_color(grid).
+
+        Returns a list of Objects (each Object is a dict mapping (row,col)->color).
+        """
+        bg = ColorOps.dominant_color(grid) if without_background else None
+        h, w = len(grid), len(grid[0])
+        neighbor_fn = GeoOps.all_neighbors if diagonal else GeoOps.orthogonal_neighbors
+        occupied = set()
+        objs = []
+
+        for r in range(h):
+            for c in range(w):
+                loc = (r, c)
+                if loc in occupied:
+                    continue
+                val = grid[r][c]
+                if val == bg:
+                    continue
+                obj = {loc: val}
+                frontier = {loc}
+                while frontier:
+                    next_frontier = set()
+                    for cand in frontier:
+                        v = grid[cand[0]][cand[1]]
+                        if (v == val) if univalued else (v != bg):
+                            obj[cand] = v
+                            occupied.add(cand)
+                            next_frontier |= {
+                                nb for nb in neighbor_fn(cand)
+                                if 0 <= nb[0] < h and 0 <= nb[1] < w
+                            }
+                    frontier = next_frontier - occupied
+                objs.append(obj)
+
+        return objs
+
+    @staticmethod
+    def partition_by_color(grid, without_background=False):
+        """
+        Group all grid cells by color. Each color → one Object (dict).
+        without_background=True: exclude cells with dominant_color(grid).
+        Returns list[Object].
+        """
+        colors = ColorOps.unique_colors(grid)
+        if without_background:
+            colors = colors - {ColorOps.dominant_color(grid)}
+        return [
+            {
+                (i, j): v
+                for i, row in enumerate(grid)
+                for j, v in enumerate(row)
+                if v == c
+            }
+            for c in colors
+        ]
+
+    @staticmethod
+    def indices_with_color(grid, color):
+        """All (row, col) positions in the grid where the cell equals `color`."""
+        return {
+            (i, j)
+            for i, row in enumerate(grid)
+            for j, v in enumerate(row)
+            if v == color
+        }
+
+    @staticmethod
+    def filter_by_color(objects, color):
+        """Keep only objects whose (assumed single) color equals `color`."""
+        return [
+            obj for obj in objects
+            if next(iter(obj.values())) == color
+        ]
+
+    @staticmethod
+    def filter_by_size(container, size):
+        """Keep only items where len(item) == size."""
+        return [item for item in container if len(item) == size]
+
+    @staticmethod
+    def find_occurrences(grid, obj):
+        """
+        Find all top-left (row, col) positions where `obj`'s colored cells match `grid`.
+        Matches only the cells in obj; does not require specific values elsewhere.
+        Returns Indices (a set of (row, col) positions).
+        """
+        normed = PatchOps.normalize_to_origin(obj)
+        oh, ow = dimensions(obj)
+        h, w = len(grid), len(grid[0])
+        occs = set()
+        for i in range(h - oh + 1):
+            for j in range(w - ow + 1):
+                placed = PatchOps.translate(normed, (i, j))
+                if all(
+                    0 <= r < h and 0 <= c < w and grid[r][c] == v
+                    for (r, c), v in placed.items()
+                ):
+                    occs.add((i, j))
+        return occs
 
 
-def occurrences(
-    grid: Grid,
-    obj: Object
-) -> Indices:
-    """ locations of occurrences of object in grid """
-    occs = set()
-    normed = normalize(obj)
-    h, w = len(grid), len(grid[0])
-    oh, ow = shape(obj)
-    h2, w2 = h - oh + 1, w - ow + 1
-    for i in range(h2):
-        for j in range(w2):
-            occurs = True
-            for v, (a, b) in shift(normed, (i, j)):
-                if not (0 <= a < h and 0 <= b < w and grid[a][b] == v):
-                    occurs = False
-                    break
-            if occurs:
-                occs.add((i, j))
-    return frozenset(occs)
+# ──────────────────────────────────────────────────────────────────────────────
+# class GeoOps — geometric relationships and index generation
+# ──────────────────────────────────────────────────────────────────────────────
+
+class GeoOps:
+    """Geometric constructs: neighbors, lines, rays, and coordinate generation."""
+
+    @staticmethod
+    def orthogonal_neighbors(location):
+        """The 4 orthogonally adjacent (row, col) positions (unbounded)."""
+        r, c = location
+        return {(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)}
+
+    @staticmethod
+    def diagonal_neighbors(location):
+        """The 4 diagonally adjacent (row, col) positions (unbounded)."""
+        r, c = location
+        return {(r-1, c-1), (r-1, c+1), (r+1, c-1), (r+1, c+1)}
+
+    @staticmethod
+    def all_neighbors(location):
+        """All 8 adjacent positions: orthogonal ∪ diagonal (unbounded)."""
+        return GeoOps.orthogonal_neighbors(location) | GeoOps.diagonal_neighbors(location)
+
+    @staticmethod
+    def line_between(point_a, point_b):
+        """
+        Indices forming a straight line between two points.
+        Works for horizontal, vertical, and 45-degree diagonal lines.
+        Returns an empty set if the points don't form any of those.
+        """
+        ai, aj = point_a
+        bi, bj = point_b
+        si, ei = min(ai, bi), max(ai, bi) + 1
+        sj, ej = min(aj, bj), max(aj, bj) + 1
+        if ai == bi:
+            return {(ai, j) for j in range(sj, ej)}
+        elif aj == bj:
+            return {(i, aj) for i in range(si, ei)}
+        elif bi - ai == bj - aj:
+            return {(i, j) for i, j in zip(range(si, ei), range(sj, ej))}
+        elif bi - ai == aj - bj:
+            return {(i, j) for i, j in zip(range(si, ei), range(ej - 1, sj - 1, -1))}
+        return set()
+
+    @staticmethod
+    def cast_ray(start, direction):
+        """
+        Indices along a ray from `start` in `direction` for up to 42 steps.
+        direction = (row_delta, col_delta), e.g. (1, 0) for downward.
+        Uses line_between internally, so only works for H/V/diagonal directions.
+        """
+        r, c = start
+        dr, dc = direction
+        return GeoOps.line_between(start, (r + 42 * dr, c + 42 * dc))
+
+    @staticmethod
+    def full_line_through(location, axis='vertical'):
+        """
+        A full line of 30 positions passing through `location`.
+        axis='vertical':   all rows in the same column as location (a column slice).
+        axis='horizontal': all columns in the same row as location (a row slice).
+        Note: always uses range(30), independent of actual grid size.
+        """
+        r, c = location
+        if axis == 'vertical':
+            return {(i, c) for i in range(30)}
+        else:
+            return {(r, j) for j in range(30)}
 
 
-def frontiers(
-    grid: Grid
-) -> Objects:
-    """ set of frontiers """
-    h, w = len(grid), len(grid[0])
-    row_indices = tuple(i for i, r in enumerate(grid) if len(set(r)) == 1)
-    column_indices = tuple(j for j, c in enumerate(dmirror(grid)) if len(set(c)) == 1)
-    hfrontiers = frozenset({frozenset({(grid[i][j], (i, j)) for j in range(w)}) for i in row_indices})
-    vfrontiers = frozenset({frozenset({(grid[i][j], (i, j)) for i in range(h)}) for j in column_indices})
-    return hfrontiers | vfrontiers
+# ──────────────────────────────────────────────────────────────────────────────
+# Flat module-level exports
+# (allows `from dsl import *` and dir()-based namespace injection)
+# ──────────────────────────────────────────────────────────────────────────────
 
+# Color queries
+dominant_color    = ColorOps.dominant_color
+count_color       = ColorOps.count_color
+unique_colors     = ColorOps.unique_colors
+count_unique_colors = ColorOps.count_unique_colors
+get_color         = ColorOps.get_color
 
-def compress(
-    grid: Grid
-) -> Grid:
-    """ removes frontiers from grid """
-    ri = tuple(i for i, r in enumerate(grid) if len(set(r)) == 1)
-    ci = tuple(j for j, c in enumerate(dmirror(grid)) if len(set(c)) == 1)
-    return tuple(tuple(v for j, v in enumerate(r) if j not in ci) for i, r in enumerate(grid) if i not in ri)
+# Shared geometry (Piece = Grid | Patch)
+# height, width, dimensions, is_portrait, is_square — already module-level
+# mirror, upscale, upscale_along_axis — already module-level
 
+# Grid construction / lookup / cropping
+create_grid       = GridOps.create_grid
+color_at          = GridOps.color_at
+crop              = GridOps.crop
+all_indices       = GridOps.all_indices
+grid_to_object    = GridOps.grid_to_object
+extract_subgrid   = GridOps.extract_subgrid
 
-def hperiod(
-    obj: Object
-) -> Integer:
-    """ horizontal periodicity """
-    normalized = normalize(obj)
-    w = width(normalized)
-    for p in range(1, w):
-        offsetted = shift(normalized, (0, -p))
-        pruned = frozenset({(c, (i, j)) for c, (i, j) in offsetted if j >= 0})
-        if pruned.issubset(normalized):
-            return p
-    return w
+# Grid painting / erasing
+fill              = GridOps.fill
+paint             = GridOps.paint
+erase             = GridOps.erase
+move_object       = GridOps.move_object
+replace_color     = GridOps.replace_color
+swap_colors       = GridOps.swap_colors
+cellwise_combine  = GridOps.cellwise_combine
 
+# Grid transformations
+rotate            = GridOps.rotate
+concatenate       = GridOps.concatenate
+split_grid        = GridOps.split_grid
+get_half          = GridOps.get_half
+downscale         = GridOps.downscale
+trim_border       = GridOps.trim_border
+find_frontiers    = GridOps.find_frontiers
+remove_frontiers  = GridOps.remove_frontiers
 
-def vperiod(
-    obj: Object
-) -> Integer:
-    """ vertical periodicity """
-    normalized = normalize(obj)
-    h = height(normalized)
-    for p in range(1, h):
-        offsetted = shift(normalized, (-p, 0))
-        pruned = frozenset({(c, (i, j)) for c, (i, j) in offsetted if i >= 0})
-        if pruned.issubset(normalized):
-            return p
-    return h
+# Patch / object construction & conversion
+to_indices          = PatchOps.to_indices
+to_colored_object   = PatchOps.to_colored_object
+recolor             = PatchOps.recolor
+translate           = PatchOps.translate
+normalize_to_origin = PatchOps.normalize_to_origin
+
+# Index / corner / boundary helpers
+get_boundary        = PatchOps.get_boundary
+get_corner          = PatchOps.get_corner
+get_center          = PatchOps.get_center
+all_corners         = PatchOps.all_corners
+
+# Bounding-box geometry
+filled_bounding_box     = PatchOps.filled_bounding_box
+bounding_box_complement = PatchOps.bounding_box_complement
+bounding_box_outline    = PatchOps.bounding_box_outline
+
+# Relations between patches
+is_line            = PatchOps.is_line
+shares_axis        = PatchOps.shares_axis
+manhattan_distance = PatchOps.manhattan_distance
+are_adjacent       = PatchOps.are_adjacent
+touches_border     = PatchOps.touches_border
+center_of_mass     = PatchOps.center_of_mass
+relative_direction = PatchOps.relative_direction
+gravitate_toward   = PatchOps.gravitate_toward
+
+# Pattern matching / periodicity
+find_occurrences = SearchOps.find_occurrences
+find_period      = PatchOps.find_period
+
+# Connected components / partitioning / filtering
+find_objects        = SearchOps.find_objects
+partition_by_color  = SearchOps.partition_by_color
+indices_with_color  = SearchOps.indices_with_color
+filter_by_color     = SearchOps.filter_by_color
+filter_by_size      = SearchOps.filter_by_size
+
+# Neighborhoods / lines / rays
+orthogonal_neighbors = GeoOps.orthogonal_neighbors
+diagonal_neighbors   = GeoOps.diagonal_neighbors
+all_neighbors        = GeoOps.all_neighbors
+line_between         = GeoOps.line_between
+cast_ray             = GeoOps.cast_ray
+full_line_through    = GeoOps.full_line_through
