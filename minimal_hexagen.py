@@ -1,6 +1,7 @@
 WIDTH = 18
 HEIGHT = 10
 COLORS = ["white", "black", "yellow", "green", "red", "blue", "purple", "orange"]
+DIRECTIONS = ["up", "down", "up_right", "down_left", "up_left", "down_right"]
 
 _game_context = []
 
