@@ -632,14 +632,29 @@ def test_get_invalid_criterion(game):
 def test_neighbors_outside_open_shape_raises(game):
     line = Line(start_tile=Tile(1, 1), direction="down_right", length=3)
 
-    with pytest.raises(Exception):
+    from hexagen.hexagen import HexagenWarning
+    with pytest.warns(HexagenWarning):
         line.neighbors(criterion="outside")
-    with pytest.raises(Exception):
+    with pytest.warns(HexagenWarning):
         line.neighbors(criterion="inside")
 
 
 def test_boundary_on_open_shape_raises(game):
     line = Line(start_tile=Tile(1, 1), direction="down_right", length=3)
 
-    with pytest.raises(Exception):
+    from hexagen.hexagen import HexagenWarning
+    with pytest.warns(HexagenWarning):
         line.boundary(criterion="inner")
+
+
+def test_intersection_method(game):
+    a = Shape([0, 1, 2], from_linds=True)
+    b = Shape([1, 2, 3], from_linds=True)
+    assert_shape_linds(a.intersection(b), [1, 2])
+
+
+def test_get_extra_args_error(game):
+    s = Shape([0, 1], from_linds=True)
+    other = Shape([2, 3], from_linds=True)
+    with pytest.raises(TypeError, match="takes exactly one criterion"):
+        s.get("inside", other)
