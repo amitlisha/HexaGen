@@ -41,6 +41,40 @@ from datasets import get_dataset
 _BATCHABLE_MODES = {"tiles-full", "code-full", "python-full"}
 
 
+def _parse_local_batch_file(filepath: str) -> Dict[str, Dict[str, Any]]:
+    """Parse a local merged JSONL file (same format as OpenAI batch output).
+
+    Returns {custom_id: {"text": str, "usage": dict, "raw": dict, "error": str|None}}.
+    """
+    from llm_wrapper import _strip_thinking_tokens
+
+    results: Dict[str, Dict[str, Any]] = {}
+    for line in Path(filepath).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        item = json.loads(line)
+        cid = item["custom_id"]
+        if item.get("error"):
+            results[cid] = {
+                "text": None,
+                "usage": {},
+                "raw": {},
+                "error": str(item["error"]),
+            }
+            continue
+        resp_body = item["response"]["body"]
+        choice = resp_body["choices"][0]
+        text = choice["message"]["content"].strip()
+        text = _strip_thinking_tokens(text)
+        results[cid] = {
+            "text": text,
+            "usage": resp_body.get("usage", {}),
+            "raw": resp_body,
+            "error": None,
+        }
+    return results
+
+
 def is_batch_compatible(cfg: argparse.Namespace) -> bool:
     """Return True if batch mode is valid for this configuration."""
     if cfg.mode not in _BATCHABLE_MODES:
@@ -184,6 +218,7 @@ def _run_set_batch_openai(
     )
 
     batch_resume_id = getattr(cfg, "batch_resume", None)
+    batch_resume_file = getattr(cfg, "batch_resume_file", None)
     poll_interval = getattr(cfg, "batch_poll_interval", 60)
     batch_timeout = getattr(cfg, "batch_timeout", 86400)
 
@@ -253,12 +288,32 @@ def _run_set_batch_openai(
                 "body": body,
             }))
 
-        # ── 2. Submit batch (round 1 supports --batch-resume) ────────
-        if round_num == 1 and batch_resume_id:
+        # ── 2. Get batch results ─────────────────────────────────────
+        batch_results: Dict[str, Dict[str, Any]] = {}
+        error_results: Dict[str, Dict[str, Any]] = {}
+
+        if round_num == 1 and batch_resume_file:
+            # Load pre-merged results from local JSONL file
+            print(f"[batch] Loading results from {batch_resume_file}...")
+            batch_results = _parse_local_batch_file(batch_resume_file)
+            print(f"[batch] Loaded {len(batch_results)} results from file")
+
+        elif round_num == 1 and batch_resume_id:
             print(f"[batch] Resuming existing batch: {batch_resume_id}")
             batch_obj = poll_openai_batch(
                 batch_resume_id, poll_interval, batch_timeout
             )
+            if batch_obj.status != "completed":
+                print(
+                    f"[batch] WARNING: Batch ended with status={batch_obj.status}. "
+                    f"Partial results may be available."
+                )
+            if batch_obj.output_file_id:
+                print(f"[batch] Downloading results...")
+                batch_results = parse_batch_results(batch_obj.output_file_id)
+            if batch_obj.error_file_id:
+                error_results = parse_batch_results(batch_obj.error_file_id)
+
         else:
             print(f"[batch] Submitting {len(jsonl_lines)} requests to OpenAI Batch API...")
             batch_id = submit_openai_batch(jsonl_lines)
@@ -267,21 +322,16 @@ def _run_set_batch_openai(
                 print(f"[batch] To resume polling later, re-run with: --batch-resume {batch_id}")
             batch_obj = poll_openai_batch(batch_id, poll_interval, batch_timeout)
 
-        if batch_obj.status != "completed":
-            print(
-                f"[batch] WARNING: Batch ended with status={batch_obj.status}. "
-                f"Partial results may be available."
-            )
-
-        # ── 3. Download and parse results ─────────────────────────────
-        batch_results: Dict[str, Dict[str, Any]] = {}
-        if batch_obj.output_file_id:
-            print(f"[batch] Downloading results...")
-            batch_results = parse_batch_results(batch_obj.output_file_id)
-
-        error_results: Dict[str, Dict[str, Any]] = {}
-        if batch_obj.error_file_id:
-            error_results = parse_batch_results(batch_obj.error_file_id)
+            if batch_obj.status != "completed":
+                print(
+                    f"[batch] WARNING: Batch ended with status={batch_obj.status}. "
+                    f"Partial results may be available."
+                )
+            if batch_obj.output_file_id:
+                print(f"[batch] Downloading results...")
+                batch_results = parse_batch_results(batch_obj.output_file_id)
+            if batch_obj.error_file_id:
+                error_results = parse_batch_results(batch_obj.error_file_id)
 
         print(
             f"[batch] Got {len(batch_results)} results, "

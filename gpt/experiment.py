@@ -480,8 +480,9 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
               f"running {len(tasks_to_run)} remaining")
 
     # ── Batch API path ───────────────────────────────────────────────
-    # --batch-resume implies --batch
-    use_batch = (getattr(cfg, "batch", False) or getattr(cfg, "batch_resume", None)) and tasks_to_run
+    # --batch-resume / --batch-resume-file imply --batch
+    use_batch = (getattr(cfg, "batch", False) or getattr(cfg, "batch_resume", None)
+                 or getattr(cfg, "batch_resume_file", None)) and tasks_to_run
     if use_batch:
         from batch_runner import is_batch_compatible, run_set_batch
 

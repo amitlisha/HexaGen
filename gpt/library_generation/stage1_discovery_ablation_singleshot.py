@@ -132,22 +132,8 @@ def analyze_all_instructions_single_shot(
 
     system_prompt = "You are a programming language designer analyzing patterns to identify what merits abstraction."
 
-    # For very large datasets, we sample to fit in context
-    # Most models can handle ~100k tokens input, so we'll cap at reasonable size
-    MAX_INSTRUCTIONS = 10000  # Adjust based on model context window
-
-    if len(instructions) > MAX_INSTRUCTIONS:
-        print(f"⚠ Warning: Dataset has {len(instructions)} instructions")
-        print(f"  Sampling {MAX_INSTRUCTIONS} for single-shot analysis")
-        import random
-
-        random.seed(42)
-        sampled = random.sample(instructions, MAX_INSTRUCTIONS)
-    else:
-        sampled = instructions
-
     io_note = ""
-    if sampled and isinstance(sampled[0], dict):
+    if instructions and isinstance(instructions[0], dict):
         io_note = ("\nEach instruction includes its output state (board after). "
                    "Non-zero values represent colored tiles. Use these to understand the transformations.\n")
 
@@ -155,15 +141,15 @@ def analyze_all_instructions_single_shot(
 
 {base_lib_docs}
 
-Analyze ALL {len(sampled)} instructions to find patterns that justify new abstractions:
+Analyze ALL {len(instructions)} instructions to find patterns that justify new abstractions:
 {io_note}
-{format_instructions(sampled)}
+{format_instructions(instructions)}
 
 Provide a comprehensive analysis of patterns. Be thorough since you're seeing the entire dataset at once.
 
 OUTPUT FORMAT:
 ## Complex Patterns Found
-- [Pattern name]: [Brief description + frequency estimate across {len(sampled)} instructions]
+- [Pattern name]: [Brief description + frequency estimate across {len(instructions)} instructions]
 - [Pattern name]: [Brief description + frequency estimate]
 
 ## Potential Abstractions
@@ -184,7 +170,7 @@ CRITICAL: Ask for each candidate - "Does this solve a genuinely complex problem?
 
 Be comprehensive - you're seeing the ENTIRE dataset at once."""
 
-    print(f"Analyzing all {len(sampled)} instructions in single shot...")
+    print(f"Analyzing all {len(instructions)} instructions in single shot...")
 
     response = call_llm(
         prompt=prompt,
@@ -280,8 +266,31 @@ def timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
 
+def _min_batches(prompt_tokens: int, context_length: int) -> int:
+    """Return the minimum number of batches needed.
+
+    Args:
+        prompt_tokens: Total prompt token count for all instructions.
+        context_length: Model context window size in tokens.
+
+    Each batch has its own system prompt / template overhead (~2000 tokens).
+    """
+    import math
+
+    PER_BATCH_OVERHEAD = 2000  # system prompt + template chrome added per batch
+    available_per_batch = context_length - PER_BATCH_OVERHEAD
+    if available_per_batch <= 0 or prompt_tokens <= available_per_batch:
+        return 1
+    return math.ceil(prompt_tokens / available_per_batch)
+
+
 def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
     """Run Stage 1 Ablation: Single-shot API Discovery.
+
+    Requires --max-tokens. When --context-length is also provided, uses it
+    to determine the minimum number of batches needed to fit all instructions.
+    When multiple batches are needed, reuses the standard Stage 1
+    batch→merge→deduplicate pipeline.
 
     Args:
         cfg: Configuration namespace
@@ -289,6 +298,7 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict[str
     Returns:
         Dictionary with stage results
     """
+
     print(f"\n{'='*70}")
     print("STAGE 1 ABLATION: SINGLE-SHOT API DISCOVERY")
     print("(No hierarchical batching)")
@@ -307,43 +317,109 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict[str
     all_instructions = load_all_instructions(cfg.train_data, include_io=include_io)
     print(f"✓ Loaded {len(all_instructions)} instructions\n")
 
-    # Single-shot pattern analysis
-    print("SINGLE-SHOT ANALYSIS")
-    print("-" * 70)
+    # Determine batch count: only batch when both --prompt-tokens and --context-length are provided
+    prompt_tokens = getattr(cfg, "prompt_tokens", None)
+    context_length = getattr(cfg, "context_length", None)
+    if prompt_tokens and context_length:
+        n_batches = _min_batches(prompt_tokens, context_length)
+        print(f"Prompt: {prompt_tokens} tokens, model context: {context_length} → {n_batches} batch(es)\n")
+    else:
+        n_batches = 1
 
-    pattern_summary = analyze_all_instructions_single_shot(
-        instructions=all_instructions,
-        base_lib_docs=base_lib_docs,
-        model=cfg.model,
-        temperature=cfg.temperature,
-        max_tokens=cfg.max_tokens,
+    thinking_kwargs = dict(
         thinking_effort=getattr(cfg, "thinking_effort", None),
         thinking_level=getattr(cfg, "thinking_level", None),
     )
 
-    # Save pattern summary
-    summary_file = output_dir / "pattern_summary_singleshot.md"
-    summary_file.write_text(pattern_summary, encoding="utf-8")
-    print(f"\n✓ Pattern summary saved to: {summary_file}\n")
+    if n_batches == 1:
+        # Everything fits — true single-shot: pattern analysis → API proposal
+        print("SINGLE-SHOT ANALYSIS")
+        print("-" * 70)
 
-    # API Proposal Generation
-    print("API PROPOSAL GENERATION")
-    print("-" * 70)
+        pattern_summary = analyze_all_instructions_single_shot(
+            instructions=all_instructions,
+            base_lib_docs=base_lib_docs,
+            model=cfg.model,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
+            **thinking_kwargs,
+        )
 
-    api_proposal = generate_api_proposal(
-        pattern_summary=pattern_summary,
-        base_lib_docs=base_lib_docs,
-        model=cfg.model,
-        temperature=cfg.temperature,
-        max_tokens=cfg.max_tokens,
-        thinking_effort=getattr(cfg, "thinking_effort", None),
-        thinking_level=getattr(cfg, "thinking_level", None),
-    )
+        summary_file = output_dir / "pattern_summary_singleshot.md"
+        summary_file.write_text(pattern_summary, encoding="utf-8")
+        print(f"\n✓ Pattern summary saved to: {summary_file}\n")
 
-    # Save API proposal
-    api_file = output_dir / "api_proposal_v1.md"
-    api_file.write_text(api_proposal, encoding="utf-8")
-    print(f"\n✓ API proposal saved to: {api_file}\n")
+        print("API PROPOSAL GENERATION")
+        print("-" * 70)
+
+        api_proposal = generate_api_proposal(
+            pattern_summary=pattern_summary,
+            base_lib_docs=base_lib_docs,
+            model=cfg.model,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
+            **thinking_kwargs,
+        )
+
+        api_file = output_dir / "api_proposal_v1.md"
+        api_file.write_text(api_proposal, encoding="utf-8")
+        print(f"\n✓ API proposal saved to: {api_file}\n")
+    else:
+        # Too large for one call — split into minimal batches and reuse
+        # the standard Stage 1 batch→merge→deduplicate pipeline
+        import math
+        from stage1_discovery import (
+            chunk_list,
+            generate_batch_proposal,
+            deduplicate_api_proposal,
+        )
+
+        batch_size = math.ceil(len(all_instructions) / n_batches)
+        batches = chunk_list(all_instructions, batch_size)
+
+        print(f"BATCH PROPOSAL GENERATION ({len(batches)} batches of ~{batch_size})")
+        print("-" * 70)
+
+        batch_proposals = []
+        for i, batch in enumerate(batches):
+            proposal = generate_batch_proposal(
+                batch, i + 1, len(batches), base_lib_docs,
+                cfg.model, cfg.temperature, cfg.max_tokens,
+                thinking_kwargs["thinking_effort"],
+                thinking_kwargs["thinking_level"],
+                getattr(cfg, "request_timeout", 300),
+            )
+            batch_file = output_dir / f"batch_{i+1:03d}_proposal.md"
+            batch_file.write_text(proposal, encoding="utf-8")
+            batch_proposals.append(proposal)
+
+        print(f"\n✓ Generated {len(batch_proposals)} batch proposals\n")
+
+        # Merge
+        merged_proposal = "\n\n---\n\n".join(
+            f"# Batch {i+1} Proposal\n{proposal}"
+            for i, proposal in enumerate(batch_proposals)
+        )
+        merged_file = output_dir / "api_proposal_merged.md"
+        merged_file.write_text(merged_proposal, encoding="utf-8")
+
+        # Deduplicate
+        print("DEDUPLICATION")
+        print("-" * 70)
+
+        api_proposal = deduplicate_api_proposal(
+            api_proposal=merged_proposal,
+            model=cfg.model,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
+            thinking_effort=thinking_kwargs["thinking_effort"],
+            thinking_level=thinking_kwargs["thinking_level"],
+            request_timeout=getattr(cfg, "request_timeout", 300),
+        )
+
+        api_file = output_dir / "api_proposal_v1.md"
+        api_file.write_text(api_proposal, encoding="utf-8")
+        print(f"\n✓ Deduplicated API proposal saved to: {api_file}\n")
 
     # Create summary
     result = {
@@ -357,22 +433,23 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict[str
             "model": cfg.model,
             "include_io": include_io,
             "hierarchical_batching": False,
+            "max_tokens": cfg.max_tokens,
+            "n_batches": n_batches,
         },
         "outputs": {
-            "pattern_summary": str(summary_file),
-            "api_proposal": str(api_file),
+            "api_proposal": str(output_dir / "api_proposal_v1.md"),
         },
     }
 
-    # Save stage summary
     stage_summary_file = output_dir / "stage1_summary.json"
     save_json(result, stage_summary_file)
 
     print(f"{'='*70}")
     print("STAGE 1 ABLATION COMPLETE")
     print(f"{'='*70}\n")
-    print(f"Analyzed: {len(all_instructions)} instructions (single-shot)")
-    print(f"API Proposal: {api_file}")
+    print(f"Analyzed: {len(all_instructions)} instructions "
+          f"({'single-shot' if n_batches == 1 else f'{n_batches} batches'})")
+    print(f"API Proposal: {output_dir / 'api_proposal_v1.md'}")
     print()
 
     return result

@@ -105,6 +105,16 @@ def parse_args() -> argparse.Namespace:
         "--max-tokens", type=int, default=None, help="Max tokens for LLM responses (default: no limit)"
     )
     p.add_argument(
+        "--context-length", type=int, default=None,
+        help="Model context window size in tokens (e.g., 131072 for GPT-4o).",
+    )
+    p.add_argument(
+        "--prompt-tokens", type=int, default=None,
+        help="Total prompt token count for all instructions. Get this from the API error "
+             "on a failed single-batch run. Used with --context-length to compute the "
+             "minimum number of batches for singleshot ablation.",
+    )
+    p.add_argument(
         "--thinking-effort",
         type=str,
         default=None,

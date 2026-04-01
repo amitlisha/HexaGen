@@ -179,4 +179,12 @@ def parse_args() -> argparse.Namespace:
         help="Resume polling an existing OpenAI batch by ID (skips prompt building "
         "and submission). Example: --batch-resume batch_abc123",
     )
+    p.add_argument(
+        "--batch-resume-file",
+        type=str,
+        default=None,
+        help="Resume from a local merged JSONL file (output of resume_batch.py). "
+        "Skips batch submission/polling and uses pre-downloaded results. "
+        "Example: --batch-resume-file merged_batch_output.jsonl",
+    )
     return p.parse_args()

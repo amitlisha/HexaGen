@@ -17,3 +17,7 @@ analyses-images/
 *.sh
 .cache/
 data/
+*.pdf
+*.png
+recover_batch.py
+error_types.md
