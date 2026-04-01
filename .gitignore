@@ -21,3 +21,4 @@ data/
 *.png
 recover_batch.py
 error_types.md
+.claude/
