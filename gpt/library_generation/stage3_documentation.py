@@ -1,4 +1,4 @@
-"""Stage 4: DSL API Specification Generation.
+"""Stage 3: DSL API Specification Generation.
 
 This stage generates a formal API specification for the generated library that can be
 integrated into experiment prompts. The API spec follows the same format as the
@@ -23,7 +23,7 @@ from typing import Dict, List, Tuple
 
 
 def load_implementation(impl_file: Path) -> str:
-    """Load generated implementation from Stage 3."""
+    """Load generated implementation from Stage 2."""
     if not impl_file.exists():
         raise FileNotFoundError(f"Implementation not found: {impl_file}")
     return impl_file.read_text(encoding="utf-8")
@@ -188,7 +188,7 @@ def extract_public_classes(implementation: str) -> List[str]:
 # Prompts
 # ---------------------------------------------------------------------------
 
-STAGE4_SYSTEM_PROMPT = """\
+STAGE3_SYSTEM_PROMPT = """\
 You are a technical writer creating concise API reference documentation.
 Your output will be used by LLMs as their ONLY reference when writing code with this library.
 Brevity and precision are critical — every extra word wastes context tokens.
@@ -312,7 +312,7 @@ def generate_class_api_spec(
 
     response = call_llm(
         prompt=prompt,
-        system_prompt=STAGE4_SYSTEM_PROMPT,
+        system_prompt=STAGE3_SYSTEM_PROMPT,
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
@@ -346,7 +346,7 @@ def generate_snippets(
 
     response = call_llm(
         prompt=prompt,
-        system_prompt=STAGE4_SYSTEM_PROMPT,
+        system_prompt=STAGE3_SYSTEM_PROMPT,
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
@@ -437,7 +437,7 @@ def assemble_api_spec(
 # Legacy monolithic generation (kept as fallback)
 # ---------------------------------------------------------------------------
 
-STAGE4_SYSTEM_PROMPT_MONOLITHIC = "You are a technical writer creating formal API specifications for LLM consumption."
+STAGE3_SYSTEM_PROMPT_MONOLITHIC = "You are a technical writer creating formal API specifications for LLM consumption."
 
 
 def _build_api_spec_prompt_monolithic(
@@ -520,7 +520,7 @@ def generate_api_spec_monolithic(
 
     response = call_llm(
         prompt=prompt,
-        system_prompt=STAGE4_SYSTEM_PROMPT_MONOLITHIC,
+        system_prompt=STAGE3_SYSTEM_PROMPT_MONOLITHIC,
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
@@ -556,8 +556,8 @@ def timestamp() -> str:
 # Main stage runner
 # ---------------------------------------------------------------------------
 
-def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -> Dict:
-    """Run Stage 4: DSL API Specification Generation.
+def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -> Dict:
+    """Run Stage 3: DSL API Specification Generation.
 
     Generates per-class API specs in parallel, then assembles them with a
     deterministic header and LLM-generated usage snippets.
@@ -570,19 +570,19 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
     Args:
         cfg: Configuration namespace
         output_dir: Directory to save outputs
-        stage3_result: Results from Stage 3
+        stage2_result: Results from Stage 2
 
     Returns:
         Dictionary with stage results
     """
     print(f"\n{'='*70}")
-    print("STAGE 4: DSL API SPECIFICATION GENERATION")
+    print("STAGE 3: DSL API SPECIFICATION GENERATION")
     print(f"{'='*70}\n")
 
-    # Load Stage 3 implementation
-    stage3_impl_file = Path(stage3_result["outputs"]["implementation"])
-    print(f"Loading implementation from {stage3_impl_file}...")
-    implementation = load_implementation(stage3_impl_file)
+    # Load Stage 2 implementation
+    stage2_impl_file = Path(stage2_result["outputs"]["implementation"])
+    print(f"Loading implementation from {stage2_impl_file}...")
+    implementation = load_implementation(stage2_impl_file)
     print(f"✓ Loaded implementation ({len(implementation)} characters)\n")
 
     # Load sample instructions for examples
@@ -654,7 +654,7 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
                 )
                 request = build_gemini_batch_request(
                     prompt=prompt,
-                    system_prompt=STAGE4_SYSTEM_PROMPT,
+                    system_prompt=STAGE3_SYSTEM_PROMPT,
                     temperature=cfg.temperature,
                     max_tokens=cfg.max_tokens,
                     thinking_level=getattr(cfg, "thinking_level", None),
@@ -672,7 +672,7 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
                     getattr(cfg, "batch_timeout", 86400),
                 )
             else:
-                display_name = f"{cfg.experiment_name}-stage4-{cfg.model}"
+                display_name = f"{cfg.experiment_name}-stage3-{cfg.model}"
                 job_name = submit_gemini_batch(gemini_requests, cfg.model, display_name)
                 print(f"Created Gemini batch: {job_name}")
                 batch_job = poll_gemini_batch(
@@ -699,7 +699,7 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
                     class_name, class_sources[class_name], implementation,
                     sample_instructions, cfg.domain_description,
                 )
-                messages = build_openai_messages(prompt=prompt, system_prompt=STAGE4_SYSTEM_PROMPT)
+                messages = build_openai_messages(prompt=prompt, system_prompt=STAGE3_SYSTEM_PROMPT)
                 body = build_openai_request_body(
                     messages=messages,
                     model=cfg.model,
@@ -708,7 +708,7 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
                     reasoning_effort=getattr(cfg, "thinking_effort", None),
                 )
                 jsonl_lines.append(json.dumps({
-                    "custom_id": f"stage4_class_{class_name}",
+                    "custom_id": f"stage3_class_{class_name}",
                     "method": "POST",
                     "url": "/v1/chat/completions",
                     "body": body,
@@ -737,7 +737,7 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
                 batch_results.update(parse_batch_results(batch_obj.error_file_id))
 
             for class_name in class_names:
-                custom_id = f"stage4_class_{class_name}"
+                custom_id = f"stage3_class_{class_name}"
                 result = batch_results.get(custom_id)
                 if result and not result.get("error"):
                     class_spec_responses.append((class_name, result["text"]))
@@ -854,7 +854,7 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
 
     # Create summary
     result = {
-        "stage": 4,
+        "stage": 3,
         "timestamp": timestamp(),
         "config": {
             "train_data": cfg.train_data,
@@ -869,11 +869,11 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
     }
 
     # Save stage summary
-    summary_file = output_dir / "stage4_summary.json"
+    summary_file = output_dir / "stage3_summary.json"
     save_json(result, summary_file)
 
     print(f"{'='*70}")
-    print("STAGE 4 COMPLETE")
+    print("STAGE 3 COMPLETE")
     print(f"{'='*70}\n")
     print(f"API specification: {api_spec_file} ({len(api_spec)} chars)")
     print(f"Classes documented: {', '.join(per_class_specs.keys())}")
@@ -890,20 +890,20 @@ if __name__ == "__main__":
 
     cfg = parse_args()
 
-    # Load Stage 3 results
-    stage3_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage3"
-    stage3_summary = stage3_dir / "stage3_summary.json"
+    # Load Stage 2 results
+    stage2_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage2"
+    stage2_summary = stage2_dir / "stage2_summary.json"
 
-    if not stage3_summary.exists():
-        print(f"Error: Stage 3 results not found at {stage3_summary}")
-        print("Please run Stage 3 first!")
+    if not stage2_summary.exists():
+        print(f"Error: Stage 2 results not found at {stage2_summary}")
+        print("Please run Stage 2 first!")
         sys.exit(1)
 
-    with open(stage3_summary) as f:
-        stage3_result = json.load(f)
+    with open(stage2_summary) as f:
+        stage2_result = json.load(f)
 
     # Create output directory
-    output_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage4"
+    output_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage3"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    run_stage4(cfg, output_dir, stage3_result)
+    run_stage3(cfg, output_dir, stage2_result)

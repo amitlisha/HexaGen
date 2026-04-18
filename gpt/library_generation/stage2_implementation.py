@@ -1,6 +1,6 @@
-"""Stage 3: Implementation Generation from refined API.
+"""Stage 2: Implementation Generation from API proposal.
 
-This stage takes the refined API proposal from Stage 2 and generates
+This stage takes the API proposal from Stage 1 and generates
 actual Python code that implements the proposed methods.
 
 Approach:
@@ -26,7 +26,7 @@ from typing import Dict, List
 
 
 def load_api_proposal(api_file: Path) -> str:
-    """Load refined API proposal from Stage 2."""
+    """Load API proposal from Stage 1."""
     if not api_file.exists():
         raise FileNotFoundError(f"API proposal not found: {api_file}")
     return api_file.read_text(encoding="utf-8")
@@ -160,7 +160,7 @@ def generate_new_methods(
     """Generate ONLY new methods from API proposal (not full library).
 
     Args:
-        api_proposal: Refined API proposal from Stage 2
+        api_proposal: API proposal from Stage 1
         base_lib_code: Current base library code
         base_lib_docs: Base library documentation
         domain_description: Brief description of domain
@@ -959,7 +959,7 @@ DO NOT:
 Provide ONLY the new method implementations for {class_name}."""
 
 
-def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -> Dict:
+def run_stage2(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -> Dict:
     """Run Stage 3: Implementation Generation.
 
     Supports three execution modes:
@@ -976,7 +976,7 @@ def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -
         Dictionary with stage results
     """
     print(f"\n{'='*70}")
-    print("STAGE 3: IMPLEMENTATION GENERATION")
+    print("STAGE 2: IMPLEMENTATION GENERATION")
     print(f"{'='*70}\n")
 
     # Load Stage 2 API proposal
@@ -1311,7 +1311,7 @@ def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -
     total_methods = sum(len(m) for m in methods_by_class.values())
 
     result = {
-        "stage": 3,
+        "stage": 2,
         "timestamp": timestamp(),
         "config": {
             "base_lib": cfg.base_lib,
@@ -1338,11 +1338,11 @@ def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -
     }
 
     # Save stage summary
-    summary_file = output_dir / "stage3_summary.json"
+    summary_file = output_dir / "stage2_summary.json"
     save_json(result, summary_file)
 
     print(f"{'='*70}")
-    print("STAGE 3 COMPLETE")
+    print("STAGE 2 COMPLETE")
     print(f"{'='*70}\n")
     print(f"Implementation: {impl_file}")
     print(f"Methods added: {total_methods}")
@@ -1363,20 +1363,26 @@ if __name__ == "__main__":
 
     cfg = parse_args()
 
-    # Load Stage 2 results
-    stage2_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage2"
-    stage2_summary = stage2_dir / "stage2_summary.json"
+    # Load Stage 1 results
+    stage1_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage1"
+    stage1_summary = stage1_dir / "stage1_summary.json"
 
-    if not stage2_summary.exists():
-        print(f"Error: Stage 2 results not found at {stage2_summary}")
-        print("Please run Stage 2 first!")
+    if not stage1_summary.exists():
+        print(f"Error: Stage 1 results not found at {stage1_summary}")
+        print("Please run Stage 1 first!")
         sys.exit(1)
 
-    with open(stage2_summary) as f:
-        stage2_result = json.load(f)
+    with open(stage1_summary) as f:
+        stage1_result = json.load(f)
+
+    # Create stage1_result in the format expected by run_stage2
+    stage1_input = {
+        "stage": 1,
+        "outputs": {"final_api": stage1_result["outputs"]["api_proposal"]},
+    }
 
     # Create output directory
-    output_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage3"
+    output_dir = Path(cfg.output_dir) / cfg.experiment_name / "stage2"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    run_stage3(cfg, output_dir, stage2_result)
+    run_stage2(cfg, output_dir, stage1_input)

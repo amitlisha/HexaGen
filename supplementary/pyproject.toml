@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hexagen"
+version = "0.1.0"
+description = "Utilities for drawing on a hexagonal board"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{name="ONLP Lab"}]
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "openai",
+    "google-genai",
+    "google-cloud-aiplatform",
+    "pillow",
+    "tenacity",
+]
+
+[tool.setuptools]
+packages = ["hexagen", "constants", "utils", "gpt", "gpt.library_generation"]

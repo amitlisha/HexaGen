@@ -2,7 +2,7 @@
 # One entity per line; two-space indentation shows containment.
 # Extra "Notes:" lines clarify hidden behaviour.
 
-Import: from hexagen import Game, Tile, Shape
+Import: from hexagen import Game, Tile
 
 Constant: WIDTH = 18
 Constant: HEIGHT = 10

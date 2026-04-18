@@ -1,73 +1,71 @@
-"Full mode runner - single-shot execution of all instructions."
+"""Step-by-step code execution runner."""
 
 from __future__ import annotations
 
 import argparse
-import sys
 import textwrap
 from pathlib import Path
 from typing import Dict, List, Optional
+
+import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from llm_wrapper import call_llm
 from runner_utils import (
+    _inject_custom_lib,
     extract_code,
     save_script,
     save_plot,
     run_with_timeout,
-    simplify_traceback,
+    fix_missing_tail_indent,
 )
 from constants.constants import WIDTH, HEIGHT
+from prompts import make_user_prompt
 from metrics import evaluate_prediction
 
 
-def build_code_full_prompt(
-    cfg: argparse.Namespace,
-    user_tmpl: str,
-    instructions: List[str],
-    code_so_far: str,
-    input_grid_2d: Optional[List[List[int]]] = None,
-) -> str:
-    """Build the first-attempt prompt for code-full mode (no error feedback)."""
-    todo_block = "\n".join(f"    # TODO: {txt}" for txt in instructions)
-    return (
-        user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
-        .replace("{CODE_SO_FAR}", code_so_far.rstrip())
-        .replace("{NEXT_STEP}", todo_block)
-    )
-
-
-def run_full(
+def run_step_code(
     cfg: argparse.Namespace,
     sys_prompt: str,
     user_tmpl: str,
-    instructions: List[str],
-    code_so_far: str,
-    gold_final: List[int],
+    instruction: str,
+    history: List[str],
+    code: str,
+    gold_board: List[int],
+    prev_gold_board: List[int],
     image_path: Optional[Path],
-    task_dir: Path,
+    out_dir: Path,
+    step_idx: int,
     run_ts: str,
-    prefetched_response: Optional[Dict] = None,
-) -> Dict:
-    """
-    Single-shot prompt that passes ALL instructions as one indented block.
-    Includes retry logic with error feedback similar to step mode.
-    """
-    todo_block = "\n".join(f"    # TODO: {txt}" for txt in instructions)
+) -> tuple[Dict, bool, str, Optional[Path]]:
+    """Run one code-completion step and return updated script and log."""
+    from runner_utils import exec_snippet
 
     attempt = 0
     last_exc: Optional[str] = None
     last_code: Optional[str] = None
     last_warning: Optional[str] = None
+    prev_pred_board: List[int]
+    try:
+        # Inject custom library if provided
+        if cfg.lib_file:
+            _inject_custom_lib(cfg.lib_file)
 
+        ns_prev: Dict[str, object] = {}
+        exec_snippet(code, ns_prev)
+        prev_pred_board = ns_prev["board_state"]
+    except Exception:
+        prev_pred_board = [0] * (WIDTH * HEIGHT)
     while True:
         attempt += 1
 
-        prompt = (
-            user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
-            .replace("{CODE_SO_FAR}", code_so_far.rstrip())
-            .replace("{NEXT_STEP}", todo_block)
+        code_with_todo = f"{code.rstrip()}\n"
+        prompt = make_user_prompt(
+            instr=instruction,
+            history=history,
+            template=user_tmpl,
+            code=code_with_todo,
         )
 
         if last_exc:
@@ -97,47 +95,42 @@ def run_full(
                 "   Fix your code to avoid these warnings. Do NOT repeat the same mistake.\n"
             )
 
-        if prefetched_response is not None and attempt == 1:
-            resp = prefetched_response
-        else:
-            resp = call_llm(
-                prompt=prompt,
-                system_prompt=sys_prompt,
-                model=cfg.model,
-                temperature=cfg.temperature,
-                max_tokens=cfg.max_tokens,
-                seed=cfg.seed,
-                images=[str(image_path)] if image_path else None,
-                reasoning_effort=getattr(cfg, "reasoning_effort", None),
-                thinking_budget=getattr(cfg, "thinking_budget", None),
-                thinking_level=getattr(cfg, "thinking_level", None),
-            )
-
-        append = extract_code(resp["text"])
-        new_code = f"{code_so_far.rstrip()}\n    {append}"
-
-        if "board_state = g.board_state" not in new_code:
-            new_code += "\nboard_state = g.board_state"
-
-        _ = save_script(
-            task_dir, run_ts, step=0, attempt=attempt, code=new_code, kind="full"
+        resp = call_llm(
+            prompt=prompt,
+            system_prompt=sys_prompt,
+            model=cfg.model,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
+            seed=cfg.seed,
+            images=[str(image_path)] if image_path else None,
+            reasoning_effort=getattr(cfg, "reasoning_effort", None),
+            thinking_budget=getattr(cfg, "thinking_budget", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
 
+        append = extract_code(resp["text"])
+        new_script = fix_missing_tail_indent(f"{code.rstrip()}\n    {append}")
+
+        if "board_state = g.board_state" not in new_script:
+            new_script += "\nboard_state = g.board_state"
+
+        _ = save_script(out_dir, run_ts, step_idx, attempt, new_script, kind="step")
+
         log = {
+            "step": step_idx,
             "attempt": attempt,
-            "code": new_code,
+            "usage": resp["usage"],
+            "code": append,
             "valid": False,
             "correct": False,
-            "usage": resp["usage"],
         }
 
-        # Execute with timeout
-        board_pred, err, hexagen_warnings = run_with_timeout(new_code, cfg.exec_timeout, cfg.lib_file)
+        # execute with timeout
+        board_pred, err, hexagen_warnings = run_with_timeout(new_script, cfg.exec_timeout, cfg.lib_file)
 
         if err is None:
             # Code executed — check for hexagen warnings
             if hexagen_warnings and (not cfg.retries or attempt < cfg.retries):
-                # Warnings present and retries remain — retry with warning feedback
                 last_exc = None
                 last_warning = "\n".join(f"- {w}" for w in hexagen_warnings)
                 last_code = append
@@ -150,27 +143,26 @@ def run_full(
             log["valid"] = True
             log.update(
                 evaluate_prediction(
-                    [0] * (WIDTH * HEIGHT),
-                    board_pred,
-                    [0] * (WIDTH * HEIGHT),
-                    gold_final,
+                    prev_pred_board, board_pred, prev_gold_board, gold_board
                 )
             )
-            save_plot(
-                board_pred,
-                gold_final,
-                task_dir / f"{run_ts}_plot_full_{attempt:02}.png",
+            plot_path = out_dir / f"{run_ts}_plot_{step_idx:02}_{attempt:02}.png"
+            plot_with_gold_path = (
+                out_dir / f"{run_ts}_plot_{step_idx:02}_{attempt:02}_gold.png"
             )
-            return log
+            save_plot(board_pred, None, plot_path)
+            save_plot(board_pred, gold_board, plot_with_gold_path)
+            return log, True, new_script, plot_path
         else:
-            last_exc = simplify_traceback(err)
+            last_exc = err
             last_code = append
             last_warning = None
             log["traceback"] = last_exc
-
-            # Check if we should retry
             if cfg.retries and attempt >= cfg.retries:
-                board_g = sum(1 for t in gold_final if t != 0)
+                # Compute gold counts so failed runs still contribute to
+                # aggregate recall (board_g / action_g).
+                board_g = sum(1 for t in gold_board if t != 0)
+                action_g = sum(1 for a, b in zip(prev_gold_board, gold_board) if a != b)
                 log.update(
                     {
                         "precision_board": 0.0,
@@ -186,7 +178,7 @@ def run_full(
                         "board_g": board_g,
                         "action_tp": 0,
                         "action_p": 0,
-                        "action_g": board_g,
+                        "action_g": action_g,
                     }
                 )
-                return log
+                return log, False, code, image_path  # keep previous image
