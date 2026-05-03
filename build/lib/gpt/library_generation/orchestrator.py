@@ -28,23 +28,6 @@ def main():
         os.environ["CLAUDE_CODE_MAX_TURNS"] = str(cfg.max_turns)
     if getattr(cfg, "claude_code_cwd", None):
         os.environ["CLAUDE_CODE_CWD"] = cfg.claude_code_cwd
-    if getattr(cfg, "request_timeout", None) is not None:
-        os.environ["LLM_REQUEST_TIMEOUT"] = str(cfg.request_timeout)
-    if getattr(cfg, "claude_code_cli", False):
-        os.environ["CLAUDE_CODE_USE_CLI"] = "1"
-    if getattr(cfg, "claude_code_local", False):
-        os.environ.setdefault("ANTHROPIC_BASE_URL", "http://localhost:8001")
-        os.environ.setdefault("ANTHROPIC_AUTH_TOKEN", "dummy")
-        os.environ.setdefault("ANTHROPIC_API_KEY", "dummy")
-        os.environ.setdefault("ANTHROPIC_DEFAULT_OPUS_MODEL", "qwen-local")
-        os.environ.setdefault("ANTHROPIC_DEFAULT_SONNET_MODEL", "qwen-local")
-        os.environ.setdefault("ANTHROPIC_DEFAULT_HAIKU_MODEL", "qwen-local")
-    if getattr(cfg, "anthropic_base_url", None):
-        os.environ["ANTHROPIC_BASE_URL"] = cfg.anthropic_base_url
-    if getattr(cfg, "anthropic_auth_token", None):
-        os.environ["ANTHROPIC_AUTH_TOKEN"] = cfg.anthropic_auth_token
-    if getattr(cfg, "anthropic_custom_headers", None):
-        os.environ["ANTHROPIC_CUSTOM_HEADERS"] = cfg.anthropic_custom_headers
     init_llm(cfg)
 
     # Create experiment directory (add ablation suffix if applicable)

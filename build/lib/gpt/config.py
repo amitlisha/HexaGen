@@ -92,13 +92,6 @@ def parse_args() -> argparse.Namespace:
         help="Seconds to wait for generated code before aborting (0 = no limit)",
     )
     p.add_argument(
-        "--request-timeout",
-        type=int,
-        default=300,
-        help="Seconds to wait for an LLM API call before aborting (default: 300). "
-        "For Claude Code agentic mode this caps the entire multi-turn run.",
-    )
-    p.add_argument(
         "--experiment-name",
         type=str,
         help="Experiment name",
@@ -142,50 +135,6 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Sandbox working directory for Claude Code agentic sessions. "
         "Default: a fresh temp dir per call (recommended).",
-    )
-    p.add_argument(
-        "--claude-code-cli",
-        action="store_true",
-        default=False,
-        help="Drive Claude Code via the `claude` CLI binary (subprocess + JSON "
-        "output) instead of the claude_agent_sdk Python API. Only relevant "
-        "when --model starts with 'claude-code/'. Requires `claude` on $PATH.",
-    )
-    p.add_argument(
-        "--claude-code-local",
-        action="store_true",
-        default=False,
-        help="Route the `claude` CLI to a local Anthropic-compatible proxy "
-        "(http://localhost:8001) and map opus/sonnet/haiku to 'qwen-local'. "
-        "Equivalent to running the `claude-local` wrapper script. Sets "
-        "ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY, and "
-        "ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL. Individual values can "
-        "still be overridden via --anthropic-base-url / --anthropic-auth-token.",
-    )
-    p.add_argument(
-        "--anthropic-base-url",
-        type=str,
-        default=None,
-        help="Override the Anthropic API base URL the `claude` CLI talks to "
-        "(sets ANTHROPIC_BASE_URL). Use this to point at a local proxy that "
-        "translates Anthropic Messages -> OpenAI Chat for a vLLM server "
-        "(e.g., LiteLLM proxy at http://localhost:4000). vLLM alone is not "
-        "Anthropic-compatible; a translation proxy is required.",
-    )
-    p.add_argument(
-        "--anthropic-auth-token",
-        type=str,
-        default=None,
-        help="Auth token sent by the `claude` CLI to ANTHROPIC_BASE_URL "
-        "(sets ANTHROPIC_AUTH_TOKEN). For a local vLLM/LiteLLM proxy this "
-        "can be any non-empty string (e.g., 'dummy').",
-    )
-    p.add_argument(
-        "--anthropic-custom-headers",
-        type=str,
-        default=None,
-        help="Extra HTTP headers the `claude` CLI sends to ANTHROPIC_BASE_URL "
-        "(sets ANTHROPIC_CUSTOM_HEADERS). Format: 'Header1: val1\\nHeader2: val2'.",
     )
     p.add_argument(
         "--resume",

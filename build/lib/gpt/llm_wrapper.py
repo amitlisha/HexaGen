@@ -162,15 +162,7 @@ def _is_openai_reasoning_model(model: str) -> bool:
     )
 
 
-# Default request timeout in seconds for API calls (prevents indefinite hangs).
-# Overridable per-process via LLM_REQUEST_TIMEOUT env var (set from --request-timeout).
-def _default_request_timeout() -> int:
-    try:
-        return int(os.environ.get("LLM_REQUEST_TIMEOUT", "300"))
-    except ValueError:
-        return 300
-
-
+# Default request timeout in seconds for API calls (prevents indefinite hangs)
 _REQUEST_TIMEOUT: int = 300
 
 
@@ -231,7 +223,7 @@ def call_llm(
     seed: Optional[int] = None,
     system_prompt: Optional[str] = None,
     images: Optional[List[str | Path]] = None,
-    request_timeout: Optional[int] = None,
+    request_timeout: int = _REQUEST_TIMEOUT,
     reasoning_effort: Optional[str] = None,
     thinking_budget: Optional[int] = None,
     thinking_level: Optional[str] = None,
@@ -256,15 +248,8 @@ def call_llm(
             - usage: Token usage information
             - raw: Raw API response
     """
-    if request_timeout is None:
-        request_timeout = _default_request_timeout()
     if _is_claude_code_model(model):
-        impl = (
-            _call_claude_code_cli
-            if os.environ.get("CLAUDE_CODE_USE_CLI") == "1"
-            else _call_claude_code
-        )
-        return impl(
+        return _call_claude_code(
             prompt=prompt,
             model=model,
             system_prompt=system_prompt,
@@ -588,125 +573,6 @@ def _call_claude_code(
                     "usage": raw_usage,
                     "cost_usd": cost_usd,
                     "message_trace": trace,
-                    "sandbox_cwd": sandbox_cwd,
-                    "max_turns": max_turns,
-                }
-            },
-        }
-    finally:
-        if owns_sandbox:
-            shutil.rmtree(sandbox_cwd, ignore_errors=True)
-
-
-def _call_claude_code_cli(
-    prompt: str,
-    model: str,
-    system_prompt: Optional[str],
-    request_timeout: int = _REQUEST_TIMEOUT,
-    max_turns: int = 20,
-    sandbox_cwd: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Agentic Claude via the `claude` CLI binary (subprocess, --print JSON).
-
-    Mirrors the behavior of `_call_claude_code` (SDK path) using the same
-    parameters: model, system prompt, max_turns, sandbox cwd, allowed/disallowed
-    tools, and bypassPermissions. The CLI must be on PATH.
-    """
-    import json
-    import shutil
-    import subprocess
-    import tempfile
-
-    cli_path = shutil.which("claude")
-    if not cli_path:
-        raise RuntimeError(
-            "claude CLI binary not found on $PATH. Install it (npm i -g "
-            "@anthropic-ai/claude-code) or drop --claude-code-cli to use the "
-            "claude_agent_sdk Python API instead."
-        )
-
-    underlying_model = _strip_claude_code_prefix(model)
-    final_system = (system_prompt or "") + (
-        "\n\nIMPORTANT: After exploring with tools, your FINAL message must "
-        "contain a single ```python ... ``` block with the solution. The "
-        "harness extracts code from that block and executes it."
-    )
-
-    owns_sandbox = sandbox_cwd is None
-    if owns_sandbox:
-        sandbox_cwd = tempfile.mkdtemp(prefix="hexagen_cc_")
-
-    try:
-        cmd = [
-            cli_path,
-            "--allowed-tools", "Bash,Read,Edit,Write,Grep,Glob",
-            "--disallowed-tools", "WebSearch,WebFetch",
-            "--print",
-            "--output-format", "json",
-            "--model", underlying_model,
-            "--system-prompt", final_system,
-            "--max-turns", str(max_turns),
-            "--permission-mode", "bypassPermissions",
-            prompt,
-        ]
-        try:
-            proc = subprocess.run(
-                cmd,
-                cwd=sandbox_cwd,
-                capture_output=True,
-                text=True,
-                timeout=request_timeout,
-            )
-        except subprocess.TimeoutExpired as e:
-            raise TimeoutError(
-                f"Claude Code CLI request timed out after {request_timeout}s"
-            ) from e
-
-        if proc.returncode != 0:
-            raise RuntimeError(
-                f"claude CLI exited {proc.returncode}: "
-                f"{(proc.stderr or proc.stdout)[:500]}"
-            )
-
-        try:
-            data = json.loads(proc.stdout)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(
-                f"claude CLI returned non-JSON output: {proc.stdout[:500]}"
-            ) from e
-
-        text = data.get("result") or ""
-        raw_usage = dict(data.get("usage") or {})
-        cost_usd = data.get("total_cost_usd")
-        num_turns = data.get("num_turns")
-        session_id = data.get("session_id")
-        is_error = data.get("is_error", False)
-        if is_error:
-            raise RuntimeError(
-                f"claude CLI reported error (subtype={data.get('subtype')}): "
-                f"{text[:500]}"
-            )
-
-        prompt_tokens = (
-            int(raw_usage.get("input_tokens", 0))
-            + int(raw_usage.get("cache_read_input_tokens", 0))
-            + int(raw_usage.get("cache_creation_input_tokens", 0))
-        )
-        completion_tokens = int(raw_usage.get("output_tokens", 0))
-        return {
-            "text": _strip_thinking_tokens(text.strip()),
-            "usage": {
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": prompt_tokens + completion_tokens,
-            },
-            "raw": {
-                "claude_code_cli": {
-                    "model": underlying_model,
-                    "usage": raw_usage,
-                    "cost_usd": cost_usd,
-                    "num_turns": num_turns,
-                    "session_id": session_id,
                     "sandbox_cwd": sandbox_cwd,
                     "max_turns": max_turns,
                 }

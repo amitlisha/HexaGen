@@ -144,39 +144,6 @@ def parse_args() -> argparse.Namespace:
         help="Sandbox working directory for Claude Code agentic sessions. "
         "Default: a fresh temp dir per call (recommended).",
     )
-    p.add_argument(
-        "--claude-code-cli",
-        action="store_true",
-        default=False,
-        help="Drive Claude Code via the `claude` CLI binary instead of the "
-        "claude_agent_sdk Python API. Only relevant when --model starts with "
-        "'claude-code/'. Requires `claude` on $PATH.",
-    )
-    p.add_argument(
-        "--claude-code-local",
-        action="store_true",
-        default=False,
-        help="Route the `claude` CLI to a local Anthropic-compatible proxy "
-        "(http://localhost:8001) and map opus/sonnet/haiku to 'qwen-local'.",
-    )
-    p.add_argument(
-        "--anthropic-base-url",
-        type=str,
-        default=None,
-        help="Override ANTHROPIC_BASE_URL for the `claude` CLI.",
-    )
-    p.add_argument(
-        "--anthropic-auth-token",
-        type=str,
-        default=None,
-        help="Override ANTHROPIC_AUTH_TOKEN for the `claude` CLI.",
-    )
-    p.add_argument(
-        "--anthropic-custom-headers",
-        type=str,
-        default=None,
-        help="Extra HTTP headers for the `claude` CLI (sets ANTHROPIC_CUSTOM_HEADERS).",
-    )
 
     # Vision
     p.add_argument(

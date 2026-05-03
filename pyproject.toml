@@ -10,14 +10,17 @@ readme = "README.md"
 requires-python = ">=3.8"
 authors = [{name="ONLP Lab"}]
 dependencies = [
-    "numpy",
-    "scipy",
-    "matplotlib",
-    "openai",
-    "google-genai",
+    "anthropic",
+    "claude-agent-sdk",
     "google-cloud-aiplatform",
+    "google-genai",
+    "matplotlib",
+    "numpy",
+    "openai",
     "pillow",
+    "scipy",
     "tenacity",
+    "pandas"
 ]
 
 [tool.setuptools]

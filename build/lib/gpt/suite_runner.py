@@ -117,11 +117,6 @@ def build_orchestrator_cmd(dsl_config: dict, experiment_name: str) -> list:
         "domain_description": "--domain-description",
         "base_url": "--base-url",
         "api_key": "--api-key",
-        "max_turns": "--max-turns",
-        "request_timeout": "--request-timeout",
-        "claude_code_cwd": "--claude-code-cwd",
-        "anthropic_base_url": "--anthropic-base-url",
-        "anthropic_auth_token": "--anthropic-auth-token",
     }
 
     for key, flag in simple_args.items():
@@ -131,12 +126,6 @@ def build_orchestrator_cmd(dsl_config: dict, experiment_name: str) -> list:
 
     if dsl_config.get("vision"):
         cmd.append("--vision")
-    if dsl_config.get("semantic_batching"):
-        cmd.append("--semantic-batching")
-    if dsl_config.get("claude_code_cli"):
-        cmd.append("--claude-code-cli")
-    if dsl_config.get("claude_code_local"):
-        cmd.append("--claude-code-local")
 
     ablation = dsl_config.get("ablation", [])
     if ablation:
@@ -168,15 +157,9 @@ def build_eval_cmd(
         "temperature": "--temperature",
         "max_tokens": "--max-tokens",
         "exec_timeout": "--exec-timeout",
-        "request_timeout": "--request-timeout",
         "retries": "--retries",
         "base_url": "--base-url",
         "api_key": "--api-key",
-        "max_turns": "--max-turns",
-        "repeats": "--repeats",
-        "claude_code_cwd": "--claude-code-cwd",
-        "anthropic_base_url": "--anthropic-base-url",
-        "anthropic_auth_token": "--anthropic-auth-token",
     }
 
     for key, flag in simple_args.items():
@@ -186,10 +169,6 @@ def build_eval_cmd(
 
     if eval_config.get("history") is False:
         cmd.append("--no-history")
-    if eval_config.get("claude_code_cli"):
-        cmd.append("--claude-code-cli")
-    if eval_config.get("claude_code_local"):
-        cmd.append("--claude-code-local")
 
     return cmd
 
@@ -330,17 +309,6 @@ def print_summary_table(all_results: list, config: dict) -> None:
     print(f"SUITE SUMMARY: {config['suite_name']}")
     print(f"{'=' * 100}\n")
 
-    # Dry-run: skip metric table (no aggregates exist).
-    if all_results and all(
-        (e.get("evaluation") or {}).get("status", "").startswith("OK (dry-run)")
-        for e in all_results
-    ):
-        for setup_name in [s["name"] for s in config["setups"]]:
-            n = len(by_setup.get(setup_name, []))
-            print(f"  {setup_name:<25}  {n} dry-run cycle(s) printed")
-        print()
-        return
-
     header = (
         f"{'Setup':<25} | {'Repeats':>7} | {'Board F1 (mean +/- std)':>25} "
         f"| {'Action F1':>12} | {'Exact':>8} | {'Valid':>8}"
@@ -401,7 +369,6 @@ def run_suite(
     skip_eval: bool = False,
     setup_filter: Optional[List[str]] = None,
     repeat_start: int = 1,
-    resume: bool = False,
 ) -> dict:
     """Run the full suite of DSL generation + evaluation experiments."""
     config = load_yaml(config_path)
@@ -448,12 +415,7 @@ def run_suite(
 
     for setup in setups:
         setup_name = setup["name"]
-        eval_overrides = setup.get("eval", {})
-        merged_dsl = {
-            **dsl_defaults,
-            **{k: v for k, v in setup.items() if k not in ("name", "eval")},
-        }
-        merged_eval = {**eval_config, **eval_overrides}
+        merged_dsl = {**dsl_defaults, **{k: v for k, v in setup.items() if k != "name"}}
 
         for repeat_idx in range(repeat_start, repeats + 1):
             run_key = f"{setup_name}__r{repeat_idx}"
@@ -480,48 +442,8 @@ def run_suite(
             lib_file = PROJECT_ROOT / output_dir / effective_name / "stage3" / "generated_library.py"
             api_spec_file = PROJECT_ROOT / output_dir / effective_name / "stage4" / "api_spec.txt"
 
-            # --- Resume: skip if both phases already produced valid artifacts ---
-            if resume and not dry_run:
-                gen_done = lib_file.exists() and api_spec_file.exists()
-                resume_eval_name = (
-                    f"{suite_name}__eval__{setup_name}__r{repeat_idx}"
-                )
-                existing_agg = (
-                    collect_eval_results(resume_eval_name, merged_eval["set"])
-                    if not skip_eval
-                    else None
-                )
-                if existing_agg and existing_agg.get("total_steps", 0) <= 0:
-                    existing_agg = None
-                if gen_done and (skip_eval or existing_agg):
-                    print(
-                        f"[RESUME] {run_key}: artifacts present, skipping."
-                    )
-                    result_entry["dsl_generation"] = {
-                        "status": "OK (resume)",
-                        "lib_file": str(lib_file),
-                        "api_spec_file": str(api_spec_file),
-                    }
-                    if skip_eval:
-                        result_entry["evaluation"] = {
-                            "status": "SKIPPED (--skip-evaluation)"
-                        }
-                    else:
-                        result_entry["evaluation"] = {
-                            "status": "OK",
-                            "aggregate": existing_agg,
-                        }
-                    all_results.append(result_entry)
-                    continue
-
             attempt = 0
             run_succeeded = False
-
-            # --- Resume: if gen artifacts present, skip Phase A ---
-            phase_a_skip_for_resume = (
-                resume and not dry_run
-                and lib_file.exists() and api_spec_file.exists()
-            )
 
             while not run_succeeded:
                 attempt += 1
@@ -533,14 +455,7 @@ def run_suite(
                     )
 
                 # --- Phase A: DSL Generation ---
-                if phase_a_skip_for_resume and attempt == 1:
-                    print(f"[RESUME] {run_key}: lib already generated, skipping Phase A.")
-                    result_entry["dsl_generation"] = {
-                        "status": "OK (resume)",
-                        "lib_file": str(lib_file),
-                        "api_spec_file": str(api_spec_file),
-                    }
-                elif not skip_gen:
+                if not skip_gen:
                     gen_label = (
                         f"DSL-GEN [{run_key}]"
                         if attempt == 1
@@ -590,7 +505,7 @@ def run_suite(
                         f"__r{repeat_idx}{eval_suffix}"
                     )
                     eval_cmd = build_eval_cmd(
-                        merged_eval,
+                        eval_config,
                         eval_exp_name,
                         str(lib_file),
                         str(api_spec_file),
@@ -616,7 +531,7 @@ def run_suite(
                         run_succeeded = True
                     else:
                         eval_agg = collect_eval_results(
-                            eval_exp_name, merged_eval["set"]
+                            eval_exp_name, eval_config["set"]
                         )
                         if eval_agg and eval_agg.get("total_steps", 0) > 0:
                             result_entry["evaluation"] = {
@@ -686,12 +601,6 @@ def main() -> None:
         default=1,
         help="Start repeat index, for resuming interrupted suites (default: 1)",
     )
-    p.add_argument(
-        "--resume",
-        action="store_true",
-        help="Skip (setup,repeat) pairs whose generated library AND eval results "
-        "already exist on disk. Re-runs only missing/failed pairs.",
-    )
 
     args = p.parse_args()
 
@@ -702,7 +611,6 @@ def main() -> None:
         skip_eval=args.skip_evaluation,
         setup_filter=args.setup,
         repeat_start=args.repeat_start,
-        resume=args.resume,
     )
 
 

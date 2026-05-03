@@ -1,0 +1,100 @@
+# Suite: 3 library generation experiments (no-hierarchy / hierarchy / semantic-batches)
+# x 2 setups (qwen-local with Claude Code CLI / qwen-local plain).
+# Each (setup x experiment) repeats 3x for both library generation and execution.
+#
+# Total: 3 experiments * 2 model setups * 3 repeats = 18 (gen + eval) cycles.
+#
+# Prereqs:
+#   - vLLM serving the qwen model at http://127.0.0.1:8001/v1
+#   - For *-cc setups: Anthropic-compatible proxy at http://localhost:8001
+#     (started via `claude-local` wrapper) routing to the same vLLM backend.
+#   - `claude` CLI on $PATH (npm i -g @anthropic-ai/claude-code).
+#
+# Usage:
+#   python gpt/suite_runner.py configs/suite_qwen_claude_code.yaml
+#   python gpt/suite_runner.py configs/suite_qwen_claude_code.yaml --dry-run
+#   python gpt/suite_runner.py configs/suite_qwen_claude_code.yaml \
+#       --setup hierarchy-plain semantic-cc
+
+suite_name: "qwen-libgen-cc-vs-plain"
+
+# Defaults for the plain (non-Claude-Code) library-generation runs.
+# Setups that use Claude Code override `model` + add the cc flags.
+dsl_defaults:
+  train_data: data/train_standard.jsonl
+  base_lib_docs: minimal_hexagen_api_spec.txt
+  base_lib: minimal_hexagen.py
+  model: qwen-local
+  base_url: http://127.0.0.1:8001/v1
+  workers: 15
+  request_timeout: 1800
+  max_turns: 25
+
+# Defaults for evaluation (experiment.py). Each setup overrides via `eval:`.
+eval:
+  set: dev
+  mode: code-full
+  model: qwen-local
+  base_url: http://127.0.0.1:8001/v1
+  workers: 15
+  exec_timeout: 800
+  request_timeout: 1800
+  max_turns: 25
+
+# Each setup is generated + evaluated 3 times.
+repeats: 3
+
+setups:
+  # ────────────── Plain qwen-local (no Claude Code) — workers: 15 ──────────────
+
+  - name: "no-hierarchy-plain"
+    ablation: [singleshot]
+
+  - name: "hierarchy-plain"
+    # baseline: hierarchical batching, no semantic clustering
+
+  - name: "semantic-plain"
+    semantic_batching: true
+
+  # ────────────── claude-code/qwen-local (Claude Code CLI) — workers: 10 ──────────────
+
+  - name: "no-hierarchy-cc"
+    ablation: [singleshot]
+    model: claude-code/qwen-local
+    workers: 10
+    claude_code_cli: true
+    claude_code_local: true
+    base_url: null  # Claude-Code path doesn't use the OpenAI base_url
+    eval:
+      model: claude-code/qwen-local
+      workers: 10
+      claude_code_cli: true
+      claude_code_local: true
+      base_url: null
+
+  - name: "hierarchy-cc"
+    model: claude-code/qwen-local
+    workers: 10
+    claude_code_cli: true
+    claude_code_local: true
+    base_url: null
+    eval:
+      model: claude-code/qwen-local
+      workers: 10
+      claude_code_cli: true
+      claude_code_local: true
+      base_url: null
+
+  - name: "semantic-cc"
+    semantic_batching: true
+    model: claude-code/qwen-local
+    workers: 10
+    claude_code_cli: true
+    claude_code_local: true
+    base_url: null
+    eval:
+      model: claude-code/qwen-local
+      workers: 10
+      claude_code_cli: true
+      claude_code_local: true
+      base_url: null
