@@ -136,6 +136,7 @@ def run_tiles_full(
         "tiles": tiles,
         "valid": True,
         "usage": resp["usage"],
+        **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
         **metrics,
     }
 

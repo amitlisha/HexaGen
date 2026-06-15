@@ -110,6 +110,7 @@ def run_tiles_step_full(
             "step": step_idx,
             "attempt": attempt,
             "usage": resp["usage"],
+            **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
             "tiles": tiles,
             "valid": True,
             **metrics,

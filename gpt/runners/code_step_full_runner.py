@@ -125,6 +125,7 @@ def run_code_step_full(
             "step": step_idx,
             "attempt": attempt,
             "usage": resp["usage"],
+            **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
             "code": append,
             "valid": False,
             "correct": False,
