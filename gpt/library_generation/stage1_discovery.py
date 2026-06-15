@@ -173,6 +173,7 @@ def generate_batch_proposal(
     thinking_effort: str | None = None,
     thinking_level: str | None = None,
     request_timeout: int = 300,
+    seed: Optional[int] = None,
 ) -> str:
     """Generate an API proposal from a single batch of instructions."""
     system_prompt = "You are a programming language designer creating minimal, powerful APIs from pattern analysis."
@@ -191,6 +192,7 @@ def generate_batch_proposal(
         reasoning_effort=thinking_effort,
         thinking_level=thinking_level,
         request_timeout=request_timeout,
+        seed=seed,
     )
 
     return response["text"]
@@ -221,6 +223,7 @@ def deduplicate_api_proposal(
     thinking_effort: str | None = None,
     thinking_level: str | None = None,
     request_timeout: int = 300,
+    seed: Optional[int] = None,
 ) -> str:
     """Use an LLM to remove duplicated methods from the merged API proposal."""
     from gpt.llm_wrapper import call_llm
@@ -239,6 +242,7 @@ def deduplicate_api_proposal(
         reasoning_effort=thinking_effort,
         thinking_level=thinking_level,
         request_timeout=request_timeout,
+        seed=seed,
     )
 
     return response["text"]
@@ -258,6 +262,8 @@ def timestamp() -> str:
 
 
 def run_stage1(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
     """Run Stage 1: API Discovery.
 
     Args:
@@ -451,6 +457,7 @@ def run_stage1(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
                         cfg.model, cfg.temperature, cfg.max_tokens,
                         getattr(cfg, "thinking_effort", None), getattr(cfg, "thinking_level", None),
                         getattr(cfg, "request_timeout", 300),
+                        seed=getattr(cfg, "seed", None),
                     )
                     batch_file = output_dir / f"batch_{i+1:03d}_proposal.md"
                     batch_file.write_text(proposal, encoding="utf-8")
@@ -475,6 +482,7 @@ def run_stage1(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
                             base_lib_docs, cfg.model, cfg.temperature, cfg.max_tokens,
                             getattr(cfg, "thinking_effort", None), getattr(cfg, "thinking_level", None),
                             getattr(cfg, "request_timeout", 300),
+                            getattr(cfg, "seed", None),
                         ): i
                         for i, batch in pending_batches.items()
                     }
@@ -601,6 +609,7 @@ def run_stage1(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
             thinking_effort=getattr(cfg, "thinking_effort", None),
             thinking_level=getattr(cfg, "thinking_level", None),
             request_timeout=getattr(cfg, "request_timeout", 300),
+            seed=getattr(cfg, "seed", None),
         )
 
     api_file = output_dir / "api_proposal_v1.md"
@@ -631,6 +640,7 @@ def run_stage1(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
             "merged_proposal": str(merged_file),
             "api_proposal": str(api_file),
         },
+        "llm_stats": get_llm_stats(),
     }
 
     stage_summary_file = output_dir / "stage1_summary.json"

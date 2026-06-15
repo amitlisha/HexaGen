@@ -99,6 +99,7 @@ def generate_methods_for_class(
     thinking_level: str | None = None,
     is_new_class: bool = False,
     request_timeout: int = 300,
+    seed: int | None = None,
 ) -> str:
     """Generate new methods for a single class from its API proposal section.
 
@@ -141,6 +142,7 @@ def generate_methods_for_class(
         reasoning_effort=thinking_effort,
         thinking_level=thinking_level,
         request_timeout=request_timeout,
+        seed=seed,
     )
 
     return response["text"]
@@ -156,6 +158,7 @@ def generate_new_methods(
     max_tokens: int | None,
     thinking_effort: str | None = None,
     thinking_level: str | None = None,
+    seed: int | None = None,
 ) -> str:
     """Generate ONLY new methods from API proposal (not full library).
 
@@ -237,6 +240,7 @@ Provide ONLY the new method implementations."""
         max_tokens=max_tokens,
         reasoning_effort=thinking_effort,
         thinking_level=thinking_level,
+        seed=seed,
     )
 
     return response["text"]
@@ -960,6 +964,8 @@ Provide ONLY the new method implementations for {class_name}."""
 
 
 def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -> Dict:
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
     """Run Stage 3: Implementation Generation.
 
     Supports three execution modes:
@@ -1108,6 +1114,7 @@ def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -
                     model=cfg.model,
                     temperature=cfg.temperature,
                     max_tokens=cfg.max_tokens,
+                    seed=getattr(cfg, "seed", None),
                     reasoning_effort=getattr(cfg, "thinking_effort", None),
                 )
                 jsonl_lines.append(json.dumps({
@@ -1164,6 +1171,7 @@ def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -
                 thinking_level=getattr(cfg, "thinking_level", None),
                 is_new_class=class_name in new_classes,
                 request_timeout=getattr(cfg, "request_timeout", 300),
+                seed=getattr(cfg, "seed", None),
             )
             class_responses.append((class_name, response))
 
@@ -1186,6 +1194,7 @@ def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -
                     thinking_level=getattr(cfg, "thinking_level", None),
                     is_new_class=class_name in new_classes,
                     request_timeout=getattr(cfg, "request_timeout", 300),
+                    seed=getattr(cfg, "seed", None),
                 ): class_name
                 for class_name, class_proposal in class_proposals.items()
             }
@@ -1334,7 +1343,8 @@ def run_stage3(cfg: argparse.Namespace, output_dir: Path, stage2_result: Dict) -
             "doctest_passed": num_passed,
             "doctest_failed": num_failed,
             "doctest_failure_details": doctest_failures,
-        }
+        },
+        "llm_stats": get_llm_stats(),
     }
 
     # Save stage summary

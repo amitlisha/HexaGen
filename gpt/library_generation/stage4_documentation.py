@@ -557,6 +557,8 @@ def timestamp() -> str:
 # ---------------------------------------------------------------------------
 
 def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -> Dict:
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
     """Run Stage 4: DSL API Specification Generation.
 
     Generates per-class API specs in parallel, then assembles them with a
@@ -865,7 +867,8 @@ def run_stage4(cfg: argparse.Namespace, output_dir: Path, stage3_result: Dict) -
             "api_spec_length": len(api_spec),
             "classes_documented": list(per_class_specs.keys()),
             "num_classes": len(per_class_specs),
-        }
+        },
+        "llm_stats": get_llm_stats(),
     }
 
     # Save stage summary

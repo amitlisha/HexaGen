@@ -249,6 +249,9 @@ def run_stage6(
     Returns:
         Dictionary with stage results
     """
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
+
     print(f"\n{'='*70}")
     print("STAGE 6: ERROR-DRIVEN EXTENSION")
     print(f"{'='*70}\n")
@@ -378,7 +381,8 @@ def run_stage6(
             "final_implementation": str(final_impl_file),
             "extension_history": extension_history,
             "num_cycles": len(extension_history),
-        }
+        },
+        "llm_stats": get_llm_stats(),
     }
 
     # Save stage summary

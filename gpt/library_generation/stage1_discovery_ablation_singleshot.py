@@ -281,6 +281,8 @@ def timestamp() -> str:
 
 
 def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict[str, Any]:
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
     """Run Stage 1 Ablation: Single-shot API Discovery.
 
     Args:
@@ -362,6 +364,7 @@ def run_stage1_singleshot(cfg: argparse.Namespace, output_dir: Path) -> Dict[str
             "pattern_summary": str(summary_file),
             "api_proposal": str(api_file),
         },
+        "llm_stats": get_llm_stats(),
     }
 
     # Save stage summary

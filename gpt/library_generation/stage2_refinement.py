@@ -153,6 +153,8 @@ def timestamp() -> str:
 
 
 def run_stage2(cfg: argparse.Namespace, output_dir: Path, stage1_result: Dict) -> Dict:
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
     """Run Stage 2: API Refinement.
 
     Args:
@@ -243,7 +245,8 @@ def run_stage2(cfg: argparse.Namespace, output_dir: Path, stage1_result: Dict) -
             "initial_api": str(stage1_api_file),
             "final_api": str(final_file),
             "refinement_history": refinement_history
-        }
+        },
+        "llm_stats": get_llm_stats(),
     }
 
     # Save stage summary

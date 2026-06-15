@@ -352,6 +352,8 @@ def timestamp() -> str:
 
 
 def run_stage5(cfg: argparse.Namespace, output_dir: Path, stage4_result: Dict, stage3_result: Dict) -> Dict:
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
     """Run Stage 5: Validation.
 
     Args:
@@ -486,7 +488,8 @@ def run_stage5(cfg: argparse.Namespace, output_dir: Path, stage4_result: Dict, s
         "failure_analysis": failure_analysis,
         "outputs": {
             "detailed_results": str(results_file),
-        }
+        },
+        "llm_stats": get_llm_stats(),
     }
 
     # Save stage summary
