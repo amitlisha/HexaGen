@@ -19,6 +19,45 @@ _OPENAI_CLIENT: Optional[Any] = None
 _GENAI_CLIENT: Optional[Any] = None
 _ANTHROPIC_CLIENT: Optional[Any] = None
 
+# ── Per-stage LLM call stats accumulator ─────────────────────────────────────
+# Lets library-generation stages collect aggregate usage/agent_info across all
+# LLM calls without changing helper-function signatures.
+# list.append is GIL-safe, so parallel intra-stage calls are fine.
+
+_llm_call_stats: List[Dict[str, Any]] = []
+
+
+def reset_llm_stats() -> None:
+    """Reset the accumulator. Call at the start of each stage."""
+    global _llm_call_stats
+    _llm_call_stats = []
+
+
+def get_llm_stats() -> Dict[str, Any]:
+    """Return aggregated stats for all call_llm calls since the last reset."""
+    calls = _llm_call_stats
+    total_prompt = sum(c["usage"].get("prompt_tokens", 0) for c in calls)
+    total_completion = sum(c["usage"].get("completion_tokens", 0) for c in calls)
+    stats: Dict[str, Any] = {
+        "num_llm_calls": len(calls),
+        "total_usage": {
+            "prompt_tokens": total_prompt,
+            "completion_tokens": total_completion,
+            "total_tokens": total_prompt + total_completion,
+        },
+    }
+    agent_calls = [c["agent_info"] for c in calls if "agent_info" in c]
+    if agent_calls:
+        stats["agent_calls"] = agent_calls
+    return stats
+
+
+def _accum_call_stats(result: Dict[str, Any]) -> None:
+    entry: Dict[str, Any] = {"usage": result.get("usage", {})}
+    if "agent_info" in result:
+        entry["agent_info"] = result["agent_info"]
+    _llm_call_stats.append(entry)
+
 
 def _get_or_create_genai_client(api_key: Optional[str] = None) -> Any:
     """Get or create a google-genai Client, caching it globally.
@@ -259,12 +298,7 @@ def call_llm(
     if request_timeout is None:
         request_timeout = _default_request_timeout()
     if _is_claude_code_model(model):
-        impl = (
-            _call_claude_code_cli
-            if os.environ.get("CLAUDE_CODE_USE_CLI") == "1"
-            else _call_claude_code
-        )
-        return impl(
+        result = _call_claude_code(
             prompt=prompt,
             model=model,
             system_prompt=system_prompt,
@@ -272,8 +306,8 @@ def call_llm(
             max_turns=int(os.environ.get("CLAUDE_CODE_MAX_TURNS", "20")),
             sandbox_cwd=os.environ.get("CLAUDE_CODE_CWD"),
         )
-    if _is_anthropic_model(model):
-        return _call_anthropic(
+    elif _is_anthropic_model(model):
+        result = _call_anthropic(
             prompt=prompt,
             model=model,
             temperature=temperature,
@@ -282,8 +316,8 @@ def call_llm(
             images=images,
             request_timeout=request_timeout,
         )
-    if _is_gemini_model(model):
-        return _call_gemini(
+    elif _is_gemini_model(model):
+        result = _call_gemini(
             prompt=prompt,
             model=model,
             temperature=temperature,
@@ -296,7 +330,7 @@ def call_llm(
             thinking_level=thinking_level,
         )
     else:
-        return _call_openai(
+        result = _call_openai(
             prompt=prompt,
             model=model,
             temperature=temperature,
@@ -307,6 +341,8 @@ def call_llm(
             request_timeout=request_timeout,
             reasoning_effort=reasoning_effort,
         )
+    _accum_call_stats(result)
+    return result
 
 
 def build_openai_messages(
@@ -380,7 +416,12 @@ def _call_openai(
 
     resp = _OPENAI_CLIENT.chat.completions.create(**api_params, timeout=request_timeout)
     choice = resp.choices[0]
-    text = choice.message.content.strip()
+    # Some models (e.g. Qwen3 thinking mode via vLLM) return content=None and
+    # put the actual output in reasoning_content. Fall back gracefully.
+    content = choice.message.content
+    if content is None:
+        content = getattr(choice.message, "reasoning_content", None) or ""
+    text = content.strip()
     text = _strip_thinking_tokens(text)
     return {
         "text": text,
@@ -501,13 +542,19 @@ def _call_claude_code(
 ) -> Dict[str, Any]:
     """Agentic Claude via the Claude Agent SDK.
 
-    The agent may use Bash/Read/Edit/Write/Grep/Glob in a sandboxed cwd before
-    emitting a final assistant message containing a fenced ```python``` block.
+    The agent may use Bash/Read/Edit/Write/Grep/Glob in a sandboxed cwd.
     WebSearch and WebFetch are disabled. Vision/temperature/seed/max_tokens/
     reasoning parameters are ignored.
 
-    Requires the `claude` CLI binary on PATH; auth via ANTHROPIC_API_KEY env
-    var or a prior `claude login` (Console subscription).
+    If the agent writes a ``solution.py`` file to the sandbox, its contents are
+    returned as ``solution_code`` in the result dict (execution runners use this
+    instead of extracting code from the final text message).
+
+    The full turn-by-turn conversation is captured and returned as
+    ``raw["claude_code"]["conversation"]``.
+
+    Requires the ``claude`` CLI binary on PATH; auth via ANTHROPIC_API_KEY env
+    var or a prior ``claude login`` (Console subscription).
     """
     import asyncio
     import shutil
@@ -516,20 +563,23 @@ def _call_claude_code(
     from claude_agent_sdk import ClaudeAgentOptions, query
 
     underlying_model = _strip_claude_code_prefix(model)
-    final_system = (system_prompt or "") + (
-        "\n\nIMPORTANT: After exploring with tools, your FINAL message must "
-        "contain a single ```python ... ``` block with the solution. The "
-        "harness extracts code from that block and executes it."
-    )
 
     owns_sandbox = sandbox_cwd is None
     if owns_sandbox:
         sandbox_cwd = tempfile.mkdtemp(prefix="hexagen_cc_")
 
+    # Symlink library packages into the sandbox so generated code can import them.
+    _PROJECT_ROOT = Path(__file__).parent.parent
+    for _pkg in ("hexagen", "constants"):
+        _src = _PROJECT_ROOT / _pkg
+        _dst = Path(sandbox_cwd) / _pkg
+        if _src.exists() and not _dst.exists():
+            os.symlink(str(_src), str(_dst))
+
     try:
         opts = ClaudeAgentOptions(
             model=underlying_model,
-            system_prompt=final_system,
+            system_prompt=system_prompt or "",
             allowed_tools=["Bash", "Read", "Edit", "Write", "Grep", "Glob"],
             disallowed_tools=["WebSearch", "WebFetch"],
             permission_mode="bypassPermissions",
@@ -542,13 +592,43 @@ def _call_claude_code(
             raw_usage: Dict[str, Any] = {}
             cost_usd = None
             trace: List[str] = []
+            num_turns = 0
+            tools_called: List[str] = []
+            conversation: List[Dict[str, Any]] = []
             async for msg in query(prompt=prompt, options=opts):
                 cls = type(msg).__name__
                 trace.append(cls)
                 if cls == "AssistantMessage":
+                    num_turns += 1
+                    msg_content: List[Dict[str, Any]] = []
                     for block in getattr(msg, "content", []):
-                        if type(block).__name__ == "TextBlock":
-                            last_text = getattr(block, "text", last_text)
+                        block_cls = type(block).__name__
+                        if block_cls == "TextBlock":
+                            text_val = getattr(block, "text", "")
+                            last_text = text_val
+                            msg_content.append({"type": "text", "text": text_val})
+                        elif block_cls == "ToolUseBlock":
+                            name = getattr(block, "name", "unknown")
+                            tools_called.append(name)
+                            msg_content.append({
+                                "type": "tool_use",
+                                "id": getattr(block, "id", ""),
+                                "name": name,
+                                "input": getattr(block, "input", {}),
+                            })
+                    if msg_content:
+                        conversation.append({"role": "assistant", "content": msg_content})
+                elif cls == "ToolResultMessage":
+                    result_content: List[Dict[str, Any]] = []
+                    for block in getattr(msg, "content", []):
+                        result_content.append({
+                            "type": "tool_result",
+                            "tool_use_id": getattr(block, "tool_use_id", ""),
+                            "content": str(getattr(block, "content", "")),
+                            "is_error": getattr(block, "is_error", False),
+                        })
+                    if result_content:
+                        conversation.append({"role": "tool_result", "content": result_content})
                 elif cls == "ResultMessage":
                     u = getattr(msg, "usage", {}) or {}
                     if hasattr(u, "model_dump"):
@@ -558,16 +638,34 @@ def _call_claude_code(
                     final_result = getattr(msg, "result", None)
                     if final_result and not last_text:
                         last_text = final_result
-            return last_text, raw_usage, cost_usd, trace
+            return last_text, raw_usage, cost_usd, trace, num_turns, tools_called, conversation
 
         try:
-            text, raw_usage, cost_usd, trace = asyncio.run(
+            text, raw_usage, cost_usd, trace, num_turns, tools_called, conversation = asyncio.run(
                 asyncio.wait_for(_run(), timeout=request_timeout)
             )
         except asyncio.TimeoutError as e:
             raise TimeoutError(
                 f"Claude Code request timed out after {request_timeout}s"
             ) from e
+        except Exception as e:
+            # Re-raise with sandbox path and any extra context so the caller can
+            # diagnose what went wrong (e.g. vLLM proxy rejection, auth error).
+            sandbox_files: List[str] = []
+            try:
+                sandbox_files = [p.name for p in Path(sandbox_cwd).iterdir()]
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"Claude Code SDK error (model={underlying_model}, "
+                f"sandbox={sandbox_cwd}, files={sandbox_files}): {e}"
+            ) from e
+
+        # Read solution file written by the agent, if present.
+        solution_code: Optional[str] = None
+        solution_path = Path(sandbox_cwd) / "solution.py"
+        if solution_path.exists():
+            solution_code = solution_path.read_text()
 
         prompt_tokens = (
             int(raw_usage.get("input_tokens", 0))
@@ -575,12 +673,18 @@ def _call_claude_code(
             + int(raw_usage.get("cache_creation_input_tokens", 0))
         )
         completion_tokens = int(raw_usage.get("output_tokens", 0))
-        return {
+        result: Dict[str, Any] = {
             "text": _strip_thinking_tokens(text.strip()),
             "usage": {
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,
                 "total_tokens": prompt_tokens + completion_tokens,
+            },
+            "agent_info": {
+                "num_turns": num_turns,
+                "tools_called": tools_called,
+                "cost_usd": cost_usd,
+                "model": underlying_model,
             },
             "raw": {
                 "claude_code": {
@@ -590,131 +694,18 @@ def _call_claude_code(
                     "message_trace": trace,
                     "sandbox_cwd": sandbox_cwd,
                     "max_turns": max_turns,
+                    "conversation": conversation,
                 }
             },
         }
+        if solution_code is not None:
+            result["solution_code"] = solution_code
+        return result
     finally:
         if owns_sandbox:
             shutil.rmtree(sandbox_cwd, ignore_errors=True)
 
 
-def _call_claude_code_cli(
-    prompt: str,
-    model: str,
-    system_prompt: Optional[str],
-    request_timeout: int = _REQUEST_TIMEOUT,
-    max_turns: int = 20,
-    sandbox_cwd: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Agentic Claude via the `claude` CLI binary (subprocess, --print JSON).
-
-    Mirrors the behavior of `_call_claude_code` (SDK path) using the same
-    parameters: model, system prompt, max_turns, sandbox cwd, allowed/disallowed
-    tools, and bypassPermissions. The CLI must be on PATH.
-    """
-    import json
-    import shutil
-    import subprocess
-    import tempfile
-
-    cli_path = shutil.which("claude")
-    if not cli_path:
-        raise RuntimeError(
-            "claude CLI binary not found on $PATH. Install it (npm i -g "
-            "@anthropic-ai/claude-code) or drop --claude-code-cli to use the "
-            "claude_agent_sdk Python API instead."
-        )
-
-    underlying_model = _strip_claude_code_prefix(model)
-    final_system = (system_prompt or "") + (
-        "\n\nIMPORTANT: After exploring with tools, your FINAL message must "
-        "contain a single ```python ... ``` block with the solution. The "
-        "harness extracts code from that block and executes it."
-    )
-
-    owns_sandbox = sandbox_cwd is None
-    if owns_sandbox:
-        sandbox_cwd = tempfile.mkdtemp(prefix="hexagen_cc_")
-
-    try:
-        cmd = [
-            cli_path,
-            "--allowed-tools", "Bash,Read,Edit,Write,Grep,Glob",
-            "--disallowed-tools", "WebSearch,WebFetch",
-            "--print",
-            "--output-format", "json",
-            "--model", underlying_model,
-            "--system-prompt", final_system,
-            "--max-turns", str(max_turns),
-            "--permission-mode", "bypassPermissions",
-            prompt,
-        ]
-        try:
-            proc = subprocess.run(
-                cmd,
-                cwd=sandbox_cwd,
-                capture_output=True,
-                text=True,
-                timeout=request_timeout,
-            )
-        except subprocess.TimeoutExpired as e:
-            raise TimeoutError(
-                f"Claude Code CLI request timed out after {request_timeout}s"
-            ) from e
-
-        if proc.returncode != 0:
-            raise RuntimeError(
-                f"claude CLI exited {proc.returncode}: "
-                f"{(proc.stderr or proc.stdout)[:500]}"
-            )
-
-        try:
-            data = json.loads(proc.stdout)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(
-                f"claude CLI returned non-JSON output: {proc.stdout[:500]}"
-            ) from e
-
-        text = data.get("result") or ""
-        raw_usage = dict(data.get("usage") or {})
-        cost_usd = data.get("total_cost_usd")
-        num_turns = data.get("num_turns")
-        session_id = data.get("session_id")
-        is_error = data.get("is_error", False)
-        if is_error:
-            raise RuntimeError(
-                f"claude CLI reported error (subtype={data.get('subtype')}): "
-                f"{text[:500]}"
-            )
-
-        prompt_tokens = (
-            int(raw_usage.get("input_tokens", 0))
-            + int(raw_usage.get("cache_read_input_tokens", 0))
-            + int(raw_usage.get("cache_creation_input_tokens", 0))
-        )
-        completion_tokens = int(raw_usage.get("output_tokens", 0))
-        return {
-            "text": _strip_thinking_tokens(text.strip()),
-            "usage": {
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": prompt_tokens + completion_tokens,
-            },
-            "raw": {
-                "claude_code_cli": {
-                    "model": underlying_model,
-                    "usage": raw_usage,
-                    "cost_usd": cost_usd,
-                    "num_turns": num_turns,
-                    "session_id": session_id,
-                    "sandbox_cwd": sandbox_cwd,
-                    "max_turns": max_turns,
-                }
-            },
-        }
-    finally:
-        if owns_sandbox:
-            shutil.rmtree(sandbox_cwd, ignore_errors=True)
 
 
 def _call_anthropic(
@@ -953,9 +944,9 @@ def _upload_batch_jsonl_to_gcs(
     import json
     import datetime
     from google.cloud import storage as gcs
-
+    print("lishalisha")
     project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get("VERTEX_PROJECT_ID")
-    bucket_name = os.environ.get("BATCH_GCS_BUCKET", f"hexagons-experiments")
+    bucket_name = os.environ.get("BATCH_GCS_BUCKET", f"hexagons-experiments-biu")
 
     client = gcs.Client(project=project_id)
 

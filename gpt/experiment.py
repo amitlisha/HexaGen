@@ -31,7 +31,7 @@ from runner_utils import (
     save_json,
     timestamp,
 )
-from llm_wrapper import init_llm
+from llm_wrapper import init_llm, _is_claude_code_model
 from constants.constants import WIDTH, HEIGHT
 from prompts import build_prompts
 from metrics import f1_score
@@ -191,8 +191,9 @@ def run_task(
     """
     dataset = get_dataset(cfg.dataset)
 
+    is_cc = _is_claude_code_model(cfg.model)
     sys_prompt, user_tmpl = build_prompts(
-        cfg.mode, cfg.vision, cfg.api_spec_file, cfg.dataset
+        cfg.mode, cfg.vision, cfg.api_spec_file, cfg.dataset, is_cc=is_cc
     )
     instructions = dataset.get_instructions(task_data)
     gold_boards = dataset.get_gold_boards(task_data)

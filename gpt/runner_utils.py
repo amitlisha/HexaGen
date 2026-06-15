@@ -4,7 +4,7 @@ import json
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import ast
 import traceback
 import linecache
@@ -20,6 +20,38 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 USER_FILE = "user_snippet.py"
 DATA_DIR = ROOT_DIR / "data"
 RUN_UID = uuid.uuid4()
+
+
+def save_claude_code_conversation(
+    resp: Dict,
+    out_dir: Path,
+    run_ts: str,
+    step: int,
+    attempt: int,
+) -> Optional[Path]:
+    """Save a Claude Code conversation to a JSON file (execution runners only).
+
+    Reads the conversation from ``resp["raw"]["claude_code"]["conversation"]``
+    and writes it to ``{out_dir}/{run_ts}_cc_conversation_{step:02}_{attempt:02}.json``.
+    Returns the saved path, or None if no conversation data is present.
+    """
+    raw = resp.get("raw", {})
+    cc_data = raw.get("claude_code")
+    if cc_data is None:
+        return None
+    conversation = cc_data.get("conversation")
+    if not conversation:
+        return None
+    conv_path = out_dir / f"{run_ts}_cc_conversation_{step:02}_{attempt:02}.json"
+    payload = {
+        "model": cc_data.get("model"),
+        "num_turns": cc_data.get("num_turns"),
+        "cost_usd": cc_data.get("cost_usd"),
+        "conversation": conversation,
+    }
+    with open(conv_path, "w") as f:
+        json.dump(payload, f, indent=2, default=str)
+    return conv_path
 
 
 def get_library_classes(lib_file: str) -> List[str]:

@@ -8,7 +8,7 @@
 #   - vLLM serving the qwen model at http://127.0.0.1:8001/v1
 #   - For *-cc setups: Anthropic-compatible proxy at http://localhost:8001
 #     (started via `claude-local` wrapper) routing to the same vLLM backend.
-#   - `claude` CLI on $PATH (npm i -g @anthropic-ai/claude-code).
+#   - `claude-agent-sdk` Python package installed (pip install claude-agent-sdk).
 #
 # Usage:
 #   python gpt/suite_runner.py configs/suite_qwen_claude_code.yaml
@@ -56,32 +56,28 @@ setups:
   - name: "semantic-plain"
     semantic_batching: true
 
-  # ────────────── claude-code/qwen-local (Claude Code CLI) — workers: 10 ──────────────
+  # ────────────── claude-code/qwen-local (Claude Code SDK) — workers: 10 ──────────────
 
   - name: "no-hierarchy-cc"
     ablation: [singleshot]
     model: claude-code/qwen-local
     workers: 10
-    claude_code_cli: true
     claude_code_local: true
     base_url: null  # Claude-Code path doesn't use the OpenAI base_url
     eval:
       model: claude-code/qwen-local
       workers: 10
-      claude_code_cli: true
       claude_code_local: true
       base_url: null
 
   - name: "hierarchy-cc"
     model: claude-code/qwen-local
     workers: 10
-    claude_code_cli: true
     claude_code_local: true
     base_url: null
     eval:
       model: claude-code/qwen-local
       workers: 10
-      claude_code_cli: true
       claude_code_local: true
       base_url: null
 
@@ -89,12 +85,10 @@ setups:
     semantic_batching: true
     model: claude-code/qwen-local
     workers: 10
-    claude_code_cli: true
     claude_code_local: true
     base_url: null
     eval:
       model: claude-code/qwen-local
       workers: 10
-      claude_code_cli: true
       claude_code_local: true
       base_url: null

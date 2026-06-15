@@ -12,8 +12,8 @@ import multiprocessing as mp
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from llm_wrapper import call_llm
-from runner_utils import save_plot, save_script
+from llm_wrapper import call_llm, _is_claude_code_model
+from runner_utils import save_plot, save_script, save_claude_code_conversation
 from constants.constants import COLORS, WIDTH, HEIGHT
 from metrics import evaluate_prediction
 
@@ -218,7 +218,9 @@ def run_python_full(
             prefetched_response=prefetched_response,
         )
 
-    # ── Hexagons path (unchanged) ────────────────────────────────────────
+    # ── Hexagons path ────────────────────────────────────────
+    is_cc = _is_claude_code_model(cfg.model)
+
     if width is None or height is None:
         width = WIDTH if width is None else width
         height = HEIGHT if height is None else height
@@ -235,10 +237,14 @@ def run_python_full(
     while True:
         attempt += 1
 
-        prompt = (
-            user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
-            .replace("{NEXT_STEP}", instructions_block)
-        )
+        # CC template only has {NEXT_STEP}; regular template also has {HISTORY_BLOCK}.
+        if is_cc:
+            prompt = user_tmpl.replace("{NEXT_STEP}", instructions_block)
+        else:
+            prompt = (
+                user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
+                .replace("{NEXT_STEP}", instructions_block)
+            )
 
         if last_exc:
             prompt += (
@@ -269,9 +275,14 @@ def run_python_full(
                 thinking_level=getattr(cfg, "thinking_level", None),
             )
 
+        save_claude_code_conversation(resp, task_dir, run_ts, step=0, attempt=attempt)
+
+        # Use solution.py written by the agent if available; otherwise parse text.
+        code_text = resp.get("solution_code") or resp["text"]
+
         try:
             tiles = extract_and_execute_python(
-                resp["text"],
+                code_text,
                 timeout=cfg.exec_timeout,
             )
             valid = True
@@ -281,11 +292,11 @@ def run_python_full(
             valid = False
             error_msg = str(e)
 
-        save_script(task_dir, run_ts, step=0, attempt=attempt, code=resp["text"], kind="python_full")
+        save_script(task_dir, run_ts, step=0, attempt=attempt, code=code_text, kind="python_full")
 
         if not valid:
             last_exc = error_msg
-            last_code = resp["text"]
+            last_code = code_text
 
             if cfg.retries and attempt >= cfg.retries:
                 blank_board = [0] * (width * height)
@@ -301,6 +312,7 @@ def run_python_full(
                     "tiles": [],
                     "valid": False,
                     "usage": resp["usage"],
+                    **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
                     "error": error_msg,
                     **metrics,
                 }
@@ -323,6 +335,7 @@ def run_python_full(
             "tiles": tiles,
             "valid": valid,
             "usage": resp["usage"],
+            **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
             **metrics,
         }
 
@@ -422,6 +435,7 @@ def _run_python_full_larc(
                     "code": resp["text"],
                     "valid": False,
                     "usage": resp["usage"],
+                    **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
                     "error": error_msg,
                     **metrics,
                 }
@@ -442,6 +456,7 @@ def _run_python_full_larc(
             "code": resp["text"],
             "valid": valid,
             "usage": resp["usage"],
+            **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
             **metrics,
         }
 

@@ -6,7 +6,7 @@ from typing import List, Tuple, Optional
 from gpt.runner_utils import DATA_DIR
 
 
-def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] = None, dataset: str = "hexagons") -> Tuple[str, str]:
+def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] = None, dataset: str = "hexagons", is_cc: bool = False) -> Tuple[str, str]:
     """Load system and user templates for the selected mode.
 
     Args:
@@ -15,6 +15,9 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
         api_spec_file: Optional path to custom API spec file (for generated libraries)
                       If None, uses default hexagen_api_spec.txt
         dataset: Dataset name ('hexagons' or 'larc')
+        is_cc: Whether the model is a Claude Code (agentic) model. When True and the
+               mode is a code-generation mode, loads CC-specific prompts that instruct
+               the agent to write solution.py rather than return code in its message.
 
     Returns:
         Tuple of (system_prompt, user_template)
@@ -24,6 +27,11 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
         shared_sys_p = DATA_DIR / "larc_shared_system_prompt.txt"
     else:
         shared_sys_p = DATA_DIR / "shared_system_prompt.txt"
+
+    # Claude Code agentic path: use file-based output prompts for hexagons code/python modes
+    _cc_code_mode = is_cc and dataset == "hexagons" and mode not in (
+        "tiles-step", "tiles-full", "tiles-step-full"
+    )
 
     if mode in ("tiles-step", "tiles-full", "tiles-step-full"):
         if dataset == "larc":
@@ -45,6 +53,10 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
             # LARC uses its own python prompts
             sys_p = DATA_DIR / "larc_python_system_prompt.txt"
             user_p = DATA_DIR / "larc_python_user_message.txt"
+        elif _cc_code_mode:
+            # Claude Code agentic path: agent writes solution.py with get_tiles()
+            sys_p = DATA_DIR / "python_cc_system_prompt.txt"
+            user_p = DATA_DIR / "code_cc_user_message_template.txt"
         else:
             # Hexagons python prompts
             sys_p = DATA_DIR / "python_system_prompt.txt"
@@ -53,6 +65,10 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
         if dataset == "larc":
             sys_p = DATA_DIR / "larc_code_full_system_prompt.txt"
             user_p = DATA_DIR / "larc_code_full_user_message.txt"
+        elif _cc_code_mode:
+            # Claude Code agentic path: agent writes solution.py and tests it
+            sys_p = DATA_DIR / "code_cc_system_prompt.txt"
+            user_p = DATA_DIR / "code_cc_user_message_template.txt"
         else:
             if vision:
                 sys_p = DATA_DIR / "code_with_vision_system_prompt.txt"
@@ -85,7 +101,10 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
         system_tmpl += f"\n\n{api_spec}"
 
     # Validate required placeholders
-    if dataset == "larc" and mode in ("code-full", "python-full"):
+    if _cc_code_mode:
+        # CC user template only needs {NEXT_STEP}
+        tags = ["{NEXT_STEP}"]
+    elif dataset == "larc" and mode in ("code-full", "python-full"):
         tags = ["{INPUT_GRID}", "{NEXT_STEP}"]
     else:
         tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]
@@ -93,7 +112,7 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
             tags.append("{CODE_SO_FAR}")
         if mode in ("code-step-full", "tiles-step-full"):
             tags.append("{ALL_INSTRUCTIONS}")
-    
+
     for tag in tags:
         if tag not in user_tmpl:
             raise ValueError(f"{user_p.name} missing placeholder {tag}")

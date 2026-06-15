@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple, Union, Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from llm_wrapper import call_llm
+from llm_wrapper import call_llm, _is_claude_code_model
 from runner_utils import (
     extract_code,
     save_script,
@@ -21,6 +21,7 @@ from runner_utils import (
     run_with_timeout,
     _inject_custom_lib,
     simplify_traceback,
+    save_claude_code_conversation,
 )
 from constants.constants import WIDTH, HEIGHT
 from metrics import evaluate_prediction
@@ -285,6 +286,7 @@ def run_full(
                         "code": resp["text"],
                         "valid": False,
                         "usage": resp["usage"],
+                        **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
                         "error": error_msg,
                         "traceback": error_msg,
                         **metrics,
@@ -306,6 +308,7 @@ def run_full(
                 "code": resp["text"],
                 "valid": valid,
                 "usage": resp["usage"],
+                **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
                 **metrics,
             }
 
@@ -326,7 +329,15 @@ def run_full(
 
     # --- HEXAGEN DATASET LOGIC (Original) ---
     else:
-        todo_block = "\n".join(f"    # TODO: {txt}" for txt in instructions)
+        is_cc = _is_claude_code_model(cfg.model)
+
+        # For CC mode the user template only has {NEXT_STEP} (no code scaffold).
+        if is_cc:
+            instructions_block = "\n".join(
+                f"{i+1}. {txt}" for i, txt in enumerate(instructions)
+            )
+        else:
+            todo_block = "\n".join(f"    # TODO: {txt}" for txt in instructions)
 
         attempt = 0
         last_exc: Optional[str] = None
@@ -336,11 +347,14 @@ def run_full(
         while True:
             attempt += 1
 
-            prompt = (
-                user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
-                .replace("{CODE_SO_FAR}", code_so_far.rstrip())
-                .replace("{NEXT_STEP}", todo_block)
-            )
+            if is_cc:
+                prompt = user_tmpl.replace("{NEXT_STEP}", instructions_block)
+            else:
+                prompt = (
+                    user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
+                    .replace("{CODE_SO_FAR}", code_so_far.rstrip())
+                    .replace("{NEXT_STEP}", todo_block)
+                )
 
             if last_exc:
                 prompt += (
@@ -385,11 +399,19 @@ def run_full(
                     thinking_level=getattr(cfg, "thinking_level", None),
                 )
 
-            append = extract_code(resp["text"])
-            new_code = f"{code_so_far.rstrip()}\n    {append}"
+            save_claude_code_conversation(resp, task_dir, run_ts, step=0, attempt=attempt)
 
-            if "board_state = g.board_state" not in new_code:
-                new_code += "\nboard_state = g.board_state"
+            # Use solution.py written by the agent if available, otherwise extract
+            # code from the final text message (non-CC path).
+            if resp.get("solution_code"):
+                new_code = resp["solution_code"]
+                if "board_state = g.board_state" not in new_code:
+                    new_code += "\nboard_state = g.board_state"
+            else:
+                append = extract_code(resp["text"])
+                new_code = f"{code_so_far.rstrip()}\n    {append}"
+                if "board_state = g.board_state" not in new_code:
+                    new_code += "\nboard_state = g.board_state"
 
             _ = save_script(
                 task_dir, run_ts, step=0, attempt=attempt, code=new_code, kind="full"
@@ -401,6 +423,7 @@ def run_full(
                 "valid": False,
                 "correct": False,
                 "usage": resp["usage"],
+                **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
             }
 
             # Execute with timeout
