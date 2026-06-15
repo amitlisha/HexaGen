@@ -241,7 +241,8 @@ def parse_args() -> argparse.Namespace:
         "--batch-resume",
         type=str,
         default=None,
-        help="Resume polling an existing OpenAI batch by ID (skips prompt building "
-        "and submission). Example: --batch-resume batch_abc123",
+        help="Resume polling existing batch(es) by ID (skips prompt building and "
+        "submission). Single ID resumes round 1. Comma-separated IDs resume each "
+        "round in order. Example: --batch-resume id1,id2,id3",
     )
     return p.parse_args()

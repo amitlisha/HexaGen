@@ -183,7 +183,11 @@ def _run_set_batch_openai(
         cfg.mode, cfg.vision, cfg.api_spec_file, cfg.dataset
     )
 
-    batch_resume_id = getattr(cfg, "batch_resume", None)
+    batch_resume_raw = getattr(cfg, "batch_resume", None)
+    batch_resume_ids: List[Optional[str]] = (
+        [s.strip() or None for s in batch_resume_raw.split(",")]
+        if batch_resume_raw else []
+    )
     poll_interval = getattr(cfg, "batch_poll_interval", 60)
     batch_timeout = getattr(cfg, "batch_timeout", 86400)
 
@@ -253,12 +257,11 @@ def _run_set_batch_openai(
                 "body": body,
             }))
 
-        # ── 2. Submit batch (round 1 supports --batch-resume) ────────
-        if round_num == 1 and batch_resume_id:
-            print(f"[batch] Resuming existing batch: {batch_resume_id}")
-            batch_obj = poll_openai_batch(
-                batch_resume_id, poll_interval, batch_timeout
-            )
+        # ── 2. Submit or resume batch ─────────────────────────────────
+        resume_id = batch_resume_ids[round_num - 1] if round_num - 1 < len(batch_resume_ids) else None
+        if resume_id:
+            print(f"[batch] Resuming existing batch (round {round_num}): {resume_id}")
+            batch_obj = poll_openai_batch(resume_id, poll_interval, batch_timeout)
         else:
             print(f"[batch] Submitting {len(jsonl_lines)} requests to OpenAI Batch API...")
             batch_id = submit_openai_batch(jsonl_lines)
@@ -366,7 +369,11 @@ def _run_set_batch_gemini(
         cfg.mode, cfg.vision, cfg.api_spec_file, cfg.dataset
     )
 
-    batch_resume_id = getattr(cfg, "batch_resume", None)
+    batch_resume_raw = getattr(cfg, "batch_resume", None)
+    batch_resume_ids: List[Optional[str]] = (
+        [s.strip() or None for s in batch_resume_raw.split(",")]
+        if batch_resume_raw else []
+    )
     poll_interval = getattr(cfg, "batch_poll_interval", 30)
     batch_timeout = getattr(cfg, "batch_timeout", 86400)
 
@@ -426,12 +433,11 @@ def _run_set_batch_gemini(
             )
             gemini_requests.append(request)
 
-        # ── 2. Submit batch (round 1 supports --batch-resume) ────────
-        if round_num == 1 and batch_resume_id:
-            print(f"[batch] Resuming existing Gemini batch: {batch_resume_id}")
-            batch_job = poll_gemini_batch(
-                batch_resume_id, poll_interval, batch_timeout
-            )
+        # ── 2. Submit or resume batch ─────────────────────────────────
+        resume_id = batch_resume_ids[round_num - 1] if round_num - 1 < len(batch_resume_ids) else None
+        if resume_id:
+            print(f"[batch] Resuming existing Gemini batch (round {round_num}): {resume_id}")
+            batch_job = poll_gemini_batch(resume_id, poll_interval, batch_timeout)
         else:
             experiment_name = getattr(cfg, "experiment_name", "hexagen")
             display_name = f"{experiment_name}-{cfg.mode}-{cfg.model}-r{round_num}"
