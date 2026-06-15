@@ -1,0 +1,55 @@
+# =========================  CADQUERY ABSTRACTION LAYER API SPEC  ========================
+# One function per entry; all functions return cq.Workplane unless noted otherwise.
+# Import with:  import abstraction_layer
+#
+# All workplanes are initialised on "XY" unless the caller passes an existing workplane.
+# face_selector uses standard CadQuery string selectors e.g. ">Z", "<X", "#Y".
+
+Import: import abstraction_layer
+
+# -------------------------------------------------------------------------------------
+# PRIMITIVES — create new geometry from scratch
+
+Function: tube(outer_radius:float, inner_radius:float, height:float) -> cq.Workplane
+  # Hollow cylinder (tube) along the Z axis centred at origin.
+  Notes: outer_radius > inner_radius; uses two concentric circles on XY then extrudes.
+
+Function: rectangular_frame(length:float, width:float, height:float, hole_length:float, hole_width:float) -> cq.Workplane
+  # Rectangular block with a centred rectangular through-hole (open top and bottom).
+  Notes: hole is cut on the >Z face; hole_length × hole_width must be smaller than length × width.
+
+Function: extrudeCircles(points:list[tuple[float,float]], radius:float, depth:float, workplane:str = "XY") -> cq.Workplane
+  # Extrude identical circles at all given 2D points on the named workplane.
+  Notes: all circles are combined into one solid; useful for boss/pin arrays.
+
+# -------------------------------------------------------------------------------------
+# PROFILES — 2D wire construction helpers (call .extrude() / .revolve() afterwards)
+
+Function: slot(start:tuple[float,float], end:tuple[float,float], radius:float, wp:cq.Workplane = None) -> cq.Workplane
+  # Closed obround (slot) profile between two centre points with semicircular caps of the given radius.
+  Notes: if wp is None a fresh XY workplane is created; returns a workplane with the closed wire ready to extrude.
+
+# -------------------------------------------------------------------------------------
+# FACE OPERATIONS — modify an existing workplane / solid
+
+Function: holesOnFace(obj:cq.Workplane, face_selector:str, points:list[tuple[float,float]], diameter:float, depth:float = None) -> cq.Workplane
+  # Drill blind or through holes of the given diameter at all points on a selected face.
+  Notes: depth=None drills through the entire solid (cutThruAll equivalent).
+
+Function: centeredThroughHole(obj:cq.Workplane, radius:float, x_offset:float = 0.0, y_offset:float = 0.0, face_selector:str = ">Z") -> cq.Workplane
+  # Cut a circular through-hole offset from the face centre by (x_offset, y_offset).
+
+Function: rectangularThroughHole(wp:cq.Workplane, width:float, height:float, face_selector:str = ">Z", centered:bool = True) -> cq.Workplane
+  # Cut a rectangular through-hole on the selected face.
+
+Function: extrude_with_holes(wp:cq.Workplane, extrude_dist:float, face_selector:str, points:list[tuple[float,float]], diameter:float, depth:float = None) -> cq.Workplane
+  # Extrude the current sketch by extrude_dist, then drill holes at points on a face.
+  Notes: combines an extrude and holesOnFace in one call.
+
+# -------------------------------------------------------------------------------------
+# NOTES ON USAGE
+# - Functions that accept an existing cq.Workplane as first argument (obj / wp) operate
+#   on that object and return the modified workplane — they do NOT create a new solid.
+# - Functions with no workplane argument always create geometry on cq.Workplane("XY").
+# - Combine helpers with raw CadQuery for anything not listed here:
+#     result = abstraction_layer.tube(10, 8, 20).union(cq.Workplane("XY").box(30, 30, 2))

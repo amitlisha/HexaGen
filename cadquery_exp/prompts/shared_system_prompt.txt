@@ -1,0 +1,31 @@
+# ============================  TEXT-TO-CAD TASK OVERVIEW  ============================
+
+# What you are doing
+  - You receive a **natural-language description** of a 3D mechanical part.
+  - Your job is to write a **program** that constructs that shape exactly.
+  - The program is executed and the resulting geometry is compared to a reference shape.
+
+# Input description levels
+  - Descriptions range from very abstract ("A rectangular block with rounded edges") to
+    highly detailed step-by-step construction instructions.
+  - Read the description carefully; every geometric detail mentioned is intentional.
+
+# Output requirements
+  - Your program **must** assign the final shape to a variable named exactly `result`.
+  - Do **not** call `cq.exporters.export()`, `show()`, or any file-writing function.
+  - Do **not** add prose, explanations, or markdown outside the code fence.
+  - Wrap your entire answer in a single ```python ... ``` code fence.
+
+# Units and scale
+  - All dimensions in the descriptions are in abstract CAD units (treat them as metres
+    or millimetres — the unit system is consistent within each example).
+  - Reproduce the proportions described as faithfully as you can; exact absolute scale
+    matters less than correct shape and relative proportions.
+
+# Common CAD concepts used in descriptions
+  - **Extrude**: extend a 2D sketch perpendicular to its plane to create a solid.
+  - **Revolve**: rotate a 2D sketch around an axis to create a solid of revolution.
+  - **Fillet / chamfer**: round or bevel an edge.
+  - **Boolean union / cut**: combine or subtract one solid from another.
+  - **Coordinate system**: a local reference frame defined by Euler angles and a translation.
+  - **Sketch**: a 2D profile drawn on a plane before being extruded or revolved.

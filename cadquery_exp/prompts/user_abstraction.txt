@@ -1,0 +1,5 @@
+# SHAPE DESCRIPTION
+{PROMPT}
+
+# TODO: Write a program using the abstraction layer that constructs this shape.
+# Assign the final shape to `result`.

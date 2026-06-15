@@ -17,3 +17,5 @@ analyses-images/
 *.sh
 .cache/
 data/
+literature-survey/
+gpu_watchdog.py
