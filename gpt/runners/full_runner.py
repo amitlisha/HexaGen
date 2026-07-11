@@ -397,12 +397,14 @@ def run_full(
                     reasoning_effort=getattr(cfg, "reasoning_effort", None),
                     thinking_budget=getattr(cfg, "thinking_budget", None),
                     thinking_level=getattr(cfg, "thinking_level", None),
+                    lib_file=getattr(cfg, "lib_file", None),
                 )
 
             save_claude_code_conversation(resp, task_dir, run_ts, step=0, attempt=attempt)
 
             # Use solution.py written by the agent if available, otherwise extract
             # code from the final text message (non-CC path).
+            append = None
             if resp.get("solution_code"):
                 new_code = resp["solution_code"]
                 if "board_state = g.board_state" not in new_code:
@@ -435,7 +437,7 @@ def run_full(
                     # Warnings present and retries remain — retry with warning feedback
                     last_exc = None
                     last_warning = "\n".join(f"- {w}" for w in hexagen_warnings)
-                    last_code = append
+                    last_code = append if append is not None else new_code
                     log["warnings"] = hexagen_warnings
                     continue
 
@@ -459,7 +461,7 @@ def run_full(
                 return log
             else:
                 last_exc = simplify_traceback(err)
-                last_code = append
+                last_code = append if append is not None else new_code
                 last_warning = None
                 log["traceback"] = last_exc
 
