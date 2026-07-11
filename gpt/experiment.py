@@ -258,21 +258,33 @@ def run_task(
             )
 
     elif cfg.mode == "code-full":
-        log = run_full(
-            cfg,
-            sys_prompt,
-            user_tmpl,
-            instructions,
-            code_so_far,
-            gold_boards[-1],
-            current_img,
-            run_dir,
-            run_ts,
-            input_grid_2d=input_grid_2d,
-            width=board_width,
-            height=board_height,
-            prefetched_response=prefetched_response,
-        )
+        if getattr(cfg, "self_revision", False) and not is_cc:
+            from runners.self_revision_runner import run_with_self_revision
+            log = run_with_self_revision(
+                cfg, sys_prompt, user_tmpl, instructions, gold_boards[-1],
+                current_img, run_dir, run_ts,
+                code_so_far=code_so_far,
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
+        else:
+            log = run_full(
+                cfg,
+                sys_prompt,
+                user_tmpl,
+                instructions,
+                code_so_far,
+                gold_boards[-1],
+                current_img,
+                run_dir,
+                run_ts,
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
         logs = [log]
         print(
             f"[task {task_id}] CODE-FULL RUN →",
@@ -311,21 +323,33 @@ def run_task(
             )
 
     elif cfg.mode == "tiles-full":
-        log = run_tiles_full(
-            cfg,
-            sys_prompt,
-            user_tmpl,
-            instructions,
-            gold_boards[-1],
-            current_img,
-            run_dir,
-            run_ts,
-            dataset.get_initial_board(task_data),
-            board_width,
-            board_height,
-            input_grid_2d,
-            prefetched_response=prefetched_response,
-        )
+        if getattr(cfg, "self_revision", False) and not is_cc:
+            from runners.self_revision_runner import run_with_self_revision
+            log = run_with_self_revision(
+                cfg, sys_prompt, user_tmpl, instructions, gold_boards[-1],
+                current_img, run_dir, run_ts,
+                initial_board=dataset.get_initial_board(task_data),
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
+        else:
+            log = run_tiles_full(
+                cfg,
+                sys_prompt,
+                user_tmpl,
+                instructions,
+                gold_boards[-1],
+                current_img,
+                run_dir,
+                run_ts,
+                dataset.get_initial_board(task_data),
+                board_width,
+                board_height,
+                input_grid_2d,
+                prefetched_response=prefetched_response,
+            )
         logs = [log]
         print(
             f"[task {task_id}] TILES-FULL RUN →",
@@ -333,21 +357,33 @@ def run_task(
         )
 
     elif cfg.mode == "python-full":
-        log = run_python_full(
-            cfg,
-            sys_prompt,
-            user_tmpl,
-            instructions,
-            gold_boards[-1],
-            current_img,
-            run_dir,
-            run_ts,
-            dataset.get_initial_board(task_data),
-            board_width,
-            board_height,
-            input_grid_2d,
-            prefetched_response=prefetched_response,
-        )
+        if getattr(cfg, "self_revision", False) and not is_cc:
+            from runners.self_revision_runner import run_with_self_revision
+            log = run_with_self_revision(
+                cfg, sys_prompt, user_tmpl, instructions, gold_boards[-1],
+                current_img, run_dir, run_ts,
+                initial_board=dataset.get_initial_board(task_data),
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
+        else:
+            log = run_python_full(
+                cfg,
+                sys_prompt,
+                user_tmpl,
+                instructions,
+                gold_boards[-1],
+                current_img,
+                run_dir,
+                run_ts,
+                dataset.get_initial_board(task_data),
+                board_width,
+                board_height,
+                input_grid_2d,
+                prefetched_response=prefetched_response,
+            )
         logs = [log]
         print(
             f"[task {task_id}] PYTHON-FULL RUN →",

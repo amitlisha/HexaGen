@@ -256,4 +256,19 @@ def parse_args() -> argparse.Namespace:
         "submission). Single ID resumes round 1. Comma-separated IDs resume each "
         "round in order. Example: --batch-resume id1,id2,id3",
     )
+    p.add_argument(
+        "--self-revision",
+        action="store_true",
+        default=False,
+        help="Enable conversational self-revision. The model sees errors and board "
+             "images in a single shared context and may revise freely until it signals "
+             "satisfaction or --max-revision-turns is reached. "
+             "Only applies to code-full, tiles-full, and python-full modes.",
+    )
+    p.add_argument(
+        "--max-revision-turns",
+        type=int,
+        default=10,
+        help="Hard cap on total LLM turns in self-revision mode (default: 10).",
+    )
     return p.parse_args()
