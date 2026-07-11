@@ -10,6 +10,7 @@ This script runs the multi-stage library generation pipeline:
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -23,6 +24,27 @@ def main():
     # Initialize LLM client (supports local models via --base-url)
     from gpt.llm_wrapper import init_llm
 
+    if getattr(cfg, "max_turns", None) is not None:
+        os.environ["CLAUDE_CODE_MAX_TURNS"] = str(cfg.max_turns)
+    if getattr(cfg, "claude_code_cwd", None):
+        os.environ["CLAUDE_CODE_CWD"] = cfg.claude_code_cwd
+    if getattr(cfg, "request_timeout", None) is not None:
+        os.environ["LLM_REQUEST_TIMEOUT"] = str(cfg.request_timeout)
+    if getattr(cfg, "claude_code_cli", False):
+        os.environ["CLAUDE_CODE_USE_CLI"] = "1"
+    if getattr(cfg, "claude_code_local", False):
+        os.environ.setdefault("ANTHROPIC_BASE_URL", "http://localhost:8001")
+        os.environ.setdefault("ANTHROPIC_AUTH_TOKEN", "dummy")
+        os.environ.setdefault("ANTHROPIC_API_KEY", "dummy")
+        os.environ.setdefault("ANTHROPIC_DEFAULT_OPUS_MODEL", "qwen-local")
+        os.environ.setdefault("ANTHROPIC_DEFAULT_SONNET_MODEL", "qwen-local")
+        os.environ.setdefault("ANTHROPIC_DEFAULT_HAIKU_MODEL", "qwen-local")
+    if getattr(cfg, "anthropic_base_url", None):
+        os.environ["ANTHROPIC_BASE_URL"] = cfg.anthropic_base_url
+    if getattr(cfg, "anthropic_auth_token", None):
+        os.environ["ANTHROPIC_AUTH_TOKEN"] = cfg.anthropic_auth_token
+    if getattr(cfg, "anthropic_custom_headers", None):
+        os.environ["ANTHROPIC_CUSTOM_HEADERS"] = cfg.anthropic_custom_headers
     init_llm(cfg)
 
     # Create experiment directory (add ablation suffix if applicable)
@@ -52,16 +74,9 @@ def main():
 
     stages_to_run = []
     if cfg.stage == "all":
-        stages_to_run = ["0", "1", "2", "3", "4"]
-        # Handle ablations
-        if "no-refinement" in cfg.ablation:
-            stages_to_run.remove("2")  # Skip Stage 2
+        stages_to_run = ["0", "1", "3", "4"]
     else:
         stages_to_run = [cfg.stage]
-        # Warn if trying to run incompatible stage with ablation
-        if "no-refinement" in cfg.ablation and cfg.stage == "2":
-            print("⚠ Warning: Stage 2 is disabled in no-refinement ablation")
-            return {}
 
     results = {}
 
@@ -99,80 +114,41 @@ def main():
             results[1] = run_stage1(cfg, stage1_dir)
 
     # Stage 2: API Refinement
-    if "2" in stages_to_run:
-        # Check if Stage 1 results exist (either from current run or from disk)
+    # Stage 2 is now permanently disabled
+
+    # Stage 3: Implementation
+    if "3" in stages_to_run:
+        stage2_result = None
+
         if 1 not in results:
             # Try to load Stage 1 results from disk
             import json
 
             stage1_summary = exp_dir / "stage1" / "stage1_summary.json"
             if stage1_summary.exists():
-                print("Loading Stage 1 results from disk...")
+                print(
+                    "Loading Stage 1 results from disk..."
+                )
                 with open(stage1_summary) as f:
                     results[1] = json.load(f)
             else:
-                print("⚠ Warning: Stage 2 requires Stage 1 results, skipping")
+                print("⚠ Warning: Stage 3 requires Stage 1 results, skipping")
                 print(f"  Expected: {stage1_summary}")
 
         if 1 in results:
-            from stage2_refinement import run_stage2
+            print("\n" + "=" * 80)
+            print(
+                "STAGE 3: IMPLEMENTATION (using Stage 1 API directly)"
+            )
+            print("=" * 80 + "\n")
 
-            stage2_dir = exp_dir / "stage2"
-            stage2_dir.mkdir(parents=True, exist_ok=True)
-            results[2] = run_stage2(cfg, stage2_dir, results[1])
+            # Create fake stage2 result pointing to stage1 API
+            stage2_result = {
+                "stage": 1,
+                "outputs": {"final_api": results[1]["outputs"]["api_proposal"]},
+            }
 
-    # Stage 3: Implementation
-    if "3" in stages_to_run:
-        stage2_result = None
-
-        # For no-refinement ablation, use Stage 1 output directly
-        if "no-refinement" in cfg.ablation:
-            if 1 not in results:
-                # Try to load Stage 1 results from disk
-                import json
-
-                stage1_summary = exp_dir / "stage1" / "stage1_summary.json"
-                if stage1_summary.exists():
-                    print(
-                        "Loading Stage 1 results from disk (no-refinement ablation)..."
-                    )
-                    with open(stage1_summary) as f:
-                        results[1] = json.load(f)
-                else:
-                    print("⚠ Warning: Stage 3 requires Stage 1 results, skipping")
-                    print(f"  Expected: {stage1_summary}")
-
-            if 1 in results:
-                print("\n" + "=" * 80)
-                print(
-                    "STAGE 3: IMPLEMENTATION (using Stage 1 API directly - no refinement)"
-                )
-                print("=" * 80 + "\n")
-
-                # Create fake stage2 result pointing to stage1 API
-                stage2_result = {
-                    "stage": 1,
-                    "outputs": {"final_api": results[1]["outputs"]["api_proposal"]},
-                }
-        else:
-            # Standard flow: check for Stage 2 results
-            if 2 not in results:
-                # Try to load Stage 2 results from disk
-                import json
-
-                stage2_summary = exp_dir / "stage2" / "stage2_summary.json"
-                if stage2_summary.exists():
-                    print("Loading Stage 2 results from disk...")
-                    with open(stage2_summary) as f:
-                        results[2] = json.load(f)
-                else:
-                    print("⚠ Warning: Stage 3 requires Stage 2 results, skipping")
-                    print(f"  Expected: {stage2_summary}")
-
-            if 2 in results:
-                stage2_result = results[2]
-
-        # Run Stage 3 if we have input (either from Stage 2 or Stage 1)
+        # Run Stage 3 if we have input (from Stage 1)
         if stage2_result:
             from stage3_implementation import run_stage3
 
@@ -213,8 +189,6 @@ def main():
     print(f"Stages completed: {list(results.keys())}")
     if "singleshot" in cfg.ablation:
         print("  Stage 1: Single-shot analysis (no hierarchical batching)")
-    if "no-refinement" in cfg.ablation:
-        print("  Stage 2: Skipped (no refinement)")
     print()
 
     return results

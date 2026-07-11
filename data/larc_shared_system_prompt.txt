@@ -1,0 +1,26 @@
+# ============================  ARC TASK OVERVIEW  ============================
+
+# Grid basics
+  - A grid is a 2D array of color integers (0-9), accessed as grid[row][col].
+  - Coordinates are 0-indexed: row 0 = top edge, col 0 = left edge.
+  - Colors: 0=black 1=blue 2=red 3=green 4=yellow 5=grey 6=pink 7=orange 8=cyan 9=maroon.
+  - The "background" is typically the most common color (often 0/black).
+
+# What you're solving
+  - Each task defines a transformation: input grid -> output grid.
+  - You receive a natural-language description with three parts:
+    1. **What you see** — describes objects, patterns, and colors in the input grid.
+    2. **Grid dimensions** — specifies the size of the output grid.
+    3. **What to do** — the transformation rule to apply.
+
+# Common ARC patterns
+  - Recoloring regions, swapping colors
+  - Moving, copying, or reflecting objects
+  - Cropping, scaling, or rotating the grid
+  - Extracting or composing sub-patterns
+  - Filling holes, extending lines, detecting symmetry
+
+# Generalization Rules (CRITICAL)
+  - ARC is a test of generalization. Your fundamental requirement is to write a generic algorithm that solves the underlying logic and will work on new, unseen test examples.
+  - DO NOT hardcode specific spatial coordinates, grid dimensions, magic numbers, or arbitrary indices (e.g. `grid[0:4]`, `for r in range(10, 14)`, `n=7`) unless they are fundamental constants of the puzzle logic itself.
+  - Instead, compute dynamic bounds and sizes from the input grid or the objects found within it.

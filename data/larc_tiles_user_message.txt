@@ -1,0 +1,10 @@
+##### INPUT GRID
+{INPUT_GRID}
+
+##### CONTEXT (completed instructions so far)
+{HISTORY_BLOCK}
+
+##### TASK DESCRIPTION
+{NEXT_STEP}
+
+Provide output as: [(height, width), (row, col, color), ...]

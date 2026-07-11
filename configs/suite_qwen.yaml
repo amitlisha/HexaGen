@@ -48,15 +48,15 @@ repeats: 3
 # DSL generation setups. Each setup can override any dsl_defaults parameter.
 setups:
   # Baseline: full pipeline with hierarchical batching + refinement
-  - name: "baseline"
+  # - name: "baseline"
 
-  # Ablation: single-shot analysis (no hierarchical batching in stage 1)
-  - name: "singleshot"
-    ablation: [singleshot]
+  # # Ablation: single-shot analysis (no hierarchical batching in stage 1)
+  # - name: "singleshot"
+  #   ablation: [singleshot]
 
-  # Ablation: skip refinement (stage 2)
-  - name: "no-refinement"
-    ablation: [no-refinement]
+  # # Ablation: skip refinement (stage 2)
+  # - name: "no-refinement"
+  #   ablation: [no-refinement]
 
   # Ablation: both single-shot and no refinement
   - name: "singleshot-no-refinement"

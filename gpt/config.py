@@ -13,13 +13,20 @@ def parse_args() -> argparse.Namespace:
     grp.add_argument("--task", type=int, help="Run a single task ID (legacy mode)")
     grp.add_argument(
         "--set",
-        choices=["train", "dev", "test", "4-samples"],
-        help="Run every task listed in the chosen JSONL file",
+        type=str,
+        help="Run every task in the chosen dataset split (e.g., 'train', 'dev', 'test' for Hexagons; 'train', 'test' for LARC)",
+    )
+    p.add_argument(
+        "--dataset",
+        choices=["hexagons", "larc"],
+        default="hexagons",
+        help="Dataset to use for experiments (default: hexagons)",
     )
     p.add_argument(
         "--model",
         default="gpt-4o",
-        help="Model name (e.g., 'gpt-4o', 'gpt-4-turbo', 'gemini-2.0-flash-exp', 'gemini-1.5-pro')",
+        help="Model name (e.g., 'gpt-4o', 'gemini-2.0-flash-exp', 'claude-sonnet-4-6', "
+             "'vertex/claude-sonnet-4-6' for Claude on Vertex AI)",
     )
     p.add_argument("--temperature", type=float, default=0)
     p.add_argument("--max-tokens", type=int, default=15000)
@@ -86,6 +93,13 @@ def parse_args() -> argparse.Namespace:
         help="Seconds to wait for generated code before aborting (0 = no limit)",
     )
     p.add_argument(
+        "--request-timeout",
+        type=int,
+        default=300,
+        help="Seconds to wait for an LLM API call before aborting (default: 300). "
+        "For Claude Code agentic mode this caps the entire multi-turn run.",
+    )
+    p.add_argument(
         "--experiment-name",
         type=str,
         help="Experiment name",
@@ -115,5 +129,146 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="API key for the LLM provider (overrides environment variables)",
+    )
+    p.add_argument(
+        "--max-turns",
+        type=int,
+        default=20,
+        help="Max agentic turns for Claude Code provider (default: 20). "
+        "Ignored by other providers.",
+    )
+    p.add_argument(
+        "--claude-code-cwd",
+        type=str,
+        default=None,
+        help="Sandbox working directory for Claude Code agentic sessions. "
+        "Default: a fresh temp dir per call (recommended).",
+    )
+    p.add_argument(
+        "--claude-code-cli",
+        action="store_true",
+        default=False,
+        help="Drive Claude Code via the `claude` CLI binary (subprocess + JSON "
+        "output) instead of the claude_agent_sdk Python API. Only relevant "
+        "when --model starts with 'claude-code/'. Requires `claude` on $PATH.",
+    )
+    p.add_argument(
+        "--claude-code-vertex",
+        action="store_true",
+        default=False,
+        help="Route Claude Code agentic sessions through Vertex AI instead of the "
+        "direct Anthropic API. Sets CLAUDE_CODE_USE_VERTEX=1, "
+        "ANTHROPIC_VERTEX_PROJECT_ID (from GCP_PROJECT_ID/VERTEX_PROJECT_ID), and "
+        "CLOUD_ML_REGION (from VERTEX_LOCATION, default: us-east5). "
+        "Only relevant when --model starts with 'claude-code/'.",
+    )
+    p.add_argument(
+        "--claude-code-local",
+        action="store_true",
+        default=False,
+        help="Route the `claude` CLI to a local Anthropic-compatible proxy "
+        "(http://localhost:8001) and map opus/sonnet/haiku to 'qwen-local'. "
+        "Equivalent to running the `claude-local` wrapper script. Sets "
+        "ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY, and "
+        "ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL. Individual values can "
+        "still be overridden via --anthropic-base-url / --anthropic-auth-token.",
+    )
+    p.add_argument(
+        "--anthropic-base-url",
+        type=str,
+        default=None,
+        help="Override the Anthropic API base URL the `claude` CLI talks to "
+        "(sets ANTHROPIC_BASE_URL). Use this to point at a local proxy that "
+        "translates Anthropic Messages -> OpenAI Chat for a vLLM server "
+        "(e.g., LiteLLM proxy at http://localhost:4000). vLLM alone is not "
+        "Anthropic-compatible; a translation proxy is required.",
+    )
+    p.add_argument(
+        "--anthropic-auth-token",
+        type=str,
+        default=None,
+        help="Auth token sent by the `claude` CLI to ANTHROPIC_BASE_URL "
+        "(sets ANTHROPIC_AUTH_TOKEN). For a local vLLM/LiteLLM proxy this "
+        "can be any non-empty string (e.g., 'dummy').",
+    )
+    p.add_argument(
+        "--anthropic-custom-headers",
+        type=str,
+        default=None,
+        help="Extra HTTP headers the `claude` CLI sends to ANTHROPIC_BASE_URL "
+        "(sets ANTHROPIC_CUSTOM_HEADERS). Format: 'Header1: val1\\nHeader2: val2'.",
+    )
+    p.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Resume from a previous results directory. Completed tasks are "
+        "loaded from existing run_*.json files and skipped. "
+        "Example: --resume results-my-experiment-{uuid}",
+    )
+    p.add_argument(
+        "--reasoning-effort",
+        type=str,
+        default=None,
+        choices=["low", "medium", "high"],
+        help="Reasoning effort for OpenAI reasoning models (o1/o3/gpt-5.x). "
+        "Default: None (use model default)",
+    )
+    p.add_argument(
+        "--thinking-budget",
+        type=int,
+        default=None,
+        help="Thinking budget (max tokens) for Gemini 2.5 thinking models. "
+        "Default: None (no thinking config)",
+    )
+    p.add_argument(
+        "--thinking-level",
+        type=str,
+        default=None,
+        choices=["minimal", "low", "medium", "high"],
+        help="Thinking level for Gemini 2.5/3.x models (minimal/low/medium/high). "
+        "Default: None (use model default)",
+    )
+    p.add_argument(
+        "--batch",
+        action="store_true",
+        default=False,
+        help="Use OpenAI Batch API for 50%% cost savings on supported modes "
+        "(tiles-full, code-full, python-full with OpenAI models only).",
+    )
+    p.add_argument(
+        "--batch-poll-interval",
+        type=int,
+        default=60,
+        help="Seconds between Batch API status polls (default: 60).",
+    )
+    p.add_argument(
+        "--batch-timeout",
+        type=int,
+        default=86400,
+        help="Maximum seconds to wait for a batch to complete (default: 86400 = 24h).",
+    )
+    p.add_argument(
+        "--batch-resume",
+        type=str,
+        default=None,
+        help="Resume polling existing batch(es) by ID (skips prompt building and "
+        "submission). Single ID resumes round 1. Comma-separated IDs resume each "
+        "round in order. Example: --batch-resume id1,id2,id3",
+    )
+    p.add_argument(
+        "--self-revision",
+        action="store_true",
+        default=False,
+        help="Enable conversational self-revision. The model sees errors and board "
+             "images in a single shared context and may revise freely until it signals "
+             "satisfaction or --max-revision-turns is reached. "
+             "Only applies to code-full, tiles-full, and python-full modes.",
+    )
+    p.add_argument(
+        "--max-revision-turns",
+        type=int,
+        default=10,
+        help="Hard cap on total LLM turns in self-revision mode (default: 10).",
     )
     return p.parse_args()

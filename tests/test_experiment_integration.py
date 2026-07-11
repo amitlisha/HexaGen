@@ -31,8 +31,8 @@ from runners.tiles_runner import run_tile_step
 from experiment import (
     summarize_logs,
     run_task,
-    iter_set_tasks,
 )
+from datasets.hexagons import HexagonsDataset
 from runner_utils import (
     extract_code,
     parse_tile_actions,
@@ -77,11 +77,14 @@ def mock_config() -> argparse.Namespace:
         seed=42,
         history=True,
         retries=3,
-        mode="step",
+        mode="code-step",
         vision=False,
         workers=1,
         exec_timeout=10,
         experiment_name="test-run",
+        lib_file=None,
+        dataset="hexagons",
+        api_spec_file=None,
     )
 
 
@@ -136,22 +139,26 @@ class TestParseTileActions:
 
     def test_parse_tuple_list(self):
         text = "[(1,2,'red'), (3,4,'blue')]"
-        result = parse_tile_actions(text)
-        assert result == [(1, 2, "red"), (3, 4, "blue")]
+        dims, tiles = parse_tile_actions(text)
+        assert dims is None
+        assert tiles == [(1, 2, "red"), (3, 4, "blue")]
 
     def test_parse_regex_pattern(self):
         text = "(1,2,green) (5,6,orange)"
-        result = parse_tile_actions(text)
-        assert result == [(1, 2, "green"), (5, 6, "orange")]
+        dims, tiles = parse_tile_actions(text)
+        assert dims is None
+        assert tiles == [(1, 2, "green"), (5, 6, "orange")]
 
     def test_parse_mixed_quotes(self):
         text = '[(1,2,"red"), (3,4,\'blue\')]'
-        result = parse_tile_actions(text)
-        assert result == [(1, 2, "red"), (3, 4, "blue")]
+        dims, tiles = parse_tile_actions(text)
+        assert dims is None
+        assert tiles == [(1, 2, "red"), (3, 4, "blue")]
 
     def test_parse_empty_input(self):
-        result = parse_tile_actions("")
-        assert result == []
+        dims, tiles = parse_tile_actions("")
+        assert dims is None
+        assert tiles == []
 
 
 class TestFixMissingTailIndent:
@@ -299,7 +306,7 @@ class TestSummarizeLogs:
             {"valid": True, "exact_board": True, "exact_action": True, "f1_board": 1.0, "f1_action": 1.0, "attempt": 1, "correct": True},
             {"valid": True, "exact_board": True, "exact_action": True, "f1_board": 1.0, "f1_action": 1.0, "attempt": 1, "correct": True},
         ]
-        stats = summarize_logs(logs, mode="step", task_id=123)
+        stats = summarize_logs(logs, mode="code-step", task_id=123)
         assert stats["task_id"] == 123
         assert stats["steps"] == 2
         assert stats["valid"] == 2
@@ -313,7 +320,7 @@ class TestSummarizeLogs:
             {"valid": True, "exact_board": True, "exact_action": True, "f1_board": 1.0, "f1_action": 1.0, "attempt": 1, "correct": True},
             {"valid": True, "exact_board": False, "exact_action": False, "f1_board": 0.5, "f1_action": 0.5, "attempt": 2, "correct": False},
         ]
-        stats = summarize_logs(logs, mode="step", task_id=123)
+        stats = summarize_logs(logs, mode="code-step", task_id=123)
         assert stats["steps"] == 2
         assert stats["valid"] == 2
         assert stats["exact"] == 1
@@ -325,7 +332,7 @@ class TestSummarizeLogs:
         logs = [
             {"valid": True, "exact_board": True, "f1_board": 1.0, "attempt": 1, "correct": True}
         ]
-        stats = summarize_logs(logs, mode="full", task_id=123)
+        stats = summarize_logs(logs, mode="code-full", task_id=123)
         assert stats["steps"] == 1
         assert stats["valid"] == 1
         assert stats["exact"] == 1
@@ -335,7 +342,8 @@ class TestIterSetTasks:
     """Test dataset iteration."""
 
     def test_iter_set_tasks_4_samples(self):
-        tasks = list(iter_set_tasks("4-samples"))
+        ds = HexagonsDataset()
+        tasks = list(ds.iter_tasks("4-samples"))
         assert len(tasks) > 0
         for task_id, task_data in tasks:
             assert isinstance(task_id, int)
@@ -346,7 +354,8 @@ class TestIterSetTasks:
 
     def test_iter_set_tasks_filters_none(self):
         """Tasks should filter out steps with NONE instruction."""
-        tasks = list(iter_set_tasks("4-samples"))
+        ds = HexagonsDataset()
+        tasks = list(ds.iter_tasks("4-samples"))
         for task_id, task_data in tasks:
             for step in task_data["steps"]:
                 assert step != "NONE"
@@ -360,10 +369,10 @@ class TestIterSetTasks:
 class TestStepModeIntegration:
     """Test step-by-step code execution mode."""
 
-    @patch("runners.step_runner.call_gpt")
-    def test_run_step_code_success(self, mock_call_gpt, mock_config, tmp_path):
+    @patch("runners.step_runner.call_llm")
+    def test_run_step_code_success(self, mock_call_llm, mock_config, tmp_path):
         """Test successful step execution."""
-        mock_call_gpt.return_value = {
+        mock_call_llm.return_value = {
             "text": "```python\nTile(row=5, column=7).draw('red')\n```",
             "usage": {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120},
         }
@@ -377,7 +386,7 @@ class TestStepModeIntegration:
         gold_board = [0] * (WIDTH * HEIGHT)
         prev_gold_board = [0] * (WIDTH * HEIGHT)
 
-        sys_prompt, user_tmpl = build_prompts("step", False)
+        sys_prompt, user_tmpl = build_prompts("code-step", False)
 
         log, success, new_code, plot_path = run_step_code(
             cfg=mock_config,
@@ -403,11 +412,11 @@ class TestStepModeIntegration:
         assert isinstance(new_code, str)
         assert len(new_code) > len(code_so_far)
 
-    @patch("runners.step_runner.call_gpt")
-    def test_run_step_code_retry_on_error(self, mock_call_gpt, mock_config, tmp_path):
+    @patch("runners.step_runner.call_llm")
+    def test_run_step_code_retry_on_error(self, mock_call_llm, mock_config, tmp_path):
         """Test retry logic when code has errors."""
         # First attempt returns invalid code
-        mock_call_gpt.side_effect = [
+        mock_call_llm.side_effect = [
             {
                 "text": "```python\ninvalid_function_call()\n```",
                 "usage": {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120},
@@ -427,7 +436,7 @@ class TestStepModeIntegration:
         gold_board = [0] * (WIDTH * HEIGHT)
         prev_gold_board = [0] * (WIDTH * HEIGHT)
 
-        sys_prompt, user_tmpl = build_prompts("step", False)
+        sys_prompt, user_tmpl = build_prompts("code-step", False)
 
         log, success, new_code, plot_path = run_step_code(
             cfg=mock_config,
@@ -456,13 +465,16 @@ class TestStepModeIntegration:
 class TestFullModeIntegration:
     """Test single-shot full execution mode."""
 
-    @patch("runners.full_runner.call_gpt")
-    def test_run_full_success(self, mock_call_gpt, mock_config, tmp_path):
+    @patch("runners.full_runner.run_with_timeout")
+    @patch("runners.full_runner.call_llm")
+    def test_run_full_success(self, mock_call_llm, mock_run_with_timeout, mock_config, tmp_path):
         """Test full mode execution."""
-        mock_call_gpt.return_value = {
+        mock_call_llm.return_value = {
             "text": "```python\nTile(row=5, column=7).draw('red')\nTile(row=5, column=8).draw('yellow')\n```",
             "usage": {"prompt_tokens": 100, "completion_tokens": 30, "total_tokens": 130},
         }
+        # Return a successful board execution: (board, error, warnings)
+        mock_run_with_timeout.return_value = ([0] * (WIDTH * HEIGHT), None, [])
 
         code_so_far = (
             "from hexagen import Game, Tile, Shape, Line, Circle, Triangle\n"
@@ -473,7 +485,7 @@ class TestFullModeIntegration:
         instructions = ["Draw red at 5,7", "Draw yellow at 5,8"]
         gold_final = [0] * (WIDTH * HEIGHT)
 
-        sys_prompt, user_tmpl = build_prompts("full", False)
+        sys_prompt, user_tmpl = build_prompts("code-full", False)
 
         log = run_full(
             cfg=mock_config,
@@ -503,10 +515,10 @@ class TestFullModeIntegration:
 class TestTilesModeIntegration:
     """Test tile prediction mode."""
 
-    @patch("runners.tiles_runner.call_gpt")
-    def test_run_tile_step_success(self, mock_call_gpt, mock_config, tmp_path):
+    @patch("runners.tiles_runner.call_llm")
+    def test_run_tile_step_success(self, mock_call_llm, mock_config, tmp_path):
         """Test tile prediction step."""
-        mock_call_gpt.return_value = {
+        mock_call_llm.return_value = {
             "text": "[(5, 7, 'red')]",
             "usage": {"prompt_tokens": 100, "completion_tokens": 10, "total_tokens": 110},
         }
@@ -515,7 +527,7 @@ class TestTilesModeIntegration:
         gold_board = [0] * (WIDTH * HEIGHT)
         prev_gold_board = [0] * (WIDTH * HEIGHT)
 
-        sys_prompt, user_tmpl = build_prompts("tiles", False)
+        sys_prompt, user_tmpl = build_prompts("tiles-step", False)
 
         log, success, new_board, plot_path = run_tile_step(
             cfg=mock_config,
@@ -550,10 +562,10 @@ class TestTilesModeIntegration:
 class TestVisionIntegration:
     """Test vision mode support."""
 
-    @patch("runners.step_runner.call_gpt")
-    def test_step_mode_with_vision(self, mock_call_gpt, mock_config, tmp_path):
+    @patch("runners.step_runner.call_llm")
+    def test_step_mode_with_vision(self, mock_call_llm, mock_config, tmp_path):
         """Test that vision mode passes image_path to GPT."""
-        mock_call_gpt.return_value = {
+        mock_call_llm.return_value = {
             "text": "```python\nTile(row=5, column=7).draw('red')\n```",
             "usage": {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120},
         }
@@ -572,7 +584,7 @@ class TestVisionIntegration:
         gold_board = [0] * (WIDTH * HEIGHT)
         prev_gold_board = [0] * (WIDTH * HEIGHT)
 
-        sys_prompt, user_tmpl = build_prompts("step", vision=True)
+        sys_prompt, user_tmpl = build_prompts("code-step", vision=True)
 
         log, success, new_code, plot_path = run_step_code(
             cfg=mock_config,
@@ -589,9 +601,9 @@ class TestVisionIntegration:
             run_ts="test-timestamp",
         )
 
-        # Verify call_gpt was called with images parameter
-        mock_call_gpt.assert_called_once()
-        call_kwargs = mock_call_gpt.call_args[1]
+        # Verify call_llm was called with images parameter
+        mock_call_llm.assert_called_once()
+        call_kwargs = mock_call_llm.call_args[1]
         assert "images" in call_kwargs
         assert call_kwargs["images"] is not None
 
@@ -604,19 +616,24 @@ class TestVisionIntegration:
 class TestEndToEnd:
     """End-to-end tests that don't call the actual API."""
 
-    @patch("runners.step_runner.call_gpt")
-    def test_run_task_step_mode(self, mock_call_gpt, mock_config, sample_task, tmp_path):
+    @patch("runners.step_runner.call_llm")
+    def test_run_task_step_mode(self, mock_call_llm, mock_config, sample_task, tmp_path):
         """Test complete task execution in step mode."""
         # Mock successful responses
-        mock_call_gpt.return_value = {
+        mock_call_llm.return_value = {
             "text": "```python\nTile(row=5, column=7).draw('red')\n```",
             "usage": {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120},
         }
 
+        # Mock config attributes needed by run_task
+        mock_config.lib_file = None
+        mock_config.dataset = "hexagons"
+
         # Temporarily change results directory
         with patch("experiment.ensure_task_dir", return_value=tmp_path), \
-             patch("runners.step_runner.call_gpt", return_value=mock_call_gpt.return_value):
-            result = run_task(cfg=mock_config, task_id=999, task=sample_task)
+             patch("experiment.generate_import_statement", return_value="from hexagen import Game, Tile, Shape, Line, Circle, Triangle"), \
+             patch("runners.step_runner.call_llm", return_value=mock_call_llm.return_value):
+            result = run_task(cfg=mock_config, task_id=999, task_data=sample_task)
 
         # Verify result structure
         assert "stats" in result
@@ -626,7 +643,7 @@ class TestEndToEnd:
 
         stats = result["stats"]
         assert stats["task_id"] == 999
-        assert stats["mode"] == "step"
+        assert stats["mode"] == "code-step"
         assert stats["steps"] == len(sample_task["steps"])
         assert isinstance(stats["f1_board"], float)
         assert isinstance(stats["f1_action"], float)

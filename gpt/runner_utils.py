@@ -4,7 +4,7 @@ import json
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import ast
 import traceback
 import linecache
@@ -20,6 +20,38 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 USER_FILE = "user_snippet.py"
 DATA_DIR = ROOT_DIR / "data"
 RUN_UID = uuid.uuid4()
+
+
+def save_claude_code_conversation(
+    resp: Dict,
+    out_dir: Path,
+    run_ts: str,
+    step: int,
+    attempt: int,
+) -> Optional[Path]:
+    """Save a Claude Code conversation to a JSON file (execution runners only).
+
+    Reads the conversation from ``resp["raw"]["claude_code"]["conversation"]``
+    and writes it to ``{out_dir}/{run_ts}_cc_conversation_{step:02}_{attempt:02}.json``.
+    Returns the saved path, or None if no conversation data is present.
+    """
+    raw = resp.get("raw", {})
+    cc_data = raw.get("claude_code")
+    if cc_data is None:
+        return None
+    conversation = cc_data.get("conversation")
+    if not conversation:
+        return None
+    conv_path = out_dir / f"{run_ts}_cc_conversation_{step:02}_{attempt:02}.json"
+    payload = {
+        "model": cc_data.get("model"),
+        "num_turns": cc_data.get("num_turns"),
+        "cost_usd": cc_data.get("cost_usd"),
+        "conversation": conversation,
+    }
+    with open(conv_path, "w") as f:
+        json.dump(payload, f, indent=2, default=str)
+    return conv_path
 
 
 def get_library_classes(lib_file: str) -> List[str]:
@@ -95,17 +127,29 @@ def _inject_custom_lib(lib_file: str):
 
 
 def _timeout_worker(code: str, q, lib_file: str = None):
-    """Executes `code` and returns ('ok', board_state) or ('err', traceback)."""
+    """Executes `code` and returns ('ok', board_state, warnings) or ('err', traceback, warnings)."""
+    import warnings as _warnings
+
     try:
         # Inject custom library if provided
         if lib_file:
             _inject_custom_lib(lib_file)
 
         ns = {}
-        exec_snippet(code, ns)
-        q.put(("ok", ns.get("board_state")))
+        with _warnings.catch_warnings(record=True) as caught:
+            _warnings.simplefilter("always")
+            exec_snippet(code, ns)
+
+        # Filter to only warnings originating from the hexagen library
+        hexagen_warnings = [
+            str(w.message)
+            for w in caught
+            if w.category.__name__ == "HexagenWarning"
+        ]
+
+        q.put(("ok", ns.get("board_state"), hexagen_warnings))
     except Exception as exc:
-        q.put(("err", format_user_tb(exc)))
+        q.put(("err", format_user_tb(exc), []))
 
 
 def timestamp() -> str:
@@ -173,26 +217,59 @@ def save_plot(
             g.plot(multiple=False, file_name=str(out), show=False)
 
 
-def parse_tile_actions(raw: str) -> List[Tuple[int, int, str]]:
-    """Parse `(row,column,color)` Tuples from raw model output."""
+def parse_tile_actions(raw: str) -> Tuple[Optional[Tuple[int, int]], List[Tuple[int, int, any]]]:
+    """Parse tile actions from raw model output.
+
+    For LARC: First tuple is (height, width), rest are (row, col, color) with int colors
+    For Hexagons: No dimensions, just (row, col, color) with string colors
+
+    Returns:
+        Tuple of (dimensions, tiles)
+        - dimensions: (height, width) for LARC, None for Hexagons
+        - tiles: List of (row, col, color) tuples
+    """
     raw = raw.strip()
     try:
         data = ast.literal_eval(raw)
         if isinstance(data, Tuple):
             data = [data]
-        if isinstance(data, list):
-            out = []
-            for item in data:
+        if isinstance(data, list) and len(data) > 0:
+            dimensions = None
+            tiles = []
+
+            # Check if first tuple is dimensions (LARC format)
+            first_item = data[0]
+            start_idx = 0
+
+            if isinstance(first_item, (list, Tuple)) and len(first_item) == 2:
+                # Could be dimensions (height, width) or a tile (row, col) without color
+                # Dimensions are always at index 0 and both values should be positive integers
+                if all(isinstance(x, int) and x > 0 for x in first_item):
+                    # Check if this looks like dimensions vs a partial tile
+                    # If there are more tuples and they have 3 elements, first is likely dimensions
+                    if len(data) > 1 and isinstance(data[1], (list, Tuple)) and len(data[1]) == 3:
+                        dimensions = (int(first_item[0]), int(first_item[1]))
+                        start_idx = 1
+
+            # Parse remaining tiles
+            for item in data[start_idx:]:
                 if isinstance(item, (list, Tuple)) and len(item) == 3:
                     r, c, col = item
-                    out.append((int(r), int(c), str(col).lower()))
-            if out:
-                return out
+                    # Preserve int colors (LARC), convert string colors to lowercase (Hexagons)
+                    if isinstance(col, int):
+                        tiles.append((int(r), int(c), col))
+                    else:
+                        tiles.append((int(r), int(c), str(col).lower()))
+
+            if tiles:
+                return dimensions, tiles
     except Exception:
         pass
 
+    # Fallback regex for Hexagons color names
     pattern = r"\(\s*(\d+)\s*,\s*(\d+)\s*,\s*['\"]?([a-zA-Z]+)['\"]?\s*\)"
-    return [(int(r), int(c), col.lower()) for r, c, col in re.findall(pattern, raw)]
+    tiles = [(int(r), int(c), col.lower()) for r, c, col in re.findall(pattern, raw)]
+    return None, tiles
 
 
 def format_user_tb(exc: BaseException, user_file: str = USER_FILE) -> str:
@@ -202,6 +279,36 @@ def format_user_tb(exc: BaseException, user_file: str = USER_FILE) -> str:
     while tb and tb.tb_frame.f_code.co_filename != user_file:
         tb = tb.tb_next
     return "".join(traceback.format_exception(type(exc), exc, tb))
+
+
+def simplify_traceback(raw_tb: str) -> str:
+    """Trim internal library stack frames, keeping user code lines + the final error.
+
+    This makes retry error feedback more readable for the LLM by removing
+    hexagen-internal frames while preserving the user snippet context and the
+    actual exception message.
+    """
+    lines = raw_tb.strip().splitlines()
+    result = []
+    keep_next_code = False
+    for line in lines:
+        if line.startswith("Traceback"):
+            result.append(line)
+            keep_next_code = False
+        elif "user_snippet.py" in line:
+            result.append(line)
+            keep_next_code = True
+        elif keep_next_code and line.startswith("    "):
+            # Code context line right after the user_snippet frame
+            result.append(line)
+            keep_next_code = False
+        elif not line.startswith("  "):
+            # Final error line (e.g. "TypeError: ...")
+            result.append(line)
+            keep_next_code = False
+        else:
+            keep_next_code = False
+    return "\n".join(result) if result else raw_tb
 
 
 def exec_snippet(src: str, globals_ns: dict, filename: str = "user_snippet.py"):
@@ -223,6 +330,13 @@ def run_with_timeout(
     timeout_sec: int = 10,
     lib_file: str = None,
 ):
+    """Execute *src* in a subprocess with a timeout.
+
+    Returns
+    -------
+    (board_state | None, error_msg | None, list[str])
+        A 3-tuple of (board_state, error, hexagen_warnings).
+    """
     ctx = mp.get_context("spawn")
     q = ctx.Queue()
     p = ctx.Process(target=_timeout_worker, args=(src, q, lib_file), daemon=True)
@@ -232,10 +346,16 @@ def run_with_timeout(
     if p.is_alive():
         p.terminate()
         p.join()
-        return None, "TIMEOUT"
+        return None, "TIMEOUT", []
 
-    status, payload = q.get()
-    return (payload, None) if status == "ok" else (None, payload)
+    try:
+        status, payload, hexagen_warnings = q.get(timeout=10)
+    except Exception:
+        return None, "Worker process died without returning result", []
+    if status == "ok":
+        return payload, None, hexagen_warnings
+    else:
+        return None, payload, hexagen_warnings
 
 
 def save_script(
@@ -274,5 +394,16 @@ def fix_missing_tail_indent(
     return "\n".join(lines)
 
 
+_RESULTS_DIR_OVERRIDE: Path | None = None
+
+
+def set_results_dir(path: Path | str) -> None:
+    """Override the results directory (used by --resume)."""
+    global _RESULTS_DIR_OVERRIDE
+    _RESULTS_DIR_OVERRIDE = Path(path)
+
+
 def get_results_dir_path(experiment_name: str):
+    if _RESULTS_DIR_OVERRIDE is not None:
+        return _RESULTS_DIR_OVERRIDE
     return ROOT_DIR / f"results-{experiment_name}-{RUN_UID}"

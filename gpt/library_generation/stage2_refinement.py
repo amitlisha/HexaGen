@@ -58,7 +58,9 @@ def refine_api(
     iteration: int,
     model: str,
     temperature: float,
-    max_tokens: int
+    max_tokens: int,
+    thinking_effort: str | None = None,
+    thinking_level: str | None = None,
 ) -> str:
     """Refine the API proposal based on a sample of instructions.
 
@@ -131,6 +133,8 @@ Quality > Quantity. Focus on minimal, powerful API."""
         model=model,
         temperature=temperature,
         max_tokens=max_tokens,
+        reasoning_effort=thinking_effort,
+        thinking_level=thinking_level,
     )
 
     return response["text"]
@@ -149,6 +153,8 @@ def timestamp() -> str:
 
 
 def run_stage2(cfg: argparse.Namespace, output_dir: Path, stage1_result: Dict) -> Dict:
+    from gpt.llm_wrapper import reset_llm_stats, get_llm_stats
+    reset_llm_stats()
     """Run Stage 2: API Refinement.
 
     Args:
@@ -201,7 +207,9 @@ def run_stage2(cfg: argparse.Namespace, output_dir: Path, stage1_result: Dict) -
             iteration=i,
             model=cfg.model,
             temperature=cfg.temperature,
-            max_tokens=cfg.max_tokens * 2  # Give more tokens for refinement
+            max_tokens=cfg.max_tokens,
+            thinking_effort=getattr(cfg, "thinking_effort", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
         )
 
         # Save refined version
@@ -237,7 +245,8 @@ def run_stage2(cfg: argparse.Namespace, output_dir: Path, stage1_result: Dict) -
             "initial_api": str(stage1_api_file),
             "final_api": str(final_file),
             "refinement_history": refinement_history
-        }
+        },
+        "llm_stats": get_llm_stats(),
     }
 
     # Save stage summary

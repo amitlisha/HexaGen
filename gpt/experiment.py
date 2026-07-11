@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 import argparse
 import random
 from typing import Dict, List, Optional
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import matplotlib
 
 from config import parse_args
+from datasets import get_dataset
 from runners.step_runner import run_step_code
 from runners.full_runner import run_full
 from runners.code_step_full_runner import run_code_step_full
@@ -21,11 +26,12 @@ from runner_utils import (
     generate_import_statement,
     DATA_DIR,
     get_results_dir_path,
+    set_results_dir,
     ensure_task_dir,
     save_json,
     timestamp,
 )
-from llm_wrapper import init_llm
+from llm_wrapper import init_llm, _is_claude_code_model
 from constants.constants import WIDTH, HEIGHT
 from prompts import build_prompts
 from metrics import f1_score
@@ -77,22 +83,54 @@ def _gold_failed_runs(task: Dict, mode: str) -> List[Dict]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Dataset helpers
+# Resume helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def iter_set_tasks(split: str):
+def _load_cached_results(resume_dir: str, mode: str) -> Dict:
+    """Scan a results directory for per-task run_*.json files.
+
+    Returns a dict mapping task_id (str) -> payload dict that matches the
+    format produced by run_task().  Only results whose mode matches are
+    returned, so resuming a multi-mode run picks the right ones.
+    """
     import json
 
-    path = DATA_DIR / f"{split}.jsonl"
-    with path.open("r", encoding="utf-8") as fh:
-        for line in fh:
-            o = json.loads(line)
-            proc = [r for r in o["drawing_procedure"] if r[1] != "NONE"]
-            yield o["index"], {
-                "steps": [r[1] for r in proc],
-                "gold_boards": [r[2] for r in proc],
+    base = Path(resume_dir)
+    if not base.is_dir():
+        print(f"Warning: resume directory does not exist: {resume_dir}")
+        return {}
+
+    cached: Dict = {}
+    for task_dir in sorted(base.iterdir()):
+        if not task_dir.is_dir() or not task_dir.name.startswith("task_"):
+            continue
+        # task_id is everything after "task_"
+        tid = task_dir.name[len("task_"):]
+
+        # Find the latest run_*.json inside any timestamp subdirectory
+        run_files = sorted(task_dir.glob("*/run_*.json"), key=lambda p: p.stat().st_mtime)
+        if not run_files:
+            continue
+
+        # Take the newest run file and check if mode matches
+        latest = run_files[-1]
+        try:
+            data = json.loads(latest.read_text())
+            stats = data.get("stats", {})
+            if stats.get("mode") != mode:
+                continue
+            cached[tid] = {
+                "stats": stats,
+                "runs": data.get("runs", []),
+                "run_dir": str(latest.parent),
+                "run_log_path": str(latest),
             }
+        except Exception as e:
+            print(f"Warning: failed to load {latest}: {e}")
+            continue
+
+    return cached
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -113,9 +151,9 @@ def summarize_logs(logs: List[Dict], mode: str, task_id: int) -> Dict:
         total_steps = 1
         valid_cnt = 1 if logs[0].get("valid", False) else 0
         exact_cnt = 1 if logs[0].get("exact_board", False) else 0
-        exact_action_cnt = 1 if logs[0].get("exact_board", False) else 0
+        exact_action_cnt = 1 if logs[0].get("exact_action", False) else 0
         avg_f1_board = logs[0].get("f1_board", 0.0)
-        avg_f1_action = logs[0].get("f1_board", 0.0)
+        avg_f1_action = logs[0].get("f1_action", 0.0)
 
     successful_steps = [i + 1 for i, lg in enumerate(logs) if lg["correct"]]
     failed_steps = [i + 1 for i, lg in enumerate(logs) if not lg["correct"]]
@@ -135,14 +173,36 @@ def summarize_logs(logs: List[Dict], mode: str, task_id: int) -> Dict:
     }
 
 
-def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
+def run_task(
+    cfg: argparse.Namespace,
+    task_id,
+    task_data: Dict,
+    prefetched_response: Optional[Dict] = None,
+) -> Dict:
     """
-    Execute ONE Hexagons task and return its stats dictionary.
-    This is the original single-task logic extracted from main().
+    Execute ONE task (Hexagons or LARC) and return its stats dictionary.
+
+    Args:
+        cfg: Configuration namespace
+        task_id: Task identifier (int for Hexagons, str for LARC)
+        task_data: Task data from dataset
+        prefetched_response: Pre-fetched LLM response (from batch API) to use
+            instead of calling call_llm() on the first attempt
     """
-    sys_prompt, user_tmpl = build_prompts(cfg.mode, cfg.vision, cfg.api_spec_file)
-    instructions = task["steps"]
-    gold_boards = task["gold_boards"]
+    dataset = get_dataset(cfg.dataset)
+
+    is_cc = _is_claude_code_model(cfg.model)
+    sys_prompt, user_tmpl = build_prompts(
+        cfg.mode, cfg.vision, cfg.api_spec_file, cfg.dataset, is_cc=is_cc
+    )
+    instructions = dataset.get_instructions(task_data)
+    gold_boards = dataset.get_gold_boards(task_data)
+
+    # Get output board dimensions (used only for validation/plotting, NOT passed to LLM for LARC)
+    board_width, board_height = dataset.get_board_dimensions(task_data)
+
+    # For LARC: keep the 2D input grid for prompt formatting
+    input_grid_2d = task_data.get("test_input")
 
     out_dir = ensure_task_dir(cfg.experiment_name, task_id)
     run_ts = timestamp()
@@ -152,17 +212,20 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     # Only generate code template for code-generation modes
     code_so_far = ""
     if cfg.mode in ("code-step", "code-full", "code-step-full"):
-        code_so_far = (
-            f"{generate_import_statement(cfg.lib_file)}\n"
-            "from constants import HEIGHT, WIDTH\n"
-            "with Game() as g:\n"
-        )
+        if cfg.dataset == "larc":
+            code_so_far = ""
+        else:
+            code_so_far = (
+                f"{generate_import_statement(cfg.lib_file)}\n"
+                "from constants import HEIGHT, WIDTH, COLORS, DIRECTIONS\n"
+                "with Game() as g:\n"
+            )
 
     current_img: Optional[Path] = DATA_DIR / "empty_board.png" if cfg.vision else None
 
     history: List[str] = []
     logs: List[Dict] = []
-    board_state: List[int] = [0] * (WIDTH * HEIGHT)
+    board_state: List[int] = dataset.get_initial_board(task_data)
 
     if cfg.mode == "code-step":
         for idx, instruction in enumerate(instructions, 1):
@@ -195,17 +258,33 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
             )
 
     elif cfg.mode == "code-full":
-        log = run_full(
-            cfg,
-            sys_prompt,
-            user_tmpl,
-            instructions,
-            code_so_far,
-            gold_boards[-1],
-            current_img,
-            run_dir,
-            run_ts,
-        )
+        if getattr(cfg, "self_revision", False) and not is_cc:
+            from runners.self_revision_runner import run_with_self_revision
+            log = run_with_self_revision(
+                cfg, sys_prompt, user_tmpl, instructions, gold_boards[-1],
+                current_img, run_dir, run_ts,
+                code_so_far=code_so_far,
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
+        else:
+            log = run_full(
+                cfg,
+                sys_prompt,
+                user_tmpl,
+                instructions,
+                code_so_far,
+                gold_boards[-1],
+                current_img,
+                run_dir,
+                run_ts,
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
         logs = [log]
         print(
             f"[task {task_id}] CODE-FULL RUN →",
@@ -244,16 +323,33 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
             )
 
     elif cfg.mode == "tiles-full":
-        log = run_tiles_full(
-            cfg,
-            sys_prompt,
-            user_tmpl,
-            instructions,
-            gold_boards[-1],
-            current_img,
-            run_dir,
-            run_ts,
-        )
+        if getattr(cfg, "self_revision", False) and not is_cc:
+            from runners.self_revision_runner import run_with_self_revision
+            log = run_with_self_revision(
+                cfg, sys_prompt, user_tmpl, instructions, gold_boards[-1],
+                current_img, run_dir, run_ts,
+                initial_board=dataset.get_initial_board(task_data),
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
+        else:
+            log = run_tiles_full(
+                cfg,
+                sys_prompt,
+                user_tmpl,
+                instructions,
+                gold_boards[-1],
+                current_img,
+                run_dir,
+                run_ts,
+                dataset.get_initial_board(task_data),
+                board_width,
+                board_height,
+                input_grid_2d,
+                prefetched_response=prefetched_response,
+            )
         logs = [log]
         print(
             f"[task {task_id}] TILES-FULL RUN →",
@@ -261,16 +357,33 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
         )
 
     elif cfg.mode == "python-full":
-        log = run_python_full(
-            cfg,
-            sys_prompt,
-            user_tmpl,
-            instructions,
-            gold_boards[-1],
-            current_img,
-            run_dir,
-            run_ts,
-        )
+        if getattr(cfg, "self_revision", False) and not is_cc:
+            from runners.self_revision_runner import run_with_self_revision
+            log = run_with_self_revision(
+                cfg, sys_prompt, user_tmpl, instructions, gold_boards[-1],
+                current_img, run_dir, run_ts,
+                initial_board=dataset.get_initial_board(task_data),
+                input_grid_2d=input_grid_2d,
+                width=board_width,
+                height=board_height,
+                prefetched_response=prefetched_response,
+            )
+        else:
+            log = run_python_full(
+                cfg,
+                sys_prompt,
+                user_tmpl,
+                instructions,
+                gold_boards[-1],
+                current_img,
+                run_dir,
+                run_ts,
+                dataset.get_initial_board(task_data),
+                board_width,
+                board_height,
+                input_grid_2d,
+                prefetched_response=prefetched_response,
+            )
         logs = [log]
         print(
             f"[task {task_id}] PYTHON-FULL RUN →",
@@ -280,7 +393,11 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     elif cfg.mode == "tiles-step-full":
         for idx, instruction in enumerate(instructions, 1):
             gold_current = gold_boards[idx - 1]
-            prev_gold = gold_boards[idx - 2] if idx > 1 else [0] * (WIDTH * HEIGHT)
+            prev_gold = (
+                gold_boards[idx - 2]
+                if idx > 1
+                else dataset.get_initial_board(task_data)
+            )
             log, _, board_state, plot_path = run_tiles_step_full(
                 cfg,
                 sys_prompt,
@@ -295,6 +412,9 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
                 run_dir,
                 idx,
                 run_ts,
+                board_width,
+                board_height,
+                input_grid_2d,
             )
             logs.append(log)
             history.append(instruction)
@@ -311,7 +431,11 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
     else:  # cfg.mode == "tiles-step"
         for idx, instruction in enumerate(instructions, 1):
             gold_current = gold_boards[idx - 1]
-            prev_gold = gold_boards[idx - 2] if idx > 1 else [0] * (WIDTH * HEIGHT)
+            prev_gold = (
+                gold_boards[idx - 2]
+                if idx > 1
+                else dataset.get_initial_board(task_data)
+            )
             log, _, board_state, plot_path = run_tile_step(
                 cfg,
                 sys_prompt,
@@ -325,6 +449,9 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
                 run_dir,
                 idx,
                 run_ts,
+                board_width,
+                board_height,
+                input_grid_2d,
             )
             logs.append(log)
             history.append(instruction)
@@ -366,30 +493,75 @@ def run_task(cfg: argparse.Namespace, task_id: int, task: Dict) -> Dict:
 def _run_set(cfg: argparse.Namespace) -> Dict:
     """Run and summarise all tasks from a dataset split, then emit ONE JSON."""
     print(f"Running full set: {cfg.set}")
-    tasks = list(iter_set_tasks(cfg.set))
+    dataset = get_dataset(cfg.dataset)
+    tasks = list(dataset.iter_tasks(cfg.set))
+
+    # ── Resume: load cached results ──────────────────────────────────────
+    cached: Dict = {}
+    if getattr(cfg, "resume", None):
+        cached = _load_cached_results(cfg.resume, cfg.mode)
+        print(f"Resume: found {len(cached)} cached task results for mode={cfg.mode}")
 
     per_task_payloads: List[Dict] = [None] * len(tasks)
 
+    # Separate tasks into cached vs to-run
+    tasks_to_run = []
+    for idx, (tid, task_data) in enumerate(tasks):
+        tid_str = str(tid)
+        if tid_str in cached:
+            per_task_payloads[idx] = cached[tid_str]
+        else:
+            tasks_to_run.append((idx, tid, task_data))
+
+    if cached:
+        print(f"Skipping {len(tasks) - len(tasks_to_run)} cached tasks, "
+              f"running {len(tasks_to_run)} remaining")
+
+    # ── Batch API path ───────────────────────────────────────────────
+    # --batch-resume implies --batch
+    use_batch = (getattr(cfg, "batch", False) or getattr(cfg, "batch_resume", None)) and tasks_to_run
+    if use_batch:
+        from batch_runner import is_batch_compatible, run_set_batch
+
+        if is_batch_compatible(cfg):
+            batch_payloads = run_set_batch(cfg, tasks_to_run)
+            for list_idx, payload in batch_payloads.items():
+                per_task_payloads[list_idx] = payload
+            tasks_to_run = []  # all handled
+        else:
+            print(
+                f"Warning: --batch is incompatible with model={cfg.model!r} "
+                f"or mode={cfg.mode!r}. Falling back to sync execution."
+            )
+
     if cfg.workers <= 1:
-        for idx, (tid, tsk) in enumerate(tasks):
+        for idx, tid, task_data in tasks_to_run:
             print(f"\n=== TASK {tid} ===")
-            payload = run_task(cfg, tid, tsk)
+            payload = run_task(cfg, tid, task_data)
             per_task_payloads[idx] = payload
     else:
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
         with ThreadPoolExecutor(max_workers=cfg.workers) as ex:
             futures = {
-                ex.submit(run_task, cfg, tid, tsk): i
-                for i, (tid, tsk) in enumerate(tasks)
+                ex.submit(run_task, cfg, tid, task_data): idx
+                for idx, tid, task_data in tasks_to_run
             }
             for fut in as_completed(futures):
                 idx = futures[fut]
                 try:
                     per_task_payloads[idx] = fut.result()
                 except Exception as exc:
-                    tid, tsk = tasks[idx]
+                    tid = tasks[idx][0]
+                    tsk = tasks[idx][1]
                     print(f"Task {tid} failed: {exc}")
+                    try:
+                        gold_boards = dataset.get_gold_boards(tsk)
+                        failed_runs = _gold_failed_runs(
+                            {"gold_boards": gold_boards}, cfg.mode
+                        )
+                    except Exception:
+                        failed_runs = []
                     per_task_payloads[idx] = {
                         "stats": {
                             "task_id": tid,
@@ -404,7 +576,7 @@ def _run_set(cfg: argparse.Namespace) -> Dict:
                             "successful_steps": [],
                             "failed_steps": [],
                         },
-                        "runs": _gold_failed_runs(tsk, cfg.mode),
+                        "runs": failed_runs,
                         "run_dir": None,
                         "run_log_path": None,
                     }
@@ -489,7 +661,36 @@ def main() -> None:
     cfg = parse_args()
     random.seed(cfg.seed)
 
+    # If resuming, point results dir at the existing directory
+    if cfg.resume:
+        resume_path = Path(cfg.resume)
+        if not resume_path.is_absolute():
+            resume_path = Path.cwd() / resume_path
+        set_results_dir(resume_path)
+        print(f"Resuming from: {resume_path}")
+
     # Initialize LLM clients globally for persistence
+    if getattr(cfg, "max_turns", None) is not None:
+        os.environ["CLAUDE_CODE_MAX_TURNS"] = str(cfg.max_turns)
+    if getattr(cfg, "claude_code_cwd", None):
+        os.environ["CLAUDE_CODE_CWD"] = cfg.claude_code_cwd
+    if getattr(cfg, "request_timeout", None) is not None:
+        os.environ["LLM_REQUEST_TIMEOUT"] = str(cfg.request_timeout)
+    if getattr(cfg, "claude_code_cli", False):
+        os.environ["CLAUDE_CODE_USE_CLI"] = "1"
+    if getattr(cfg, "claude_code_local", False):
+        os.environ.setdefault("ANTHROPIC_BASE_URL", "http://localhost:8001")
+        os.environ.setdefault("ANTHROPIC_AUTH_TOKEN", "dummy")
+        os.environ.setdefault("ANTHROPIC_API_KEY", "dummy")
+        os.environ.setdefault("ANTHROPIC_DEFAULT_OPUS_MODEL", "qwen-local")
+        os.environ.setdefault("ANTHROPIC_DEFAULT_SONNET_MODEL", "qwen-local")
+        os.environ.setdefault("ANTHROPIC_DEFAULT_HAIKU_MODEL", "qwen-local")
+    if getattr(cfg, "anthropic_base_url", None):
+        os.environ["ANTHROPIC_BASE_URL"] = cfg.anthropic_base_url
+    if getattr(cfg, "anthropic_auth_token", None):
+        os.environ["ANTHROPIC_AUTH_TOKEN"] = cfg.anthropic_auth_token
+    if getattr(cfg, "anthropic_custom_headers", None):
+        os.environ["ANTHROPIC_CUSTOM_HEADERS"] = cfg.anthropic_custom_headers
     init_llm(cfg)
 
     modes = cfg.mode if isinstance(cfg.mode, list) else [cfg.mode]
@@ -517,7 +718,12 @@ def main() -> None:
                     }
                 )
             else:
-                _ = run_task(run_cfg, cfg.task, read_task(cfg.task))
+                task_data = read_task(cfg.task) if cfg.dataset == "hexagons" else None
+                if task_data is None:
+                    raise ValueError(
+                        f"Single task mode (--task) requires hexagons dataset"
+                    )
+                _ = run_task(cfg, cfg.task, task_data)
 
     if cfg.set and len(all_results) > 0:
         out_dir = get_results_dir_path(cfg.experiment_name) / cfg.set

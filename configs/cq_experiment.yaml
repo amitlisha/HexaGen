@@ -1,0 +1,46 @@
+# CadQuery condition-comparison experiment config.
+# All data paths are inferred from the repo root; the model is the only
+# required field you must set before running.
+#
+# Equivalent CLI invocation:
+#
+#   ~/.conda/envs/from-a-to-a/bin/python cadquery_exp/cq_experiment.py \
+#       --model <your-model> \
+#       --split test \
+#       --workers 8 \
+#       --timeout 30 \
+#       --temperature 0.0 \
+#       --max-tokens 4096
+#
+# Run the validator first:
+#   ~/.conda/envs/from-a-to-a/bin/python cadquery_exp/cq_validate.py
+
+experiment_name: cq-experiment
+
+model:
+  model: null          # REQUIRED — set to your model name before running
+  base_url: null       # optional, for local OpenAI-compatible endpoints
+  api_key: null        # optional, falls back to env var
+
+data:
+  split: test          # which split to evaluate on (train / validation / test)
+  max_examples: null   # set to a small number (e.g. 20) for a smoke-run
+  abstraction_levels:  # which CSV columns to use as natural-language prompt
+    - abstract
+    - beginner
+    - intermediate
+    - expert
+
+conditions:
+  - direct             # (a) generate raw CadQuery
+  - abstraction        # (b) generate against the abstraction layer
+
+execution:
+  workers: 8           # parallel threads (LLM calls are I/O-bound;
+                       # CadQuery runs in subprocesses inside each thread)
+  timeout: 30          # seconds per CadQuery subprocess execution
+
+llm:
+  temperature: 0.0
+  max_tokens: 4096
+  seed: 42

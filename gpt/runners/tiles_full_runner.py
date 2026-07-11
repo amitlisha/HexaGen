@@ -12,7 +12,25 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from llm_wrapper import call_llm
 from runner_utils import parse_tile_actions, save_plot
 from constants.constants import COLORS, WIDTH, HEIGHT
+from prompts import make_larc_tile_prompt
 from metrics import evaluate_prediction
+
+
+def build_tiles_full_prompt(
+    cfg: argparse.Namespace,
+    user_tmpl: str,
+    instructions: List[str],
+    input_grid_2d: Optional[List[List[int]]] = None,
+) -> str:
+    """Build the first-attempt prompt for tiles-full mode."""
+    instructions_block = "\n".join(f"{i+1}. {txt}" for i, txt in enumerate(instructions))
+    if cfg.dataset == "larc":
+        return make_larc_tile_prompt(instructions_block, input_grid_2d, user_tmpl)
+    else:
+        return (
+            user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
+            .replace("{NEXT_STEP}", instructions_block)
+        )
 
 
 def run_tiles_full(
@@ -24,45 +42,92 @@ def run_tiles_full(
     image_path: Optional[Path],
     task_dir: Path,
     run_ts: str,
+    initial_board: List[int] = None,
+    width: int = None,
+    height: int = None,
+    input_grid_2d: List[List[int]] = None,
+    prefetched_response: Optional[Dict] = None,
 ) -> Dict:
     """
     Single-shot prompt that passes ALL instructions as one block.
     Model predicts tiles directly for all instructions combined.
+
+    Args:
+        initial_board: Initial board state (for reference, LARC only)
+        width: Board width (defaults to constants.WIDTH if None)
+        height: Board height (defaults to constants.HEIGHT if None)
     """
-    # Format all instructions as a numbered block
-    instructions_block = "\n".join(f"{i+1}. {txt}" for i, txt in enumerate(instructions))
+    if width is None or height is None:
+        width = WIDTH if width is None else width
+        height = HEIGHT if height is None else height
 
-    # Build the prompt with all instructions
-    prompt = (
-        user_tmpl.replace("{HISTORY_BLOCK}", "(none – full run)")
-        .replace("{NEXT_STEP}", instructions_block)
-    )
+    if initial_board is None:
+        initial_board = [0] * (width * height)
 
-    resp = call_llm(
-        prompt=prompt,
-        system_prompt=sys_prompt,
-        model=cfg.model,
-        temperature=cfg.temperature,
-        max_tokens=cfg.max_tokens,
-        seed=cfg.seed,
-        images=[str(image_path)] if image_path else None,
-    )
+    # Build prompt and get response (or use prefetched from batch)
+    if prefetched_response is not None:
+        resp = prefetched_response
+    else:
+        prompt = build_tiles_full_prompt(cfg, user_tmpl, instructions, input_grid_2d)
+        resp = call_llm(
+            prompt=prompt,
+            system_prompt=sys_prompt,
+            model=cfg.model,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens,
+            seed=cfg.seed,
+            images=[str(image_path)] if image_path else None,
+            reasoning_effort=getattr(cfg, "reasoning_effort", None),
+            thinking_budget=getattr(cfg, "thinking_budget", None),
+            thinking_level=getattr(cfg, "thinking_level", None),
+        )
 
     # Parse tile predictions
-    tiles = parse_tile_actions(resp["text"])
+    predicted_dims, tiles = parse_tile_actions(resp["text"])
 
-    # Apply tiles to blank board
-    board = [0] * (WIDTH * HEIGHT)
-    for r, c, col in tiles:
-        if 1 <= r <= HEIGHT and 1 <= c <= WIDTH and col in COLORS:
-            idx = (r - 1) * WIDTH + (c - 1)
-            board[idx] = COLORS.index(col)
+    # For LARC: validate dimensions and apply strict dimension check
+    dimension_match = True
+    if cfg.dataset == "larc":
+        if predicted_dims is None:
+            # LLM didn't provide dimensions - mark as failure
+            dimension_match = False
+            predicted_height, predicted_width = 0, 0
+        else:
+            predicted_height, predicted_width = predicted_dims
+            # Check if dimensions match gold
+            if predicted_height != height or predicted_width != width:
+                dimension_match = False
+            else:
+                # Dimensions match, use predicted dimensions
+                width, height = predicted_width, predicted_height
+
+    # Create board with appropriate dimensions
+    board = [0] * (width * height)
+
+    # Apply tiles only if dimensions match (for LARC) or always (for Hexagons)
+    if cfg.dataset != "larc" or dimension_match:
+        for r, c, col in tiles:
+            # Validate tile based on dataset
+            if cfg.dataset == "larc":
+                # LARC: col is integer 0-9
+                if 1 <= r <= height and 1 <= c <= width and isinstance(col, int) and 0 <= col <= 9:
+                    idx = (r - 1) * width + (c - 1)
+                    board[idx] = col
+            else:
+                # Hexagons: col is color name string
+                if 1 <= r <= height and 1 <= c <= width and col in COLORS:
+                    idx = (r - 1) * width + (c - 1)
+                    board[idx] = COLORS.index(col)
 
     # Evaluate against gold final board
+    # In full mode the model predicts the entire output board from scratch,
+    # so the "previous" state is blank for both pred and gold.  This ensures
+    # action metrics == board metrics (every non-zero tile is a "change").
+    blank_board = [0] * (width * height)
     metrics = evaluate_prediction(
-        [0] * (WIDTH * HEIGHT),
+        blank_board,
         board,
-        [0] * (WIDTH * HEIGHT),
+        blank_board,
         gold_final,
     )
 
@@ -71,11 +136,23 @@ def run_tiles_full(
         "tiles": tiles,
         "valid": True,
         "usage": resp["usage"],
+        **({"agent_info": resp["agent_info"]} if "agent_info" in resp else {}),
         **metrics,
     }
 
+    # Add LARC-specific dimension tracking
+    if cfg.dataset == "larc":
+        log["dimension_match"] = dimension_match
+        log["predicted_dimensions"] = predicted_dims if predicted_dims else (0, 0)
+        log["gold_dimensions"] = (height, width)
+
     # Save plots
     plot_path = task_dir / f"{run_ts}_plot_tiles_full_01.png"
-    save_plot(board, gold_final, plot_path)
+    if cfg.dataset == "larc":
+        from larc_plot import save_larc_plot
+
+        save_larc_plot(board, gold_final, plot_path, width, height)
+    else:
+        save_plot(board, gold_final, plot_path)
 
     return log
