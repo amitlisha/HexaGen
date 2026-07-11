@@ -19,3 +19,4 @@ analyses-images/
 data/
 literature-survey/
 gpu_watchdog.py
+logs/
