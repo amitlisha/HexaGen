@@ -25,7 +25,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--model",
         default="gpt-4o",
-        help="Model name (e.g., 'gpt-4o', 'gpt-4-turbo', 'gemini-2.0-flash-exp', 'gemini-1.5-pro')",
+        help="Model name (e.g., 'gpt-4o', 'gemini-2.0-flash-exp', 'claude-sonnet-4-6', "
+             "'vertex/claude-sonnet-4-6' for Claude on Vertex AI)",
     )
     p.add_argument("--temperature", type=float, default=0)
     p.add_argument("--max-tokens", type=int, default=15000)
@@ -150,6 +151,16 @@ def parse_args() -> argparse.Namespace:
         help="Drive Claude Code via the `claude` CLI binary (subprocess + JSON "
         "output) instead of the claude_agent_sdk Python API. Only relevant "
         "when --model starts with 'claude-code/'. Requires `claude` on $PATH.",
+    )
+    p.add_argument(
+        "--claude-code-vertex",
+        action="store_true",
+        default=False,
+        help="Route Claude Code agentic sessions through Vertex AI instead of the "
+        "direct Anthropic API. Sets CLAUDE_CODE_USE_VERTEX=1, "
+        "ANTHROPIC_VERTEX_PROJECT_ID (from GCP_PROJECT_ID/VERTEX_PROJECT_ID), and "
+        "CLOUD_ML_REGION (from VERTEX_LOCATION, default: us-east5). "
+        "Only relevant when --model starts with 'claude-code/'.",
     )
     p.add_argument(
         "--claude-code-local",

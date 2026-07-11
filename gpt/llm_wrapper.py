@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import mimetypes
 import re
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import os
@@ -18,6 +19,7 @@ os.environ["GRPC_DNS_RESOLVER"] = "native"
 _OPENAI_CLIENT: Optional[Any] = None
 _GENAI_CLIENT: Optional[Any] = None
 _ANTHROPIC_CLIENT: Optional[Any] = None
+_ANTHROPIC_VERTEX_CLIENT: Optional[Any] = None
 
 # ── Per-stage LLM call stats accumulator ─────────────────────────────────────
 # Lets library-generation stages collect aggregate usage/agent_info across all
@@ -106,7 +108,22 @@ def init_llm(cfg: argparse.Namespace) -> None:
                 "Claude Code requires `claude-agent-sdk`. "
                 "Install with: pip install claude-agent-sdk"
             ) from e
-        if not os.environ.get("ANTHROPIC_API_KEY"):
+
+        if getattr(cfg, "claude_code_vertex", False):
+            project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get("VERTEX_PROJECT_ID")
+            if not project_id:
+                raise ValueError(
+                    "GCP_PROJECT_ID or VERTEX_PROJECT_ID must be set for --claude-code-vertex"
+                )
+            region = os.environ.get("VERTEX_LOCATION", "us-east5")
+            os.environ["CLAUDE_CODE_USE_VERTEX"] = "1"
+            os.environ["ANTHROPIC_VERTEX_PROJECT_ID"] = project_id
+            os.environ["CLOUD_ML_REGION"] = region
+            print(
+                f"[init_llm] Claude Code → Vertex AI "
+                f"(project={project_id}, region={region})"
+            )
+        elif not os.environ.get("ANTHROPIC_API_KEY"):
             print(
                 "[init_llm] ANTHROPIC_API_KEY not set; SDK will use existing "
                 "`claude login` credentials if available."
@@ -121,6 +138,20 @@ def init_llm(cfg: argparse.Namespace) -> None:
         if getattr(cfg, "api_key", None):
             kwargs["api_key"] = cfg.api_key
         _ANTHROPIC_CLIENT = Anthropic(**kwargs)
+        return
+
+    # Claude on Vertex AI
+    if _is_vertex_claude_model(cfg.model):
+        from anthropic import AnthropicVertex
+
+        global _ANTHROPIC_VERTEX_CLIENT
+        project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get("VERTEX_PROJECT_ID")
+        if not project_id:
+            raise ValueError(
+                "GCP_PROJECT_ID or VERTEX_PROJECT_ID must be set for vertex/claude-* models"
+            )
+        region = os.environ.get("VERTEX_LOCATION", "us-east5")
+        _ANTHROPIC_VERTEX_CLIENT = AnthropicVertex(project_id=project_id, region=region)
         return
 
     # Gemini / Vertex AI
@@ -188,9 +219,20 @@ def _strip_claude_code_prefix(model: str) -> str:
     return suffix or os.environ.get("CLAUDE_CODE_MODEL", "claude-opus-4-7")
 
 
+def _is_vertex_claude_model(model: str) -> bool:
+    """Claude on Vertex AI: model names starting with 'vertex/claude-'."""
+    return model.lower().startswith("vertex/claude-")
+
+
+def _strip_vertex_prefix(model: str) -> str:
+    """Return the underlying Claude model name from a 'vertex/claude-<model>' string."""
+    return model.split("/", 1)[1]
+
+
 def _is_anthropic_model(model: str) -> bool:
-    """Direct Anthropic Messages API: claude-* names except the agentic claude-code/* prefix."""
-    return model.lower().startswith("claude-") and not _is_claude_code_model(model)
+    """Direct Anthropic Messages API: claude-* names except agentic and vertex prefixes."""
+    m = model.lower()
+    return m.startswith("claude-") and not _is_claude_code_model(model) and not _is_vertex_claude_model(model)
 
 
 def _is_openai_reasoning_model(model: str) -> bool:
@@ -270,10 +312,12 @@ def call_llm(
     seed: Optional[int] = None,
     system_prompt: Optional[str] = None,
     images: Optional[List[str | Path]] = None,
+    messages: Optional[List[Dict[str, Any]]] = None,
     request_timeout: Optional[int] = None,
     reasoning_effort: Optional[str] = None,
     thinking_budget: Optional[int] = None,
     thinking_level: Optional[str] = None,
+    lib_file: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Send a chat completion request to OpenAI or Gemini.
 
@@ -305,6 +349,18 @@ def call_llm(
             request_timeout=request_timeout,
             max_turns=int(os.environ.get("CLAUDE_CODE_MAX_TURNS", "20")),
             sandbox_cwd=os.environ.get("CLAUDE_CODE_CWD"),
+            lib_file=lib_file,
+        )
+    elif _is_vertex_claude_model(model):
+        result = _call_vertex_claude(
+            prompt=prompt,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            system_prompt=system_prompt,
+            images=images,
+            messages=messages,
+            request_timeout=request_timeout,
         )
     elif _is_anthropic_model(model):
         result = _call_anthropic(
@@ -314,6 +370,7 @@ def call_llm(
             max_tokens=max_tokens,
             system_prompt=system_prompt,
             images=images,
+            messages=messages,
             request_timeout=request_timeout,
         )
     elif _is_gemini_model(model):
@@ -325,6 +382,7 @@ def call_llm(
             seed=seed,
             system_prompt=system_prompt,
             images=images,
+            messages=messages,
             request_timeout=request_timeout,
             thinking_budget=thinking_budget,
             thinking_level=thinking_level,
@@ -338,6 +396,7 @@ def call_llm(
             seed=seed,
             system_prompt=system_prompt,
             images=images,
+            messages=messages,
             request_timeout=request_timeout,
             reasoning_effort=reasoning_effort,
         )
@@ -399,6 +458,7 @@ def _call_openai(
     seed: Optional[int],
     system_prompt: Optional[str],
     images: Optional[List[str | Path]],
+    messages: Optional[List[Dict[str, Any]]] = None,
     request_timeout: int = _REQUEST_TIMEOUT,
     reasoning_effort: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -409,9 +469,19 @@ def _call_openai(
 
         _OPENAI_CLIENT = OpenAI()
 
-    messages = build_openai_messages(prompt, system_prompt, images)
+    if messages is not None:
+        # Continue an existing conversation: append the new user turn.
+        # System message is always first; only add it if not already present.
+        base = list(messages)
+        if system_prompt and (not base or base[0].get("role") != "system"):
+            base.insert(0, {"role": "system", "content": system_prompt})
+        new_turn = build_openai_messages(prompt, system_prompt=None, images=images)
+        # build_openai_messages with no system returns just the user message
+        all_messages = base + [m for m in new_turn if m["role"] != "system"]
+    else:
+        all_messages = build_openai_messages(prompt, system_prompt, images)
     api_params = build_openai_request_body(
-        messages, model, temperature, max_tokens, seed, reasoning_effort
+        all_messages, model, temperature, max_tokens, seed, reasoning_effort
     )
 
     resp = _OPENAI_CLIENT.chat.completions.create(**api_params, timeout=request_timeout)
@@ -430,6 +500,23 @@ def _call_openai(
     }
 
 
+def _build_gemini_user_parts(
+    prompt: str,
+    images: Optional[List[str | Path]] = None,
+) -> list:
+    """Build Gemini content parts for a single user turn."""
+    from google.genai import types
+
+    parts: list = []
+    if images:
+        for img_path in images:
+            img_bytes = Path(img_path).read_bytes()
+            mime = mimetypes.guess_type(str(img_path))[0] or "image/png"
+            parts.append(types.Part.from_bytes(data=img_bytes, mime_type=mime))
+    parts.append(prompt)
+    return parts
+
+
 def _call_gemini(
     prompt: str,
     model: str,
@@ -438,6 +525,7 @@ def _call_gemini(
     seed: Optional[int],
     system_prompt: Optional[str],
     images: Optional[List[str | Path]],
+    messages: Optional[List[Dict[str, Any]]] = None,
     request_timeout: int = _REQUEST_TIMEOUT,
     thinking_budget: Optional[int] = None,
     thinking_level: Optional[str] = None,
@@ -470,24 +558,37 @@ def _call_gemini(
 
     config = types.GenerateContentConfig(**config_kwargs)
 
-    # Build content parts
-    content_parts: list = []
-
-    # Add images first if provided
-    if images:
-        for img_path in images:
-            img_bytes = Path(img_path).read_bytes()
-            mime = mimetypes.guess_type(str(img_path))[0] or "image/png"
-            content_parts.append(types.Part.from_bytes(data=img_bytes, mime_type=mime))
-
-    # Add text prompt
-    content_parts.append(prompt)
+    if messages is not None:
+        # Multi-turn: convert message history to Gemini contents format.
+        # Each item in messages is {"role": "user"|"assistant", "content": str|list}.
+        # Gemini uses "user" and "model" roles.
+        contents: list = []
+        for msg in messages:
+            role = "model" if msg["role"] == "assistant" else "user"
+            content = msg["content"]
+            if isinstance(content, str):
+                parts_for_msg = [content]
+            elif isinstance(content, list):
+                # Already structured (e.g. contains image parts)
+                parts_for_msg = content
+            else:
+                parts_for_msg = [str(content)]
+            contents.append(types.Content(role=role, parts=parts_for_msg))
+        # Append current user turn
+        contents.append(
+            types.Content(
+                role="user",
+                parts=_build_gemini_user_parts(prompt, images),
+            )
+        )
+    else:
+        contents = _build_gemini_user_parts(prompt, images)
 
     # Generate response (with timeout to prevent indefinite hangs)
     resp = _call_with_timeout(
         client.models.generate_content,
         (),
-        {"model": model, "contents": content_parts, "config": config},
+        {"model": model, "contents": contents, "config": config},
         request_timeout,
     )
 
@@ -539,6 +640,7 @@ def _call_claude_code(
     request_timeout: int = _REQUEST_TIMEOUT,
     max_turns: int = 20,
     sandbox_cwd: Optional[str] = None,
+    lib_file: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Agentic Claude via the Claude Agent SDK.
 
@@ -575,6 +677,33 @@ def _call_claude_code(
         _dst = Path(sandbox_cwd) / _pkg
         if _src.exists() and not _dst.exists():
             os.symlink(str(_src), str(_dst))
+
+    # When a custom library is provided, replace the hexagen package in the sandbox
+    # with it so the CC agent develops and tests against the correct library.
+    if lib_file:
+        _lib_path = Path(lib_file)
+        _hexagen_dst = Path(sandbox_cwd) / "hexagen"
+        if _lib_path.exists() and _lib_path.resolve() != (_PROJECT_ROOT / "hexagen" / "hexagen.py").resolve():
+            # Remove the real hexagen symlink and create a package with the custom lib
+            if _hexagen_dst.exists() or _hexagen_dst.is_symlink():
+                if _hexagen_dst.is_symlink() or _hexagen_dst.is_file():
+                    _hexagen_dst.unlink()
+                else:
+                    shutil.rmtree(str(_hexagen_dst))
+            _hexagen_dst.mkdir()
+            shutil.copy(str(_lib_path), str(_hexagen_dst / "hexagen.py"))
+            # Generate __init__.py that only re-exports what the custom lib defines,
+            # so `import hexagen` doesn't crash on missing classes (e.g. Shape/Line/Circle).
+            try:
+                from runner_utils import get_library_classes
+                _classes = get_library_classes(str(_lib_path))
+            except Exception:
+                _classes = []
+            _init_lines = ["\"\"\"Custom hexagen library.\"\"\""]
+            if _classes:
+                _init_lines.append(f"from .hexagen import {', '.join(_classes)}")
+                _init_lines.append(f"__all__ = {_classes!r}")
+            (_hexagen_dst / "__init__.py").write_text("\n".join(_init_lines) + "\n")
 
     try:
         opts = ClaudeAgentOptions(
@@ -715,6 +844,7 @@ def _call_anthropic(
     max_tokens: Optional[int],
     system_prompt: Optional[str],
     images: Optional[List[str | Path]],
+    messages: Optional[List[Dict[str, Any]]] = None,
     request_timeout: int = _REQUEST_TIMEOUT,
 ) -> Dict[str, Any]:
     """Direct Anthropic Messages API. Parallel to _call_openai/_call_gemini."""
@@ -744,9 +874,15 @@ def _call_anthropic(
     else:
         user_content = prompt
 
+    new_user_msg = {"role": "user", "content": user_content}
+    if messages is not None:
+        anthropic_messages = list(messages) + [new_user_msg]
+    else:
+        anthropic_messages = [new_user_msg]
+
     api_kwargs: Dict[str, Any] = {
         "model": model,
-        "messages": [{"role": "user", "content": user_content}],
+        "messages": anthropic_messages,
         "max_tokens": max_tokens if max_tokens is not None else 4096,
         "temperature": temperature,
         "timeout": request_timeout,
@@ -759,6 +895,86 @@ def _call_anthropic(
     text_parts = [
         b.text for b in resp.content if getattr(b, "type", "") == "text"
     ]
+    text = _strip_thinking_tokens("".join(text_parts).strip())
+
+    u = resp.usage
+    prompt_tokens = (
+        (getattr(u, "input_tokens", 0) or 0)
+        + (getattr(u, "cache_read_input_tokens", 0) or 0)
+        + (getattr(u, "cache_creation_input_tokens", 0) or 0)
+    )
+    completion_tokens = getattr(u, "output_tokens", 0) or 0
+    return {
+        "text": text,
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+        },
+        "raw": resp.model_dump(),
+    }
+
+
+def _call_vertex_claude(
+    prompt: str,
+    model: str,
+    temperature: float,
+    max_tokens: Optional[int],
+    system_prompt: Optional[str],
+    images: Optional[List[str | Path]],
+    messages: Optional[List[Dict[str, Any]]] = None,
+    request_timeout: int = _REQUEST_TIMEOUT,
+) -> Dict[str, Any]:
+    """Claude via Vertex AI (AnthropicVertex). Same interface as _call_anthropic."""
+    global _ANTHROPIC_VERTEX_CLIENT
+    if _ANTHROPIC_VERTEX_CLIENT is None:
+        from anthropic import AnthropicVertex
+
+        project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get("VERTEX_PROJECT_ID")
+        if not project_id:
+            raise ValueError(
+                "GCP_PROJECT_ID or VERTEX_PROJECT_ID must be set for vertex/claude-* models"
+            )
+        region = os.environ.get("VERTEX_LOCATION", "us-east5")
+        _ANTHROPIC_VERTEX_CLIENT = AnthropicVertex(project_id=project_id, region=region)
+
+    underlying_model = _strip_vertex_prefix(model)
+
+    if images:
+        content_blocks: List[Dict[str, Any]] = []
+        for img in images:
+            mime = mimetypes.guess_type(str(img))[0] or "image/png"
+            data = base64.b64encode(Path(img).read_bytes()).decode()
+            content_blocks.append(
+                {
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": mime, "data": data},
+                }
+            )
+        content_blocks.append({"type": "text", "text": prompt})
+        user_content: Any = content_blocks
+    else:
+        user_content = prompt
+
+    new_user_msg = {"role": "user", "content": user_content}
+    if messages is not None:
+        anthropic_messages = list(messages) + [new_user_msg]
+    else:
+        anthropic_messages = [new_user_msg]
+
+    api_kwargs: Dict[str, Any] = {
+        "model": underlying_model,
+        "messages": anthropic_messages,
+        "max_tokens": max_tokens if max_tokens is not None else 4096,
+        "temperature": temperature,
+        "timeout": request_timeout,
+    }
+    if system_prompt:
+        api_kwargs["system"] = system_prompt
+
+    resp = _ANTHROPIC_VERTEX_CLIENT.messages.create(**api_kwargs)
+
+    text_parts = [b.text for b in resp.content if getattr(b, "type", "") == "text"]
     text = _strip_thinking_tokens("".join(text_parts).strip())
 
     u = resp.usage
