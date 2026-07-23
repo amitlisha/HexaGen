@@ -966,9 +966,12 @@ def _call_vertex_claude(
         "model": underlying_model,
         "messages": anthropic_messages,
         "max_tokens": max_tokens if max_tokens is not None else 4096,
-        "temperature": temperature,
         "timeout": request_timeout,
     }
+    # claude-opus-4-8 (and possibly later models) reject `temperature` outright ("temperature is
+    # deprecated for this model") rather than just ignoring it, so it must be omitted entirely.
+    if "opus-4-8" not in underlying_model.lower():
+        api_kwargs["temperature"] = temperature
     if system_prompt:
         api_kwargs["system"] = system_prompt
 
