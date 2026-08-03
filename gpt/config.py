@@ -58,6 +58,7 @@ def parse_args() -> argparse.Namespace:
             "tiles-full",
             "tiles-step-full",
             "python-full",
+            "code-full-regal",
         ],
         default=["code-step"],
         help="code-step = one code instruction at a time (default); "
@@ -66,7 +67,10 @@ def parse_args() -> argparse.Namespace:
         "tiles-step = predict tiles step-by-step; "
         "tiles-full = predict all tiles at once for all instructions; "
         "tiles-step-full = all instructions visible, predict tiles one at a time; "
-        "python-full = unrestricted Python code outputting (row, col, color) tuples",
+        "python-full = unrestricted Python code outputting (row, col, color) tuples; "
+        "code-full-regal = single-shot, python-full's get_tiles() contract, but with a "
+        "REGAL-learned library (--api-spec-dir) shown as text AND exec-injected so generated "
+        "code can actually call it — for evaluating REGAL-discovered libraries faithfully",
     )
     p.add_argument(
         "--repeats",
@@ -110,6 +114,15 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Path to custom API spec file (for testing generated libraries). "
         "If not specified, uses default hexagen_api_spec.txt",
+    )
+    p.add_argument(
+        "--api-spec-dir",
+        type=str,
+        default=None,
+        help="Directory of PER-TASK API spec files, named '<task_id>.txt' (e.g. as produced by "
+        "REGAL's program_refactoring/generate_task_specs.py). If set, overrides --api-spec-file: "
+        "each task gets its own retrieved-subset spec instead of one static spec shared by every "
+        "task in the run — faithful to REGAL's own per-query retrieval at test time.",
     )
     p.add_argument(
         "--lib-file",

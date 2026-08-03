@@ -10,7 +10,7 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
     """Load system and user templates for the selected mode.
 
     Args:
-        mode: Experiment mode ('code-step', 'code-full', 'code-step-full', 'tiles-step', 'tiles-full', 'tiles-step-full', 'python-full')
+        mode: Experiment mode ('code-step', 'code-full', 'code-step-full', 'tiles-step', 'tiles-full', 'tiles-step-full', 'python-full', 'code-full-regal')
         vision: Whether to use vision-enabled system prompt
         api_spec_file: Optional path to custom API spec file (for generated libraries)
                       If None, uses default hexagen_api_spec.txt
@@ -61,6 +61,13 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
             # Hexagons python prompts
             sys_p = DATA_DIR / "python_system_prompt.txt"
             user_p = DATA_DIR / "python_user_message.txt"
+    elif mode == "code-full-regal":
+        if dataset == "larc":
+            raise ValueError("code-full-regal is hexagons-only (no REGAL/LARC corpus exists)")
+        # Same get_tiles() contract as python-full, but the system prompt acknowledges the
+        # injected library instead of forbidding one (see python_regal_system_prompt.txt).
+        sys_p = DATA_DIR / "python_regal_system_prompt.txt"
+        user_p = DATA_DIR / "python_user_message.txt"
     else:
         if dataset == "larc":
             sys_p = DATA_DIR / "larc_code_full_system_prompt.txt"
@@ -83,8 +90,13 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
     system_tmpl = f"{shared_sys_p.read_text()}\n\n{sys_p.read_text()}"
     user_tmpl = user_p.read_text()
 
-    # Inject API spec into system prompt for code modes (not tiles or python-full)
-    if mode not in ("tiles-step", "tiles-full", "tiles-step-full", "python-full"):
+    # Inject API spec into system prompt for code modes (not tiles or python-full).
+    # code-full-regal has no fixed default spec to fall back to (there's no hexagen Game/Shape
+    # API in this mode) — without an explicit --api-spec-file/--api-spec-dir it simply runs
+    # with no library, same as plain python-full.
+    if mode == "code-full-regal":
+        api_spec_path = Path(api_spec_file) if api_spec_file else None
+    elif mode not in ("tiles-step", "tiles-full", "tiles-step-full", "python-full"):
         # Load API spec (either custom or default)
         if api_spec_file:
             api_spec_path = Path(api_spec_file)
@@ -93,7 +105,10 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
                 api_spec_path = DATA_DIR / "larc_api_spec.txt"
             else:
                 api_spec_path = DATA_DIR / "hexagen_api_spec.txt"
+    else:
+        api_spec_path = None
 
+    if api_spec_path is not None:
         if not api_spec_path.exists():
             raise FileNotFoundError(f"API spec file not found: {api_spec_path}")
 
@@ -108,7 +123,7 @@ def build_prompts(mode: str, vision: bool = False, api_spec_file: Optional[str] 
         tags = ["{INPUT_GRID}", "{NEXT_STEP}"]
     else:
         tags = ["{HISTORY_BLOCK}", "{NEXT_STEP}"]
-        if mode not in ("tiles-step", "tiles-full", "tiles-step-full", "python-full"):
+        if mode not in ("tiles-step", "tiles-full", "tiles-step-full", "python-full", "code-full-regal"):
             tags.append("{CODE_SO_FAR}")
         if mode in ("code-step-full", "tiles-step-full"):
             tags.append("{ALL_INSTRUCTIONS}")

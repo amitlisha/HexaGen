@@ -206,10 +206,15 @@ def run_python_full(
     height: int = None,
     input_grid_2d: List[List[int]] = None,
     prefetched_response: Optional[Dict] = None,
+    library_code: str = "",
 ) -> Dict:
     """
     Single-shot prompt that passes ALL instructions as one block.
     Model generates Python code that computes tiles for all instructions.
+
+    library_code: optional extra Python source (e.g. REGAL-retrieved helper functions)
+        prepended to the model's generated code before execution, so calls to those helpers
+        actually resolve. Empty by default — a no-op for plain python-full runs.
     """
     if cfg.dataset == "larc":
         return _run_python_full_larc(
@@ -280,9 +285,11 @@ def run_python_full(
         # Use solution.py written by the agent if available; otherwise parse text.
         code_text = resp.get("solution_code") or resp["text"]
 
+        exec_code = f"{library_code}\n\n{code_text}" if library_code else code_text
+
         try:
             tiles = extract_and_execute_python(
-                code_text,
+                exec_code,
                 timeout=cfg.exec_timeout,
             )
             valid = True
@@ -292,7 +299,10 @@ def run_python_full(
             valid = False
             error_msg = str(e)
 
-        save_script(task_dir, run_ts, step=0, attempt=attempt, code=code_text, kind="python_full")
+        # Save the code as actually EXECUTED (library + generated code), same convention as
+        # code-full's saved script (scaffold + generated continuation) — not just the model's
+        # raw output — so the artifact reflects exactly what ran.
+        save_script(task_dir, run_ts, step=0, attempt=attempt, code=exec_code, kind="python_full")
 
         if not valid:
             last_exc = error_msg
@@ -308,7 +318,7 @@ def run_python_full(
                 )
                 return {
                     "attempt": attempt,
-                    "code": resp["text"],
+                    "code": exec_code,
                     "tiles": [],
                     "valid": False,
                     "usage": resp["usage"],
@@ -331,7 +341,7 @@ def run_python_full(
 
         log = {
             "attempt": attempt,
-            "code": resp["text"],
+            "code": exec_code,
             "tiles": tiles,
             "valid": valid,
             "usage": resp["usage"],

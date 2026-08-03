@@ -47,7 +47,7 @@ def _gold_failed_runs(task: Dict, mode: str) -> List[Dict]:
     correctly instead of silently ignoring the task.
     """
     gold_boards = task["gold_boards"]
-    is_full = mode in ("code-full", "tiles-full", "python-full")
+    is_full = mode in ("code-full", "tiles-full", "python-full", "code-full-regal")
     if is_full:
         final = gold_boards[-1]
         bg = sum(1 for t in final if t != 0)
@@ -192,8 +192,11 @@ def run_task(
     dataset = get_dataset(cfg.dataset)
 
     is_cc = _is_claude_code_model(cfg.model)
+    api_spec_file = cfg.api_spec_file
+    if getattr(cfg, "api_spec_dir", None):
+        api_spec_file = str(Path(cfg.api_spec_dir) / f"{task_id}.txt")
     sys_prompt, user_tmpl = build_prompts(
-        cfg.mode, cfg.vision, cfg.api_spec_file, cfg.dataset, is_cc=is_cc
+        cfg.mode, cfg.vision, api_spec_file, cfg.dataset, is_cc=is_cc
     )
     instructions = dataset.get_instructions(task_data)
     gold_boards = dataset.get_gold_boards(task_data)
@@ -387,6 +390,37 @@ def run_task(
         logs = [log]
         print(
             f"[task {task_id}] PYTHON-FULL RUN →",
+            "✓✓" if log["correct"] else ("✓" if log["valid"] else "✗"),
+        )
+
+    elif cfg.mode == "code-full-regal":
+        # Same execution contract as python-full (get_tiles()), but the per-task retrieved
+        # REGAL library (already shown as text in sys_prompt via build_prompts' api-spec
+        # injection) is ALSO exec-injected so generated code can actually call those helper
+        # functions, not just read about them.
+        library_code = ""
+        if api_spec_file and Path(api_spec_file).exists():
+            library_code = Path(api_spec_file).read_text()
+
+        log = run_python_full(
+            cfg,
+            sys_prompt,
+            user_tmpl,
+            instructions,
+            gold_boards[-1],
+            current_img,
+            run_dir,
+            run_ts,
+            dataset.get_initial_board(task_data),
+            board_width,
+            board_height,
+            input_grid_2d,
+            prefetched_response=prefetched_response,
+            library_code=library_code,
+        )
+        logs = [log]
+        print(
+            f"[task {task_id}] CODE-FULL-REGAL RUN →",
             "✓✓" if log["correct"] else ("✓" if log["valid"] else "✗"),
         )
 
@@ -723,7 +757,7 @@ def main() -> None:
                     raise ValueError(
                         f"Single task mode (--task) requires hexagons dataset"
                     )
-                _ = run_task(cfg, cfg.task, task_data)
+                _ = run_task(run_cfg, cfg.task, task_data)
 
     if cfg.set and len(all_results) > 0:
         out_dir = get_results_dir_path(cfg.experiment_name) / cfg.set
