@@ -1163,7 +1163,6 @@ def _upload_batch_jsonl_to_gcs(
     import json
     import datetime
     from google.cloud import storage as gcs
-    print("lishalisha")
     project_id = os.environ.get("GCP_PROJECT_ID") or os.environ.get("VERTEX_PROJECT_ID")
     bucket_name = os.environ.get("BATCH_GCS_BUCKET", f"hexagons-experiments-biu")
 
