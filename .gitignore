@@ -20,3 +20,5 @@ data/
 literature-survey/
 gpu_watchdog.py
 logs/
+_compare_cache*/
+compare*.json

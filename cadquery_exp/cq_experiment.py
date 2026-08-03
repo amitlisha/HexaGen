@@ -42,6 +42,7 @@ from llm_wrapper import call_llm, init_llm  # noqa: E402
 
 from cq_dataset import ABSTRACTION_LEVELS, load_dataset  # noqa: E402
 from cq_executor import execute_cq  # noqa: E402
+from cq_gold_cache import get_gold_brep  # noqa: E402
 from cq_metrics import compute_metrics  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -61,7 +62,9 @@ def _timestamp() -> str:
 
 
 def _save_json(obj: dict, path: Path) -> None:
-    path.write_text(json.dumps(obj, indent=2, ensure_ascii=False))
+    # default=str: cfg (saved as vars(cfg)) can hold real Path objects (e.g.
+    # --resume-run/--resume-failed), which plain json.dumps can't serialize.
+    path.write_text(json.dumps(obj, indent=2, ensure_ascii=False, default=str))
 
 
 def _results_dir(experiment_name: str) -> Path:
@@ -137,8 +140,9 @@ def run_one(
         "usage": {},
     }
 
-    # 1. Execute gold through the same CadQuery path used for predictions
-    gold_brep, gold_err = execute_cq(example["gold_code"], timeout=cfg.timeout)
+    # 1. Gold BREP: uid-keyed cache shared across levels/conditions/runs
+    # (gold_code depends only on uid, never on level/condition/model).
+    gold_brep, gold_err = get_gold_brep(uid, example["gold_code"], timeout=cfg.timeout)
     result["gold_status"] = "error" if gold_err else "ok"
     if gold_err:
         result["status"] = "gold_failed"
@@ -221,6 +225,13 @@ def run_one(
     result["status"] = "ok"
     result["iou"] = metrics["iou"]
     result["chamfer"] = metrics["chamfer"]
+
+    # Persist normalised BREPs so cq_compare.py can render multi-view images
+    # later without re-running the LLM or re-executing the gold program.
+    (task_dir / f"{run_ts}_pred.brep").write_text(pred_brep, encoding="utf-8")
+    (task_dir / f"{run_ts}_gold.brep").write_text(gold_brep, encoding="utf-8")
+    result["pred_brep_path"] = str(task_dir / f"{run_ts}_pred.brep")
+    result["gold_brep_path"] = str(task_dir / f"{run_ts}_gold.brep")
 
     _save_json(result, task_dir / f"{run_ts}_result.json")
     return result
@@ -354,6 +365,22 @@ def parse_args() -> argparse.Namespace:
                    help="Use Gemini batch API with up to --retries rounds (default 3)")
     p.add_argument("--coverage-only", action="store_true",
                    help="Print dataset coverage report and exit")
+    p.add_argument("--resume-failed", type=Path, default=None,
+                   help="Path to an existing results-* dir. Re-run only the "
+                        "tasks whose latest status is gold_failed/error/"
+                        "timeout/exception (using this invocation's --model/"
+                        "--workers/--timeout/--retries), merge the new "
+                        "results back into that same dir, and exit. Does not "
+                        "use --batch — repairs are small and run inline.")
+    p.add_argument("--resume-run", type=Path, default=None,
+                   help="Path to an existing (possibly interrupted, mid-run) "
+                        "results-* dir. Recovers already-completed tasks "
+                        "from the per-task files already on disk, runs only "
+                        "what's still missing (same --split/--max-examples/"
+                        "--levels/--conditions as the original invocation), "
+                        "and writes the final aggregate. Use this — not "
+                        "--resume-failed — when a run was killed before it "
+                        "ever produced its own *_results.json.")
     return p.parse_args()
 
 
@@ -398,7 +425,7 @@ def run_batch_gemini(
 
     def _exec_gold(uid_ex):
         uid, ex = uid_ex
-        return uid, execute_cq(ex["gold_code"], timeout=cfg.timeout)
+        return uid, get_gold_brep(uid, ex["gold_code"], timeout=cfg.timeout)
 
     with ThreadPoolExecutor(max_workers=cfg.workers) as pool:
         futures = {pool.submit(_exec_gold, item): item[0] for item in unique_examples.items()}
@@ -498,6 +525,17 @@ def run_batch_gemini(
                 result["status"] = "ok"
                 result["iou"] = metrics["iou"]
                 result["chamfer"] = metrics["chamfer"]
+
+                # Persist normalised BREPs (mirrors run_one) so cq_compare.py
+                # can render multi-view images without re-running the LLM.
+                task_dir = out_dir / ex["uid"].replace("/", "_") / lvl / cond
+                task_dir.mkdir(parents=True, exist_ok=True)
+                pred_path = task_dir / f"r{round_num}_pred.brep"
+                gold_path = task_dir / f"r{round_num}_gold.brep"
+                pred_path.write_text(pred_brep, encoding="utf-8")
+                gold_path.write_text(gold_brep, encoding="utf-8")
+                result["pred_brep_path"] = str(pred_path)
+                result["gold_brep_path"] = str(gold_path)
             return idx, result, generated_code
 
         exec_results: Dict[int, tuple] = {}  # idx -> (result, generated_code)
@@ -558,6 +596,203 @@ def run_batch_gemini(
     return all_results
 
 
+def _latest_results_json(run_dir: Path) -> Path:
+    candidates = sorted(run_dir.glob("*_results.json"))
+    if not candidates:
+        raise FileNotFoundError(f"No *_results.json found in {run_dir}")
+    return candidates[-1]
+
+
+FAILED_STATUSES = ("gold_failed",)
+# Deliberately NOT including "error"/"timeout"/"exception" (prediction-side
+# failures): those are outcomes of the actual generation methodology being
+# compared and already got the full --retries budget in the original run.
+# Silently giving them another attempt here would hand one run bonus
+# retries the other run didn't get, biasing the very comparison this repair
+# is meant to make fair. Only "gold_failed" is targeted, since that's the
+# artifact of the shared-gold-execution-timeout bug, not a real result.
+
+
+def _scan_existing_task_results(out_dir: Path) -> Dict[tuple, Dict]:
+    """Recover already-completed per-task results directly from disk.
+
+    run_one() writes a `{run_ts}_result.json` into its task_dir immediately
+    on completion, independent of whether the parent process ever reaches
+    its own final aggregate write (which only happens after ALL work_items
+    finish). If the process is killed mid-run (crash, OOM, host restart,
+    session teardown, ...) before that final write, this is the only record
+    of the work already done — and it is enough to resume without losing it.
+    """
+    latest: Dict[tuple, Path] = {}
+    for path in out_dir.glob("*/*/*/*_result.json"):
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            continue
+        key = (data.get("uid"), data.get("level"), data.get("condition"))
+        if None in key:
+            continue
+        prev = latest.get(key)
+        # filenames are f"{run_ts}_result.json" with a sortable timestamp
+        # prefix, so lexicographic comparison is also chronological.
+        if prev is None or path.name > prev.name:
+            latest[key] = path
+    return {key: json.loads(path.read_text()) for key, path in latest.items()}
+
+
+def resume_run(cfg: argparse.Namespace) -> None:
+    """Continue an interrupted full run that never reached its own final
+    aggregate write, without redoing any already-completed task.
+
+    Unlike resume_failed_run (which repairs specific known-failed tasks
+    listed in an existing {ts}_results.json), this handles the case where
+    that aggregate file was never written at all because the process died
+    mid-run. Recovers completed results from disk, recomputes the exact
+    same deterministic work set the original run would have produced (same
+    split/max-examples/levels/conditions/seed), and executes only what's
+    still missing.
+    """
+    out_dir: Path = cfg.resume_run
+    existing = _scan_existing_task_results(out_dir)
+    print(f"Recovered {len(existing)} already-completed tasks from {out_dir}")
+
+    examples = load_dataset(cfg.split, cfg.max_examples, cfg.levels)
+    print(f"  {len(examples)} examples (same deterministic load as the original run)")
+
+    prompts = load_prompts()
+    work_items = [
+        (ex, lvl, cond)
+        for ex in examples
+        for lvl in cfg.levels
+        for cond in cfg.conditions
+        if (ex["uid"], lvl, cond) not in existing
+    ]
+    total_expected = len(examples) * len(cfg.levels) * len(cfg.conditions)
+    print(f"  {len(work_items)} tasks remaining out of {total_expected} total")
+
+    all_results: List[Dict] = list(existing.values())
+
+    def _save_progress() -> None:
+        ts = _timestamp()
+        summary = aggregate(all_results)
+        _save_json(
+            {"config": vars(cfg), "summary": summary, "results": all_results},
+            out_dir / f"{ts}_results.json",
+        )
+        write_csv(summary, out_dir / f"{ts}_summary.csv")
+
+    if work_items:
+        with ThreadPoolExecutor(max_workers=cfg.workers) as pool:
+            futures = {
+                pool.submit(run_one, ex, lvl, cond, prompts, cfg, out_dir): (ex["uid"], lvl, cond)
+                for ex, lvl, cond in work_items
+            }
+            done = 0
+            for future in as_completed(futures):
+                uid, lvl, cond = futures[future]
+                done += 1
+                try:
+                    r = future.result()
+                    all_results.append(r)
+                    iou_s = f"{r['iou']:.3f}" if r.get("iou") is not None else "N/A"
+                    cd_s = f"{r['chamfer']:.4f}" if r.get("chamfer") is not None else "N/A"
+                    print(f"[{done}/{len(work_items)}] {uid} | {lvl} | {cond} → {r['status']}  IoU={iou_s}  CD={cd_s}")
+                except Exception as exc:
+                    print(f"[{done}/{len(work_items)}] {uid} | {lvl} | {cond} → EXCEPTION: {exc}")
+                    all_results.append({
+                        "uid": uid, "level": lvl, "condition": cond,
+                        "gold_status": None, "status": "exception", "error": str(exc),
+                        "iou": None, "chamfer": None, "usage": {},
+                    })
+                # Periodic incremental save — so a second interruption loses
+                # at most the last 25 tasks, not the whole remaining run.
+                if done % 25 == 0:
+                    _save_progress()
+
+    _save_progress()
+    print_report(aggregate(all_results), cfg.levels, cfg.conditions)
+    print(f"Full results → {out_dir}")
+
+
+def resume_failed_run(cfg: argparse.Namespace) -> None:
+    """Re-run only the failed tasks of an existing run and merge in place.
+
+    Targeted repair for cases like: gold execution flakily timed out on a
+    contended machine for a handful of uids in one run but not another run
+    of the identical gold code, leaving those tasks stuck at status
+    "gold_failed" with no prediction ever attempted. Since get_gold_brep()
+    now caches successful gold BREPs by uid, retrying picks up any gold
+    result another run already proved out, and otherwise gets a fresh
+    (retried) attempt instead of being permanently poisoned by one bad race.
+    """
+    run_dir: Path = cfg.resume_failed
+    results_path = _latest_results_json(run_dir)
+    old_data = json.loads(results_path.read_text())
+    old_results: List[Dict] = old_data["results"]
+
+    failed = [r for r in old_results if r.get("status") in FAILED_STATUSES]
+    print(f"Found {len(failed)}/{len(old_results)} failed tasks in {run_dir}")
+    if not failed:
+        print("Nothing to repair.")
+        return
+
+    failed_uids = {r["uid"] for r in failed}
+    failed_levels = sorted({r["level"] for r in failed})
+    examples_by_uid = {
+        ex["uid"]: ex
+        for ex in load_dataset(cfg.split, None, failed_levels)
+        if ex["uid"] in failed_uids
+    }
+    missing = failed_uids - examples_by_uid.keys()
+    if missing:
+        print(f"  WARNING: {len(missing)} failed uids not found via load_dataset "
+              f"(split={cfg.split!r}) — skipping those: {sorted(missing)[:5]}...")
+
+    prompts = load_prompts()
+    retried: Dict[tuple, Dict] = {}
+
+    with ThreadPoolExecutor(max_workers=cfg.workers) as pool:
+        futures = {}
+        for r in failed:
+            ex = examples_by_uid.get(r["uid"])
+            if ex is None:
+                continue
+            key = (r["uid"], r["level"], r["condition"])
+            futures[pool.submit(run_one, ex, r["level"], r["condition"], prompts, cfg, run_dir)] = key
+        for i, future in enumerate(as_completed(futures), 1):
+            key = futures[future]
+            try:
+                new_r = future.result()
+            except Exception as exc:
+                uid, lvl, cond = key
+                new_r = {
+                    "uid": uid, "level": lvl, "condition": cond,
+                    "status": "exception", "error": str(exc),
+                    "iou": None, "chamfer": None, "usage": {},
+                }
+            retried[key] = new_r
+            print(f"  [{i}/{len(futures)}] {key} -> {new_r['status']}")
+
+    fixed = sum(1 for r in retried.values() if r["status"] == "ok")
+    print(f"Repaired {fixed}/{len(retried)} previously-failed tasks")
+
+    merged = [
+        retried.get((r["uid"], r["level"], r["condition"]), r)
+        for r in old_results
+    ]
+
+    summary = aggregate(merged)
+    ts = _timestamp()
+    _save_json(
+        {"config": old_data["config"], "summary": summary, "results": merged},
+        run_dir / f"{ts}_results.json",
+    )
+    write_csv(summary, run_dir / f"{ts}_summary.csv")
+    print_report(summary, sorted({r["level"] for r in merged}),
+                 sorted({r["condition"] for r in merged}))
+    print(f"Merged results -> {run_dir}")
+
+
 def main() -> None:
     cfg = parse_args()
 
@@ -568,6 +803,14 @@ def main() -> None:
 
     # Initialise the LLM client (mirrors experiment.py pattern)
     init_llm(cfg)
+
+    if cfg.resume_failed:
+        resume_failed_run(cfg)
+        return
+
+    if cfg.resume_run:
+        resume_run(cfg)
+        return
 
     out_dir = _results_dir(cfg.experiment_name)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -616,6 +859,17 @@ def main() -> None:
                         "gold_status": None, "status": "exception", "error": str(exc),
                         "iou": None, "chamfer": None, "usage": {},
                     })
+
+                # Periodic incremental save: if this process is killed
+                # before reaching the final write below (crash, OOM, host
+                # restart, ...), --resume-run can still recover from the
+                # per-task files run_one() already wrote, but this also
+                # keeps a best-effort aggregate on disk throughout.
+                if i % 25 == 0:
+                    _save_json(
+                        {"config": vars(cfg), "summary": aggregate(all_results), "results": all_results},
+                        out_dir / f"{_timestamp()}_results.json",
+                    )
 
     # Save full results + summary
     ts = _timestamp()
