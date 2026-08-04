@@ -740,6 +740,7 @@ def main() -> None:
             # Create a run-specific config
             run_cfg = argparse.Namespace(**vars(cfg))
             run_cfg.mode = mode
+            run_cfg.seed = cfg.seed + r
 
             if cfg.set:
                 res = _run_set(run_cfg)

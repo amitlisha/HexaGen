@@ -38,7 +38,7 @@ from runner_utils import generate_import_statement, extract_code, DATA_DIR
 from prompts import build_prompts
 from datasets import get_dataset
 
-_BATCHABLE_MODES = {"tiles-full", "code-full", "python-full"}
+_BATCHABLE_MODES = {"tiles-full", "code-full", "python-full", "code-full-regal"}
 
 
 def is_batch_compatible(cfg: argparse.Namespace) -> bool:
@@ -626,7 +626,7 @@ def _build_first_prompt(
         return build_code_full_prompt(
             cfg, user_tmpl, instructions, code_so_far, input_grid_2d
         )
-    elif cfg.mode == "python-full":
+    elif cfg.mode in ("python-full", "code-full-regal"):
         from runners.python_full_runner import build_python_full_prompt
 
         return build_python_full_prompt(cfg, user_tmpl, instructions, input_grid_2d)
